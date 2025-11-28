@@ -169,7 +169,7 @@ int main(int argc, char *argv[]) {
   // Evenly space the profiels so each thread can get a bundle of profiles to
   // process they can then all write to the output matrix
   std::vector<uintf32> ranges;
-  if (threads <= 0) {
+  if (threads <= 1) {
     threads = 1;
     ranges.push_back(0);
     ranges.push_back(profile_data.size());
