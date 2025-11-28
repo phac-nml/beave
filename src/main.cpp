@@ -169,6 +169,7 @@ int main(int argc, char *argv[]) {
   const option long_options[] = {{"input", required_argument, 0, 'i'},
                                  {"threads", required_argument, 0, 't'},
                                  {"missing", optional_argument, 0, 't'},
+                                 {"delimiter", optional_argument, 0, 'd'},
                                  {"scaled", no_argument, 0, 's'},
                                  {"count-missing", no_argument, 0, 'c'},
                                  {0, 0, 0, 0}};
@@ -176,6 +177,7 @@ int main(int argc, char *argv[]) {
   const char *input_file = nullptr;
   uint8_t threads = 1;
   std::string zero_value = "0";
+  char delimiter = '\t';
   bool scaled = false;
   bool count_missing = false;
 
@@ -187,7 +189,7 @@ int main(int argc, char *argv[]) {
   while (1) {
 
     int option_index = 0;
-    c = getopt_long(argc, argv, "hi:t:m:s", long_options, &option_index);
+    c = getopt_long(argc, argv, "hi:t:m:d:sc", long_options, &option_index);
     if (c == -1)
       break;
     switch (c) {
@@ -208,6 +210,9 @@ int main(int argc, char *argv[]) {
     case 'm':
       zero_value = optarg;
       break;
+    case 'd':
+      delimiter = *optarg;
+      break;
     case 'h':
       break;
     default:
@@ -225,15 +230,15 @@ int main(int argc, char *argv[]) {
     if (inputFile.is_open()) {
       std::string header;
       std::getline(inputFile, header);
-      auto columns = std::count(header.begin(), header.end(), '\t');
+      auto columns = std::count(header.begin(), header.end(), delimiter);
       while (std::getline(inputFile, line)) {
         std::istringstream tokens(line);
         std::string code;
         std::string sample;
-        std::getline(tokens, sample, '\t');
+        std::getline(tokens, sample, delimiter);
         std::vector<size_t> profile(columns);
         size_t idx = 0;
-        while (std::getline(tokens, code, '\t')) {
+        while (std::getline(tokens, code, delimiter)) {
           if (code == zero_value) {
             profile[idx] = MISSING_VALUE;
           } else {
