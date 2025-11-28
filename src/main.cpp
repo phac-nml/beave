@@ -178,6 +178,8 @@ int main(int argc, char *argv[]) {
   }
 
   std::vector<std::thread> pool;
+
+  // Can save memory making this the upper triangle array only.
   std::vector<uintf32> output_matrix(profile_data.size() * profile_data.size());
 
   for (size_t i = 0; i < ranges.size() - 1; i++) {
