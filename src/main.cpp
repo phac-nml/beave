@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <fstream>
 #include <functional>
 #include <getopt.h>
@@ -14,16 +15,17 @@
 #include <utility>
 #include <vector>
 
+typedef struct Option {
+  option long_opt;
+  std::string help;
+} Option;
+
 const size_t MISSING_VALUE = 0;
 
 union Output {
   double scaled;
   size_t hamming;
 };
-
-void print_help() {
-  std::cout << "Missing args, --input|--threads" << std::endl;
-}
 
 std::vector<size_t> sample_ranges(size_t profiles, size_t threads) {
   size_t samples_bin = profiles / threads;
@@ -162,16 +164,45 @@ void write_hamming(std::vector<Output> &output_matrix,
   }
 }
 
+const Option long_opts[] = {
+    {{"input", required_argument, 0, 'i'}, "Input file file of profiles."},
+    {{"threads", required_argument, 0, 't'}, "How many threads to run."},
+    {{"missing", optional_argument, 0, 'm'},
+     "Specify the charactar to use for missing values. default = 0"},
+    {{"delimiter", optional_argument, 0, 'd'},
+     "Delimiter for table. default = \\t"},
+    {{"scaled", no_argument, 0, 's'}, "Calculate a scaled distance metric."},
+    {{"count-missing", no_argument, 0, 'c'},
+     "Include missing values in count of differences."}};
+
+void print_help() {
+  for (const Option &opt : long_opts) {
+    std::cout << " --" << opt.long_opt.name << "| -" << (char)opt.long_opt.val
+              << ": " << std::endl;
+    std::cout << "\t" << opt.help;
+    switch (opt.long_opt.has_arg) {
+    case required_argument:
+      std::cout << " [required]";
+      break;
+    case no_argument:
+      std::cout << " [flag]";
+      break;
+    case optional_argument:
+      std::cout << " [optional]";
+      break;
+    default:
+      break;
+    }
+    std::cout << std::endl;
+  }
+}
+
 int main(int argc, char *argv[]) {
 
   int c = 0;
-
-  const option long_options[] = {{"input", required_argument, 0, 'i'},
-                                 {"threads", required_argument, 0, 't'},
-                                 {"missing", optional_argument, 0, 't'},
-                                 {"delimiter", optional_argument, 0, 'd'},
-                                 {"scaled", no_argument, 0, 's'},
-                                 {"count-missing", no_argument, 0, 'c'},
+  const option long_options[] = {long_opts[0].long_opt, long_opts[1].long_opt,
+                                 long_opts[2].long_opt, long_opts[3].long_opt,
+                                 long_opts[4].long_opt, long_opts[5].long_opt,
                                  {0, 0, 0, 0}};
 
   const char *input_file = nullptr;
@@ -193,8 +224,6 @@ int main(int argc, char *argv[]) {
     if (c == -1)
       break;
     switch (c) {
-    case '?':
-      break;
     case 'i':
       input_file = optarg;
       break;
@@ -214,7 +243,16 @@ int main(int argc, char *argv[]) {
       delimiter = *optarg;
       break;
     case 'h':
+      print_help();
+      exit(EXIT_SUCCESS);
       break;
+    case '?':
+      print_help();
+      exit(EXIT_FAILURE);
+      break;
+    case ':':
+      print_help();
+      exit(EXIT_FAILURE);
     default:
       print_help();
       exit(EXIT_FAILURE);
