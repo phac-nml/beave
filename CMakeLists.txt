@@ -9,7 +9,8 @@ set(TARGET_GROUP production CACHE STRING "BUILD OPTION")
 
 if(TARGET_GROUP STREQUAL release)
   set(CMAKE_CXX_FLAGS
-  "-Wall -Wextra -g -fanalyzer -O3 -march=native -mfpmath=sse -flto -fopt-info-vec-all")
+  "-Wall -Wextra -g -O3 -march=native -mfpmath=sse -flto")
+  #"-Wall -Wextra -g -fanalyzer -O3 -march=native -mfpmath=sse -flto -fopt-info-vec-all")
   add_subdirectory(src)
 else()
   set(CMAKE_CXX_FLAGS "-Wall -Wextra -g -fanalyzer")

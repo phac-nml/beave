@@ -14,6 +14,13 @@
 #include <utility>
 #include <vector>
 
+const size_t MISSING_VALUE = 0;
+
+union Output {
+  double scaled;
+  size_t hamming;
+};
+
 void print_help() {
   std::cout << "Missing args, --input|--threads" << std::endl;
 }
@@ -55,15 +62,38 @@ public:
   }
 };
 
-size_t hamming_distance(const DMPair &p1, const DMPair &p2) {
+Output hamming_distance(const DMPair &p1, const DMPair &p2, const bool scaled,
+                        const bool count_missing) {
+  Output dist_out;
   size_t dist = 0;
-  for (size_t i = 0; i < p1.profile.size(); i++) {
-    if ((p1.profile[i] != p2.profile[i]) && p1.profile[i] != 0 &&
-        p2.profile[i] != 0) {
-      dist++;
+  size_t compared_sites = p1.profile.size();
+
+  if (count_missing) {
+    for (size_t i = 0; i < p1.profile.size(); i++) {
+      if ((p1.profile[i] != p2.profile[i])) {
+        dist++;
+      }
+    }
+  } else {
+    for (size_t i = 0; i < p1.profile.size(); i++) {
+      if ((p1.profile[i] != p2.profile[i]) && p1.profile[i] != 0 &&
+          p2.profile[i] != 0) {
+        dist++;
+      } else {
+        compared_sites++;
+      }
     }
   }
-  return dist;
+
+  if (scaled) {
+    dist_out.scaled =
+        (((double)compared_sites - (double)dist) / (double)compared_sites) *
+        100.0;
+  } else {
+    dist_out.hamming = dist;
+  }
+
+  return dist_out;
 }
 
 void clear_memory(std::vector<DMPair> &data) {
@@ -74,15 +104,60 @@ void clear_memory(std::vector<DMPair> &data) {
 }
 
 void populate_dist_matrix(size_t start, size_t end, size_t pdata_size,
+                          const bool scaled, const bool count_missing,
                           std::vector<DMPair> &profile_data,
-                          std::vector<size_t> &output_matrix) {
+                          std::vector<Output> &output_matrix) {
 
   for (size_t i = start; i < end; i++) {
     for (size_t f = i; f < pdata_size; f++) {
-      size_t dist = hamming_distance(profile_data[i], profile_data[f]);
+      Output dist_out = hamming_distance(profile_data[i], profile_data[f],
+                                         scaled, count_missing);
+      output_matrix[(i * pdata_size) + f] = dist_out;
+      output_matrix[(f * pdata_size) + i] = dist_out;
+    }
+  }
+}
 
-      output_matrix[(i * pdata_size) + f] = dist;
-      output_matrix[(f * pdata_size) + i] = dist;
+void write_scaled(std::vector<Output> &output_matrix,
+                  std::vector<DMPair> &profiles) {
+
+  std::cout << "Sample" << "\t";
+  for (const DMPair &d : profiles) {
+    std::cout << d.sample << "\t";
+  }
+  std::cout << "\n";
+  std::cout << profiles[0].sample << "\t";
+
+  size_t idx = 0;
+  for (size_t i = 0; i < output_matrix.size(); i++) {
+    std::cout << output_matrix[i].scaled << "\t";
+    size_t mod = (i + 1) % profiles.size();
+    if (mod == 0) {
+      idx++;
+      std::cout << '\n';
+      std::cout << profiles[idx].sample << "\t";
+    }
+  }
+}
+
+void write_hamming(std::vector<Output> &output_matrix,
+                   std::vector<DMPair> &profiles) {
+
+  std::cout << "Sample" << "\t";
+  for (const DMPair &d : profiles) {
+    std::cout << d.sample << "\t";
+  }
+  std::cout << "\n";
+  std::cout << profiles[0].sample << "\t";
+
+  size_t idx = 0;
+  for (size_t i = 0; i < output_matrix.size(); i++) {
+    std::cout << output_matrix[i].hamming << "\t";
+    size_t mod = (i + 1) % profiles.size();
+    if (mod == 0) {
+      idx++;
+      std::cout << '\n';
+      std::cout << profiles[idx].sample << "\t";
     }
   }
 }
@@ -93,19 +168,26 @@ int main(int argc, char *argv[]) {
 
   const option long_options[] = {{"input", required_argument, 0, 'i'},
                                  {"threads", required_argument, 0, 't'},
+                                 {"missing", optional_argument, 0, 't'},
+                                 {"scaled", no_argument, 0, 's'},
+                                 {"count-missing", no_argument, 0, 'c'},
                                  {0, 0, 0, 0}};
 
   const char *input_file = nullptr;
   uint8_t threads = 1;
+  std::string zero_value = "0";
+  bool scaled = false;
+  bool count_missing = false;
 
   if (argc <= 1) {
     std::cout << "No args passed" << std::endl;
     exit(EXIT_FAILURE);
   }
+
   while (1) {
 
     int option_index = 0;
-    c = getopt_long(argc, argv, "hi:t:", long_options, &option_index);
+    c = getopt_long(argc, argv, "hi:t:m:s", long_options, &option_index);
     if (c == -1)
       break;
     switch (c) {
@@ -116,6 +198,15 @@ int main(int argc, char *argv[]) {
       break;
     case 't':
       threads = (uint8_t)std::stoi(std::string(optarg));
+      break;
+    case 's':
+      scaled = true;
+      break;
+    case 'c':
+      count_missing = true;
+      break;
+    case 'm':
+      zero_value = optarg;
       break;
     case 'h':
       break;
@@ -143,15 +234,11 @@ int main(int argc, char *argv[]) {
         std::vector<size_t> profile(columns);
         size_t idx = 0;
         while (std::getline(tokens, code, '\t')) {
-          // Convert stuff to int if possible
-          // auto allele = std::hash<std::string>{}(code);
-          // size_t allele = 0;
-          //  try {
-          //    allele = (size_t)std::stol(code);
-          //  } catch (std::invalid_argument const &ex) {
-          //    // Unhandled as allele will be set to 0 anyways
-          //  }
-          profile[idx] = std::hash<std::string>{}(code);
+          if (code == zero_value) {
+            profile[idx] = MISSING_VALUE;
+          } else {
+            profile[idx] = std::hash<std::string>{}(code);
+          }
           idx++;
         }
         DMPair new_sample(sample, std::move(profile));
@@ -177,11 +264,12 @@ int main(int argc, char *argv[]) {
   std::vector<std::thread> pool;
 
   // Can save memory making this the upper triangle array only.
-  std::vector<size_t> output_matrix(profile_data.size() * profile_data.size());
+  std::vector<Output> output_matrix(profile_data.size() * profile_data.size());
 
   for (size_t i = 0; i < ranges.size() - 1; i++) {
     pool.push_back(std::thread(populate_dist_matrix, ranges[i], ranges[i + 1],
-                               profile_data.size(), std::ref(profile_data),
+                               profile_data.size(), scaled, count_missing,
+                               std::ref(profile_data),
                                std::ref(output_matrix)));
   }
 
@@ -191,24 +279,12 @@ int main(int argc, char *argv[]) {
   }
 
   std::thread clear_profiles(clear_memory, std::ref(profile_data));
-
-  std::cout << "Sample" << "\t";
-  for (const DMPair &d : profile_data) {
-    std::cout << d.sample << "\t";
+  if (scaled) {
+    write_scaled(output_matrix, profile_data);
+  } else {
+    write_hamming(output_matrix, profile_data);
   }
-  std::cout << "\n";
-  std::cout << profile_data[0].sample << "\t";
 
-  size_t idx = 0;
-  for (size_t i = 0; i < output_matrix.size(); i++) {
-    std::cout << output_matrix[i] << "\t";
-    size_t mod = (i + 1) % profile_data.size();
-    if (mod == 0) {
-      idx++;
-      std::cout << '\n';
-      std::cout << profile_data[idx].sample << "\t";
-    }
-  }
   clear_profiles.join();
 
   return 0;
