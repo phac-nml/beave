@@ -2,12 +2,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
+#include <functional>
 #include <getopt.h>
 #include <iostream>
-#include <memory>
 #include <ostream>
 #include <sstream>
-#include <stdexcept>
 #include <stdint.h>
 #include <string>
 #include <sys/types.h>
@@ -15,16 +14,14 @@
 #include <utility>
 #include <vector>
 
-typedef uint_fast32_t uintf32;
-
 void print_help() {
   std::cout << "Missing args, --input|--threads" << std::endl;
 }
 
-std::vector<uintf32> sample_ranges(uintf32 profiles, uintf32 threads) {
-  uintf32 samples_bin = profiles / threads;
-  std::vector<uintf32> bins;
-  for (uintf32 i = 0; i < profiles; i = i + samples_bin) {
+std::vector<size_t> sample_ranges(size_t profiles, size_t threads) {
+  size_t samples_bin = profiles / threads;
+  std::vector<size_t> bins;
+  for (size_t i = 0; i < profiles; i = i + samples_bin) {
     bins.push_back(i);
   }
 
@@ -35,9 +32,9 @@ class DMPair {
 
 public:
   const std::string sample;
-  std::vector<uintf32> profile;
+  std::vector<size_t> profile;
 
-  DMPair(const std::string name, std::vector<uintf32> prof)
+  DMPair(const std::string name, std::vector<size_t> prof)
       : sample(name), profile(std::move(prof)) {}
 
   DMPair(DMPair &&other) noexcept
@@ -58,8 +55,8 @@ public:
   }
 };
 
-uintf32 hamming_distance(const DMPair &p1, const DMPair &p2) {
-  uintf32 dist = 0;
+size_t hamming_distance(const DMPair &p1, const DMPair &p2) {
+  size_t dist = 0;
   for (size_t i = 0; i < p1.profile.size(); i++) {
     if ((p1.profile[i] != p2.profile[i]) && p1.profile[i] != 0 &&
         p2.profile[i] != 0) {
@@ -71,18 +68,18 @@ uintf32 hamming_distance(const DMPair &p1, const DMPair &p2) {
 
 void clear_memory(std::vector<DMPair> &data) {
   for (auto &profile : data) {
-    std::vector<uintf32> tmp(0);
+    std::vector<size_t> tmp(0);
     profile.profile.swap(tmp);
   }
 }
 
-void populate_dist_matrix(uintf32 start, uintf32 end, size_t pdata_size,
+void populate_dist_matrix(size_t start, size_t end, size_t pdata_size,
                           std::vector<DMPair> &profile_data,
-                          std::vector<uintf32> &output_matrix) {
+                          std::vector<size_t> &output_matrix) {
 
   for (size_t i = start; i < end; i++) {
     for (size_t f = i; f < pdata_size; f++) {
-      uintf32 dist = hamming_distance(profile_data[i], profile_data[f]);
+      size_t dist = hamming_distance(profile_data[i], profile_data[f]);
 
       output_matrix[(i * pdata_size) + f] = dist;
       output_matrix[(f * pdata_size) + i] = dist;
@@ -108,7 +105,6 @@ int main(int argc, char *argv[]) {
   while (1) {
 
     int option_index = 0;
-    // Have GCC ignore my overriding of the options
     c = getopt_long(argc, argv, "hi:t:", long_options, &option_index);
     if (c == -1)
       break;
@@ -144,17 +140,18 @@ int main(int argc, char *argv[]) {
         std::string code;
         std::string sample;
         std::getline(tokens, sample, '\t');
-        std::vector<uintf32> profile(columns);
+        std::vector<size_t> profile(columns);
         size_t idx = 0;
         while (std::getline(tokens, code, '\t')) {
           // Convert stuff to int if possible
-          uintf32 allele = 0;
-          try {
-            allele = (uintf32)std::stol(code);
-          } catch (std::invalid_argument const &ex) {
-            // Unhandled as allele will be set to 0 anyways
-          }
-          profile[idx] = allele;
+          // auto allele = std::hash<std::string>{}(code);
+          // size_t allele = 0;
+          //  try {
+          //    allele = (size_t)std::stol(code);
+          //  } catch (std::invalid_argument const &ex) {
+          //    // Unhandled as allele will be set to 0 anyways
+          //  }
+          profile[idx] = std::hash<std::string>{}(code);
           idx++;
         }
         DMPair new_sample(sample, std::move(profile));
@@ -168,7 +165,7 @@ int main(int argc, char *argv[]) {
 
   // Evenly space the profiels so each thread can get a bundle of profiles to
   // process they can then all write to the output matrix
-  std::vector<uintf32> ranges;
+  std::vector<size_t> ranges;
   if (threads <= 1) {
     threads = 1;
     ranges.push_back(0);
@@ -180,7 +177,7 @@ int main(int argc, char *argv[]) {
   std::vector<std::thread> pool;
 
   // Can save memory making this the upper triangle array only.
-  std::vector<uintf32> output_matrix(profile_data.size() * profile_data.size());
+  std::vector<size_t> output_matrix(profile_data.size() * profile_data.size());
 
   for (size_t i = 0; i < ranges.size() - 1; i++) {
     pool.push_back(std::thread(populate_dist_matrix, ranges[i], ranges[i + 1],
@@ -205,7 +202,7 @@ int main(int argc, char *argv[]) {
   size_t idx = 0;
   for (size_t i = 0; i < output_matrix.size(); i++) {
     std::cout << output_matrix[i] << "\t";
-    uintf32 mod = (i + 1) % profile_data.size();
+    size_t mod = (i + 1) % profile_data.size();
     if (mod == 0) {
       idx++;
       std::cout << '\n';
