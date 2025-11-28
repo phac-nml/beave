@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
+#include <getopt.h>
 #include <iostream>
 #include <memory>
 #include <ostream>
@@ -9,11 +10,26 @@
 #include <stdexcept>
 #include <stdint.h>
 #include <string>
+#include <sys/types.h>
 #include <thread>
 #include <utility>
 #include <vector>
 
 typedef uint_fast32_t uintf32;
+
+void print_help() {
+  std::cout << "Missing args, --input|--threads" << std::endl;
+}
+
+std::vector<uintf32> sample_ranges(uintf32 profiles, uintf32 threads) {
+  uintf32 samples_bin = profiles / threads;
+  std::vector<uintf32> bins;
+  for (uintf32 i = 0; i < profiles; i = i + samples_bin) {
+    bins.push_back(i);
+  }
+
+  return bins;
+}
 
 class DMPair {
 
@@ -53,18 +69,70 @@ uintf32 hamming_distance(const DMPair &p1, const DMPair &p2) {
   return dist;
 }
 
-void clear_memory(std::shared_ptr<std::vector<DMPair>> data) {
-  for (auto &profile : *data) {
+void clear_memory(std::vector<DMPair> &data) {
+  for (auto &profile : data) {
     std::vector<uintf32> tmp(0);
     profile.profile.swap(tmp);
   }
 }
 
+void populate_dist_matrix(uintf32 start, uintf32 end, size_t pdata_size,
+                          std::vector<DMPair> &profile_data,
+                          std::vector<uintf32> &output_matrix) {
+
+  for (size_t i = start; i < end; i++) {
+    for (size_t f = i; f < pdata_size; f++) {
+      uintf32 dist = hamming_distance(profile_data[i], profile_data[f]);
+
+      output_matrix[(i * pdata_size) + f] = dist;
+      output_matrix[(f * pdata_size) + i] = dist;
+    }
+  }
+}
+
 int main(int argc, char *argv[]) {
+
+  int c = 0;
+
+  const option long_options[] = {{"input", required_argument, 0, 'i'},
+                                 {"threads", required_argument, 0, 't'},
+                                 {0, 0, 0, 0}};
+
+  const char *input_file = nullptr;
+  uint8_t threads = 1;
+
+  if (argc <= 1) {
+    std::cout << "No args passed" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  while (1) {
+
+    int option_index = 0;
+    // Have GCC ignore my overriding of the options
+    c = getopt_long(argc, argv, "hi:t:", long_options, &option_index);
+    if (c == -1)
+      break;
+    switch (c) {
+    case '?':
+      break;
+    case 'i':
+      input_file = optarg;
+      break;
+    case 't':
+      threads = (uint8_t)std::stoi(std::string(optarg));
+      break;
+    case 'h':
+      break;
+    default:
+      print_help();
+      exit(EXIT_FAILURE);
+    }
+  }
 
   // Get Profiles
   std::vector<DMPair> profile_data;
-  std::ifstream inputFile(argv[1]);
+
+  std::ifstream inputFile(input_file);
   if (inputFile.is_open()) {
     std::string line; // Storage for profile
     if (inputFile.is_open()) {
@@ -94,24 +162,36 @@ int main(int argc, char *argv[]) {
       }
       inputFile.close();
     } else {
-      std::cerr << "Could not open file: " << argv[1] << std::endl;
+      std::cerr << "Could not open file: " << input_file << std::endl;
     }
   }
 
-  // Divide the range into some amount of cores and call this function in each
-  // thread No need for a mutex
+  // Evenly space the profiels so each thread can get a bundle of profiles to
+  // process they can then all write to the output matrix
+  std::vector<uintf32> ranges;
+  if (threads <= 0) {
+    threads = 1;
+    ranges.push_back(0);
+    ranges.push_back(profile_data.size());
+  } else {
+    ranges = sample_ranges(profile_data.size(), threads);
+  }
+
+  std::vector<std::thread> pool;
   std::vector<uintf32> output_matrix(profile_data.size() * profile_data.size());
-  // Populate distance matrix between profiles
-  for (size_t i = 0; i < profile_data.size(); i++) {
-    for (size_t f = i; f < profile_data.size(); f++) {
-      uintf32 dist = hamming_distance(profile_data[i], profile_data[f]);
-      output_matrix[(i * profile_data.size()) + f] = dist;
-      output_matrix[(f * profile_data.size()) + i] = dist;
-    }
+
+  for (size_t i = 0; i < ranges.size() - 1; i++) {
+    pool.push_back(std::thread(populate_dist_matrix, ranges[i], ranges[i + 1],
+                               profile_data.size(), std::ref(profile_data),
+                               std::ref(output_matrix)));
   }
 
-  auto shared_data = std::make_shared<std::vector<DMPair>>(profile_data);
-  std::thread clear_profiles(clear_memory, shared_data);
+  // Join all threads
+  for (std::thread &th : pool) {
+    th.join();
+  }
+
+  std::thread clear_profiles(clear_memory, std::ref(profile_data));
 
   std::cout << "Sample" << "\t";
   for (const DMPair &d : profile_data) {
