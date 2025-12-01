@@ -22,9 +22,11 @@ typedef struct Option {
 
 const size_t MISSING_VALUE = 0;
 
+typedef uint_fast32_t uint32f;
+
 union Output {
   float scaled;
-  size_t hamming;
+  uint32f hamming;
 };
 
 std::vector<size_t> sample_ranges(size_t profiles, size_t threads) {
@@ -67,8 +69,8 @@ public:
 Output hamming_distance(const DMPair &p1, const DMPair &p2, const bool scaled,
                         const bool count_missing) {
   Output dist_out;
-  size_t dist = 0;
-  size_t compared_sites = p1.profile.size();
+  uint32f dist = 0;
+  uint32f compared_sites = p1.profile.size();
 
   if (count_missing) {
     for (size_t i = 0; i < p1.profile.size(); i++) {
@@ -170,7 +172,8 @@ void write_hamming(std::vector<Output> &output_matrix,
 
 const Option long_opts[] = {
     {{"input", required_argument, 0, 'i'}, "Input file file of profiles."},
-    {{"threads", required_argument, 0, 't'}, "How many threads to run."},
+    {{"threads", optional_argument, 0, 't'},
+     "How many threads to run. default = 1"},
     {{"missing", optional_argument, 0, 'm'},
      "Specify the charactar to use for missing values. default = 0"},
     {{"delimiter", optional_argument, 0, 'd'},
@@ -302,7 +305,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  // Evenly space the profiels so each thread can get a bundle of profiles to
+  // Evenly space the profiles so each thread can get a bundle of profiles to
   // process they can then all write to the output matrix
   std::vector<size_t> ranges;
   if (threads <= 1) {
@@ -330,14 +333,14 @@ int main(int argc, char *argv[]) {
     th.join();
   }
 
-  // std::thread clear_profiles(clear_memory, std::ref(profile_data));
+  std::thread clear_profiles(clear_memory, std::ref(profile_data));
   if (scaled) {
     write_scaled(output_matrix, profile_data);
   } else {
     write_hamming(output_matrix, profile_data);
   }
 
-  // clear_profiles.join();
+  clear_profiles.join();
 
   return 0;
 }
