@@ -23,7 +23,7 @@ typedef struct Option {
 const size_t MISSING_VALUE = 0;
 
 union Output {
-  double scaled;
+  float scaled;
   size_t hamming;
 };
 
@@ -77,19 +77,24 @@ Output hamming_distance(const DMPair &p1, const DMPair &p2, const bool scaled,
       }
     }
   } else {
+    compared_sites = 0;
     for (size_t i = 0; i < p1.profile.size(); i++) {
-      bool missing = p1.profile[i] == 0 || p2.profile[i] == 0 ? true : false;
+      bool missing =
+          (p1.profile[i] == MISSING_VALUE) || (p2.profile[i] == MISSING_VALUE)
+              ? true
+              : false;
+      if (missing) {
+        continue;
+      }
       if ((p1.profile[i] != p2.profile[i]) && !missing) {
         dist++;
-        compared_sites++;
-      } else if (!missing) {
-        compared_sites++;
       }
+      compared_sites++;
     }
   }
 
   if (scaled) {
-    dist_out.scaled = ((double)dist / (double)compared_sites) * 100.0;
+    dist_out.scaled = ((float)dist / (float)compared_sites) * 100.0f;
   } else {
     dist_out.hamming = dist;
   }
@@ -276,6 +281,7 @@ int main(int argc, char *argv[]) {
         std::vector<size_t> profile(columns);
         size_t idx = 0;
         while (std::getline(tokens, code, delimiter)) {
+
           if (code == zero_value) {
             profile[idx] = MISSING_VALUE;
           } else {
