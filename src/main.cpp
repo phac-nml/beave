@@ -86,7 +86,7 @@ Output hamming_distance(const DMPair &p1, const DMPair &p2, const bool scaled,
       if (missing) {
         continue;
       }
-      if ((p1.profile[i] != p2.profile[i]) && !missing) {
+      if (p1.profile[i] != p2.profile[i]) {
         dist++;
       }
       compared_sites++;
@@ -263,6 +263,10 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  if (input_file == nullptr) {
+    print_help();
+    exit(EXIT_FAILURE);
+  }
   // Get Profiles
   std::vector<DMPair> profile_data;
 
