@@ -72,25 +72,24 @@ Output hamming_distance(const DMPair &p1, const DMPair &p2, const bool scaled,
 
   if (count_missing) {
     for (size_t i = 0; i < p1.profile.size(); i++) {
-      if ((p1.profile[i] != p2.profile[i])) {
+      if (p1.profile[i] != p2.profile[i]) {
         dist++;
       }
     }
   } else {
     for (size_t i = 0; i < p1.profile.size(); i++) {
-      if ((p1.profile[i] != p2.profile[i]) && p1.profile[i] != 0 &&
-          p2.profile[i] != 0) {
+      bool missing = p1.profile[i] == 0 || p2.profile[i] == 0 ? true : false;
+      if ((p1.profile[i] != p2.profile[i]) && !missing) {
         dist++;
-      } else {
+        compared_sites++;
+      } else if (!missing) {
         compared_sites++;
       }
     }
   }
 
   if (scaled) {
-    dist_out.scaled =
-        (((double)compared_sites - (double)dist) / (double)compared_sites) *
-        100.0;
+    dist_out.scaled = ((double)dist / (double)compared_sites) * 100.0;
   } else {
     dist_out.hamming = dist;
   }
@@ -123,7 +122,7 @@ void populate_dist_matrix(size_t start, size_t end, size_t pdata_size,
 void write_scaled(std::vector<Output> &output_matrix,
                   std::vector<DMPair> &profiles) {
 
-  std::cout << "Sample" << "\t";
+  std::cout << "dists" << "\t";
   for (const DMPair &d : profiles) {
     std::cout << d.sample << "\t";
   }
@@ -145,7 +144,7 @@ void write_scaled(std::vector<Output> &output_matrix,
 void write_hamming(std::vector<Output> &output_matrix,
                    std::vector<DMPair> &profiles) {
 
-  std::cout << "Sample" << "\t";
+  std::cout << "dists" << "\t";
   for (const DMPair &d : profiles) {
     std::cout << d.sample << "\t";
   }
@@ -321,14 +320,14 @@ int main(int argc, char *argv[]) {
     th.join();
   }
 
-  std::thread clear_profiles(clear_memory, std::ref(profile_data));
+  // std::thread clear_profiles(clear_memory, std::ref(profile_data));
   if (scaled) {
     write_scaled(output_matrix, profile_data);
   } else {
     write_hamming(output_matrix, profile_data);
   }
 
-  clear_profiles.join();
+  // clear_profiles.join();
 
   return 0;
 }
