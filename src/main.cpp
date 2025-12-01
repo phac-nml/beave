@@ -95,10 +95,9 @@ Output hamming_distance(const DMPair &p1, const DMPair &p2, const bool scaled,
     }
   }
 
+  dist_out.hamming = dist;
   if (scaled) {
     dist_out.scaled = ((float)dist / (float)compared_sites) * 100.0f;
-  } else {
-    dist_out.hamming = dist;
   }
 
   return dist_out;
