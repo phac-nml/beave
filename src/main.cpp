@@ -18,7 +18,10 @@
 typedef struct Option {
   option long_opt;
   std::string help;
+  bool print;
 } Option;
+
+enum Program { FASTMATCH, MATRIX };
 
 const size_t MISSING_VALUE = 0;
 
@@ -169,20 +172,35 @@ void write_hamming(std::vector<Output> &output_matrix,
   }
 }
 
-const Option long_opts[] = {
-    {{"input", required_argument, 0, 'i'}, "Input file file of profiles."},
+Option long_opts[] = {
+    {{"input", required_argument, 0, 'i'},
+     "Input file file of profiles.",
+     true},
+    {{"reference", required_argument, 0, 'r'},
+     "Reference profiles to use for fast matching.",
+     true},
     {{"threads", optional_argument, 0, 't'},
-     "How many threads to run. default = 1"},
+     "How many threads to run. default = 1",
+     true},
     {{"missing", optional_argument, 0, 'm'},
-     "Specify the charactar to use for missing values. default = 0"},
+     "Specify the charactar to use for missing values. default = 0",
+     true},
     {{"delimiter", optional_argument, 0, 'd'},
-     "Delimiter for table. default = \\t"},
-    {{"scaled", no_argument, 0, 's'}, "Calculate a scaled distance metric."},
+     "Delimiter for table. default = \\t",
+     true},
+    {{"scaled", no_argument, 0, 's'},
+     "Calculate a scaled distance metric.",
+     true},
     {{"count-missing", no_argument, 0, 'c'},
-     "Include missing values in count of differences."}};
+     "Include missing values in count of differences.",
+     true},
+};
 
 void print_help() {
   for (const Option &opt : long_opts) {
+    if (!opt.print) {
+      continue;
+    }
     std::cout << " --" << opt.long_opt.name << "| -" << (char)opt.long_opt.val
               << ": " << std::endl;
     std::cout << "\t" << opt.help;
@@ -203,28 +221,77 @@ void print_help() {
   }
 }
 
+void print_parser_help() {
+  std::cout << "matrix - Create distance matrix with an input profile."
+            << std::endl;
+  std::cout
+      << "fast-match - Compare a set of profiles to a set of query profiles."
+      << std::endl;
+}
+
+void read_profiles(std::ifstream &fo, std::vector<DMPair> &data, char delimiter,
+                   std::string zero_value) {
+
+  std::string line; // Storage for profile
+  std::string header;
+  std::getline(fo, header);
+  auto columns = std::count(header.begin(), header.end(), delimiter);
+  while (std::getline(fo, line)) {
+    std::istringstream tokens(line);
+    std::string code;
+    std::string sample;
+    std::getline(tokens, sample, delimiter);
+    std::vector<size_t> profile(columns);
+    size_t idx = 0;
+    while (std::getline(tokens, code, delimiter)) {
+
+      if (code == zero_value) {
+        profile[idx] = MISSING_VALUE;
+      } else {
+        profile[idx] = std::hash<std::string>{}(code);
+      }
+      idx++;
+    }
+    DMPair new_sample(sample, std::move(profile));
+    data.push_back(new_sample);
+  }
+}
+
 int main(int argc, char *argv[]) {
 
-  int c = 0;
   const option long_options[] = {long_opts[0].long_opt, long_opts[1].long_opt,
                                  long_opts[2].long_opt, long_opts[3].long_opt,
                                  long_opts[4].long_opt, long_opts[5].long_opt,
-                                 {0, 0, 0, 0}};
+                                 long_opts[6].long_opt, {0, 0, 0, 0}};
 
   const char *input_file = nullptr;
+  const char *reference_file = nullptr;
   uint8_t threads = 1;
   std::string zero_value = "0";
   char delimiter = '\t';
   bool scaled = false;
   bool count_missing = false;
+  Program program = MATRIX;
 
   if (argc <= 1) {
     std::cout << "No args passed" << std::endl;
     exit(EXIT_FAILURE);
   }
+  std::string mat = "matrix";
+  std::string fast_match = "fast-match";
 
+  int REFERENCE_OPT = 1;
+  if (argv[1] == mat) {
+    long_opts[REFERENCE_OPT].print = false;
+  } else if (argv[1] == fast_match) {
+    program = FASTMATCH;
+  } else {
+    print_parser_help();
+    exit(EXIT_FAILURE);
+  }
+
+  int c = 0;
   while (1) {
-
     int option_index = 0;
     c = getopt_long(argc, argv, "hi:t:m:d:sc", long_options, &option_index);
     if (c == -1)
@@ -248,6 +315,16 @@ int main(int argc, char *argv[]) {
     case 'd':
       delimiter = *optarg;
       break;
+    case 'r':
+      if (program != FASTMATCH) {
+        std::cout << "Reference option passed, but matrix program selected."
+                  << std::endl;
+        print_parser_help();
+        print_help();
+        exit(EXIT_FAILURE);
+      }
+      delimiter = *optarg;
+      break;
     case 'h':
       print_help();
       exit(EXIT_SUCCESS);
@@ -269,39 +346,20 @@ int main(int argc, char *argv[]) {
     print_help();
     exit(EXIT_FAILURE);
   }
+  if (reference_file == nullptr && program == FASTMATCH) {
+    print_help();
+    exit(EXIT_FAILURE);
+  }
   // Get Profiles
   std::vector<DMPair> profile_data;
 
   std::ifstream inputFile(input_file);
   if (inputFile.is_open()) {
-    std::string line; // Storage for profile
-    if (inputFile.is_open()) {
-      std::string header;
-      std::getline(inputFile, header);
-      auto columns = std::count(header.begin(), header.end(), delimiter);
-      while (std::getline(inputFile, line)) {
-        std::istringstream tokens(line);
-        std::string code;
-        std::string sample;
-        std::getline(tokens, sample, delimiter);
-        std::vector<size_t> profile(columns);
-        size_t idx = 0;
-        while (std::getline(tokens, code, delimiter)) {
-
-          if (code == zero_value) {
-            profile[idx] = MISSING_VALUE;
-          } else {
-            profile[idx] = std::hash<std::string>{}(code);
-          }
-          idx++;
-        }
-        DMPair new_sample(sample, std::move(profile));
-        profile_data.push_back(new_sample);
-      }
-      inputFile.close();
-    } else {
-      std::cerr << "Could not open file: " << input_file << std::endl;
-    }
+    read_profiles(inputFile, profile_data, delimiter, zero_value);
+    inputFile.close();
+  } else {
+    std::cerr << "Could not open file: " << input_file << std::endl;
+    exit(EXIT_FAILURE);
   }
 
   // Evenly space the profiles so each thread can get a bundle of profiles to
