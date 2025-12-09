@@ -9,17 +9,13 @@
 #include <sstream>
 #include <stdint.h>
 #include <string>
-<<<<<<< HEAD
-#include <string_view>
-    =======
 #include <syncstream>
-    >>>>>>> fast-matching
 #include <sys/types.h>
 #include <thread>
 #include <utility>
 #include <vector>
 
-    typedef struct Option {
+typedef struct Option {
   option long_opt;
   std::string help;
   bool print;
