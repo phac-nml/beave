@@ -10,6 +10,7 @@
 #include <sstream>
 #include <stdint.h>
 #include <string>
+#include <string_view>
 #include <sys/types.h>
 #include <thread>
 #include <utility>
@@ -283,7 +284,6 @@ int main(int argc, char *argv[]) {
         std::istringstream tokens(line);
         std::string code;
         std::string sample;
-        std::getline(tokens, sample, delimiter);
         std::vector<size_t> profile(columns);
         size_t idx = 0;
         while (std::getline(tokens, code, delimiter)) {
