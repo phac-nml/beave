@@ -6,10 +6,10 @@
 #include <functional>
 #include <getopt.h>
 #include <iostream>
-#include <ostream>
 #include <sstream>
 #include <stdint.h>
 #include <string>
+#include <syncstream>
 #include <sys/types.h>
 #include <thread>
 #include <utility>
@@ -128,6 +128,31 @@ void populate_dist_matrix(size_t start, size_t end, size_t pdata_size,
   }
 }
 
+void fast_match_func(size_t start, size_t end, const bool scaled,
+                     const bool count_missing,
+                     std::vector<DMPair> &query_data) {
+  std::osyncstream bout(std::cout);
+  if (scaled) {
+    for (size_t i = start; i < end; i++) {
+      for (size_t f = 0; f < end; f++) {
+        Output dist_out = hamming_distance(query_data[i], query_data[f], scaled,
+                                           count_missing);
+        bout << query_data[i].sample << "\t" << query_data[f].sample << "\t"
+             << dist_out.scaled << "\n";
+      }
+    }
+  } else {
+    for (size_t i = start; i < end; i++) {
+      for (size_t f = 0; f < end; f++) {
+        Output dist_out = hamming_distance(query_data[i], query_data[f], scaled,
+                                           count_missing);
+        bout << query_data[i].sample << "\t" << query_data[f].sample << "\t"
+             << dist_out.hamming << "\n";
+      }
+    }
+  }
+}
+
 void write_scaled(std::vector<Output> &output_matrix,
                   std::vector<DMPair> &profiles) {
 
@@ -229,9 +254,13 @@ void print_parser_help() {
       << std::endl;
 }
 
-void read_profiles(std::ifstream &fo, std::vector<DMPair> &data, char delimiter,
-                   std::string zero_value) {
-
+std::string read_profiles(const char *file, std::vector<DMPair> &data,
+                          char delimiter, std::string zero_value) {
+  std::ifstream fo(file);
+  if (!fo.is_open()) {
+    std::cerr << "Could not open " << file << std::endl;
+    exit(EXIT_FAILURE);
+  }
   std::string line; // Storage for profile
   std::string header;
   std::getline(fo, header);
@@ -255,6 +284,22 @@ void read_profiles(std::ifstream &fo, std::vector<DMPair> &data, char delimiter,
     DMPair new_sample(sample, std::move(profile));
     data.push_back(new_sample);
   }
+  fo.close();
+  return header;
+}
+
+// Evenly space the profiles so each thread can get a bundle of profiles to
+// process they can then all write to the output matrix
+std::vector<size_t> get_thread_ranges(size_t threads, size_t data_size) {
+  std::vector<size_t> ranges;
+  if (threads <= 1) {
+    threads = 1;
+    ranges.push_back(0);
+    ranges.push_back(data_size);
+  } else {
+    ranges = sample_ranges(data_size, threads);
+  }
+  return ranges;
 }
 
 int main(int argc, char *argv[]) {
@@ -350,54 +395,82 @@ int main(int argc, char *argv[]) {
     print_help();
     exit(EXIT_FAILURE);
   }
-  // Get Profiles
-  std::vector<DMPair> profile_data;
 
-  std::ifstream inputFile(input_file);
-  if (inputFile.is_open()) {
-    read_profiles(inputFile, profile_data, delimiter, zero_value);
-    inputFile.close();
+  if (program == MATRIX) {
+
+    // Get Profiles
+    std::vector<DMPair> profile_data;
+
+    // Discarding return value here on purpose
+    read_profiles(input_file, profile_data, delimiter, zero_value);
+
+    std::vector<size_t> ranges =
+        get_thread_ranges(threads, profile_data.size());
+
+    std::vector<std::thread> pool;
+
+    // Can save memory making this the upper triangle array only.
+    std::vector<Output> output_matrix(profile_data.size() *
+                                      profile_data.size());
+
+    for (size_t i = 0; i < ranges.size() - 1; i++) {
+      pool.push_back(std::thread(populate_dist_matrix, ranges[i], ranges[i + 1],
+                                 profile_data.size(), scaled, count_missing,
+                                 std::ref(profile_data),
+                                 std::ref(output_matrix)));
+    }
+
+    // Join all threads
+    for (std::thread &th : pool) {
+      th.join();
+    }
+
+    std::thread clear_profiles(clear_memory, std::ref(profile_data));
+    if (scaled) {
+      write_scaled(output_matrix, profile_data);
+    } else {
+      write_hamming(output_matrix, profile_data);
+    }
+
+    clear_profiles.join();
+
+    return 0;
+  } else if (program == FASTMATCH) {
+    std::vector<DMPair> query_data;
+
+    std::string input_header =
+        read_profiles(input_file, query_data, delimiter, zero_value);
+
+    size_t length_input = query_data.size();
+
+    // Reusing the vector to combine the data
+    std::string ref_header =
+        read_profiles(reference_file, query_data, delimiter, zero_value);
+
+    if (input_header != ref_header) {
+      std::cerr
+          << "Headers differ between input and reference profiles. Bailing out."
+          << std::endl;
+      exit(EXIT_FAILURE);
+    }
+
+    // Get the range of threads to use based on the length of the reference
+    // queries
+    std::vector<size_t> ranges = get_thread_ranges(threads, length_input);
+
+    std::vector<std::thread> pool;
+    for (size_t i = 0; i < ranges.size() - 1; i++) {
+      pool.push_back(std::thread(fast_match_func, ranges[i], ranges[i + 1],
+                                 scaled, count_missing, std::ref(query_data)));
+    }
+
+    for (std::thread &th : pool) {
+      th.join();
+    }
+
+    return 0;
   } else {
-    std::cerr << "Could not open file: " << input_file << std::endl;
     exit(EXIT_FAILURE);
   }
-
-  // Evenly space the profiles so each thread can get a bundle of profiles to
-  // process they can then all write to the output matrix
-  std::vector<size_t> ranges;
-  if (threads <= 1) {
-    threads = 1;
-    ranges.push_back(0);
-    ranges.push_back(profile_data.size());
-  } else {
-    ranges = sample_ranges(profile_data.size(), threads);
-  }
-
-  std::vector<std::thread> pool;
-
-  // Can save memory making this the upper triangle array only.
-  std::vector<Output> output_matrix(profile_data.size() * profile_data.size());
-
-  for (size_t i = 0; i < ranges.size() - 1; i++) {
-    pool.push_back(std::thread(populate_dist_matrix, ranges[i], ranges[i + 1],
-                               profile_data.size(), scaled, count_missing,
-                               std::ref(profile_data),
-                               std::ref(output_matrix)));
-  }
-
-  // Join all threads
-  for (std::thread &th : pool) {
-    th.join();
-  }
-
-  std::thread clear_profiles(clear_memory, std::ref(profile_data));
-  if (scaled) {
-    write_scaled(output_matrix, profile_data);
-  } else {
-    write_hamming(output_matrix, profile_data);
-  }
-
-  clear_profiles.join();
-
   return 0;
 }
