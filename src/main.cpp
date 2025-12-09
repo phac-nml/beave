@@ -134,7 +134,7 @@ void fast_match_func(size_t start, size_t end, const bool scaled,
   std::osyncstream bout(std::cout);
   if (scaled) {
     for (size_t i = start; i < end; i++) {
-      for (size_t f = 0; f < end; f++) {
+      for (size_t f = 0; f < query_data.size(); f++) {
         Output dist_out = hamming_distance(query_data[i], query_data[f], scaled,
                                            count_missing);
         bout << query_data[i].sample << "\t" << query_data[f].sample << "\t"
@@ -143,7 +143,7 @@ void fast_match_func(size_t start, size_t end, const bool scaled,
     }
   } else {
     for (size_t i = start; i < end; i++) {
-      for (size_t f = 0; f < end; f++) {
+      for (size_t f = 0; f < query_data.size(); f++) {
         Output dist_out = hamming_distance(query_data[i], query_data[f], scaled,
                                            count_missing);
         bout << query_data[i].sample << "\t" << query_data[f].sample << "\t"
@@ -320,6 +320,7 @@ int main(int argc, char *argv[]) {
 
   if (argc <= 1) {
     std::cout << "No args passed" << std::endl;
+    print_parser_help();
     exit(EXIT_FAILURE);
   }
   std::string mat = "matrix";
@@ -338,7 +339,7 @@ int main(int argc, char *argv[]) {
   int c = 0;
   while (1) {
     int option_index = 0;
-    c = getopt_long(argc, argv, "hi:t:m:d:sc", long_options, &option_index);
+    c = getopt_long(argc, argv, "hi:t:r:m:d:sc", long_options, &option_index);
     if (c == -1)
       break;
     switch (c) {
@@ -368,7 +369,7 @@ int main(int argc, char *argv[]) {
         print_help();
         exit(EXIT_FAILURE);
       }
-      delimiter = *optarg;
+      reference_file = optarg;
       break;
     case 'h':
       print_help();
