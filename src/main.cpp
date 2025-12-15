@@ -167,7 +167,7 @@ void write_scaled(std::vector<Output> &output_matrix,
   for (size_t i = 0; i < output_matrix.size(); i++) {
     std::cout << output_matrix[i].scaled << "\t";
     size_t mod = (i + 1) % profiles.size();
-    if (mod == 0) {
+    if (mod == 0 && idx < profiles.size() - 1) {
       idx++;
       std::cout << '\n';
       std::cout << profiles[idx].sample << "\t";
@@ -189,7 +189,7 @@ void write_hamming(std::vector<Output> &output_matrix,
   for (size_t i = 0; i < output_matrix.size(); i++) {
     std::cout << output_matrix[i].hamming << "\t";
     size_t mod = (i + 1) % profiles.size();
-    if (mod == 0) {
+    if (mod == 0 && idx < profiles.size() - 1) {
       idx++;
       std::cout << '\n';
       std::cout << profiles[idx].sample << "\t";
