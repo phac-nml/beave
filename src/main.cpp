@@ -139,7 +139,7 @@ void fast_match_func(size_t start, size_t end, const bool scaled,
         Output dist_out = hamming_distance(query_data[i], query_data[f], scaled,
                                            count_missing);
         bout << query_data[i].sample << "\t" << query_data[f].sample << "\t"
-             << std::format("{:.4f}", dist_out.scaled) << "\n";
+             << std::format("{:.6f}", dist_out.scaled) << "\n";
       }
     }
   } else {
@@ -168,7 +168,7 @@ void write_scaled(std::vector<Output> &output_matrix,
     std::cout << '\n' << profiles[idx].sample << "\t";
     size_t i = mat_idx;
     for (; i < mat_idx + profiles.size(); i++) {
-      std::cout << std::format("{:.4f}", output_matrix[i].scaled) << "\t";
+      std::cout << std::format("{:.6f}", output_matrix[i].scaled) << "\t";
     }
     mat_idx = i;
     ++idx;
