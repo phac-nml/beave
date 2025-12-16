@@ -24,7 +24,8 @@ typedef struct Option {
 
 enum Program { FASTMATCH, MATRIX };
 
-const size_t MISSING_VALUE = 0;
+constexpr size_t MISSING_VALUE = 0;
+constexpr size_t INITIAL_VEC_SIZE = 10000;
 
 typedef uint_fast32_t uint32f;
 
@@ -47,17 +48,17 @@ class DMPair {
 
 public:
   const std::string sample;
-  std::vector<size_t> profile;
+  const std::vector<size_t> profile;
 
   DMPair(const std::string name, std::vector<size_t> prof)
       : sample(name), profile(std::move(prof)) {}
 
   DMPair(DMPair &&other) noexcept
-      : sample(other.sample), profile(other.profile) {}
+      : sample(std::move(other.sample)), profile(std::move(other.profile)) {}
 
   DMPair(const DMPair &other) : sample(other.sample), profile(other.profile) {}
 
-  ~DMPair() {}
+  ~DMPair() = default;
 
   friend std::ostream &operator<<(std::ostream &os, const DMPair &obj) {
 
@@ -85,17 +86,10 @@ Output hamming_distance(const DMPair &p1, const DMPair &p2, const bool scaled,
   } else {
     compared_sites = 0;
     for (size_t i = 0; i < p1.profile.size(); i++) {
-      bool missing =
-          (p1.profile[i] == MISSING_VALUE) || (p2.profile[i] == MISSING_VALUE)
-              ? true
-              : false;
-      if (missing) {
-        continue;
-      }
-      if (p1.profile[i] != p2.profile[i]) {
-        dist++;
-      }
-      compared_sites++;
+      const bool valid =
+          (p1.profile[i] != MISSING_VALUE) & (p2.profile[i] != MISSING_VALUE);
+      compared_sites += valid;
+      dist += valid & (p1.profile[i] != p2.profile[i]);
     }
   }
 
@@ -105,13 +99,6 @@ Output hamming_distance(const DMPair &p1, const DMPair &p2, const bool scaled,
   }
 
   return dist_out;
-}
-
-void clear_memory(std::vector<DMPair> &data) {
-  for (auto &profile : data) {
-    std::vector<size_t> tmp(0);
-    profile.profile.swap(tmp);
-  }
 }
 
 void populate_dist_matrix(size_t start, size_t end, size_t pdata_size,
@@ -132,14 +119,14 @@ void populate_dist_matrix(size_t start, size_t end, size_t pdata_size,
 void fast_match_func(size_t start, size_t end, const bool scaled,
                      const bool count_missing,
                      std::vector<DMPair> &query_data) {
-  std::osyncstream bout(std::cout);
+  std::ostringstream local_buffer;
   if (scaled) {
     for (size_t i = start; i < end; i++) {
       for (size_t f = 0; f < query_data.size(); f++) {
         Output dist_out = hamming_distance(query_data[i], query_data[f], scaled,
                                            count_missing);
-        bout << query_data[i].sample << "\t" << query_data[f].sample << "\t"
-             << std::format("{:.6f}", dist_out.scaled) << "\n";
+        local_buffer << query_data[i].sample << "\t" << query_data[f].sample
+                     << "\t" << std::format("{:.6f}", dist_out.scaled) << "\n";
       }
     }
   } else {
@@ -147,11 +134,12 @@ void fast_match_func(size_t start, size_t end, const bool scaled,
       for (size_t f = 0; f < query_data.size(); f++) {
         Output dist_out = hamming_distance(query_data[i], query_data[f], scaled,
                                            count_missing);
-        bout << query_data[i].sample << "\t" << query_data[f].sample << "\t"
-             << dist_out.hamming << "\n";
+        local_buffer << query_data[i].sample << "\t" << query_data[f].sample
+                     << "\t" << dist_out.hamming << "\n";
       }
     }
   }
+  std::osyncstream(std::cout) << local_buffer.str();
 }
 
 void write_scaled(std::vector<Output> &output_matrix,
@@ -280,8 +268,8 @@ std::string read_profiles(const char *file, std::vector<DMPair> &data,
       }
       idx++;
     }
-    DMPair new_sample(sample, std::move(profile));
-    data.push_back(new_sample);
+    DMPair new_sample(std::move(sample), std::move(profile));
+    data.emplace_back(new_sample);
   }
   fo.close();
   return header;
@@ -297,6 +285,7 @@ std::vector<size_t> get_thread_ranges(size_t threads, size_t data_size) {
     ranges.push_back(data_size);
   } else {
     ranges = sample_ranges(data_size, threads);
+    ranges.push_back(data_size);
   }
   return ranges;
 }
@@ -400,6 +389,7 @@ int main(int argc, char *argv[]) {
 
     // Get Profiles
     std::vector<DMPair> profile_data;
+    profile_data.reserve(INITIAL_VEC_SIZE);
 
     // Discarding return value here on purpose
     read_profiles(input_file, profile_data, delimiter, zero_value);
@@ -425,18 +415,16 @@ int main(int argc, char *argv[]) {
       th.join();
     }
 
-    std::thread clear_profiles(clear_memory, std::ref(profile_data));
     if (scaled) {
       write_scaled(output_matrix, profile_data);
     } else {
       write_hamming(output_matrix, profile_data);
     }
 
-    clear_profiles.join();
-
     return 0;
   } else if (program == FASTMATCH) {
     std::vector<DMPair> query_data;
+    query_data.reserve(INITIAL_VEC_SIZE);
 
     std::string input_header =
         read_profiles(input_file, query_data, delimiter, zero_value);
