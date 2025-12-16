@@ -160,19 +160,18 @@ void write_scaled(std::vector<Output> &output_matrix,
   for (const DMPair &d : profiles) {
     std::cout << d.sample << "\t";
   }
-  std::cout << "\n";
-  std::cout << profiles[0].sample << "\t";
 
   size_t idx = 0;
-  for (size_t i = 0; i < output_matrix.size(); i++) {
-    std::cout << output_matrix[i].scaled << "\t";
-    size_t mod = (i + 1) % profiles.size();
-    if (mod == 0 && idx < profiles.size() - 1) {
-      idx++;
-      std::cout << '\n';
-      std::cout << profiles[idx].sample << "\t";
+  size_t mat_idx = 0;
+  do {
+    std::cout << '\n' << profiles[idx].sample << "\t";
+    size_t i = mat_idx;
+    for (; i < mat_idx + profiles.size(); i++) {
+      std::cout << output_matrix[i].scaled << "\t";
     }
-  }
+    mat_idx = i;
+    ++idx;
+  } while (idx < profiles.size());
 }
 
 void write_hamming(std::vector<Output> &output_matrix,
@@ -182,19 +181,18 @@ void write_hamming(std::vector<Output> &output_matrix,
   for (const DMPair &d : profiles) {
     std::cout << d.sample << "\t";
   }
-  std::cout << "\n";
-  std::cout << profiles[0].sample << "\t";
 
   size_t idx = 0;
-  for (size_t i = 0; i < output_matrix.size(); i++) {
-    std::cout << output_matrix[i].hamming << "\t";
-    size_t mod = (i + 1) % profiles.size();
-    if (mod == 0 && idx < profiles.size() - 1) {
-      idx++;
-      std::cout << '\n';
-      std::cout << profiles[idx].sample << "\t";
+  size_t mat_idx = 0;
+  do {
+    std::cout << '\n' << profiles[idx].sample << "\t";
+    size_t i = mat_idx;
+    for (; i < mat_idx + profiles.size(); i++) {
+      std::cout << output_matrix[i].hamming << "\t";
     }
-  }
+    mat_idx = i;
+    ++idx;
+  } while (idx < profiles.size());
 }
 
 Option long_opts[] = {
