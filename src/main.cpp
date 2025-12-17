@@ -10,6 +10,7 @@
 #include <sstream>
 #include <stdint.h>
 #include <string>
+#include <string_view>
 #include <syncstream>
 #include <sys/types.h>
 #include <thread>
@@ -212,7 +213,23 @@ Option long_opts[] = {
      true},
 };
 
+void print_parser_help() {
+  std::ostringstream local_buffer;
+  local_buffer << "Subcommands:\n";
+  local_buffer << "\tmatrix - Create distance matrix with an input profile.\n";
+  local_buffer << "\tfast-match - Compare a set of profiles to a set of query "
+                  "profiles.\n";
+  local_buffer << "\nExamples:\n";
+  local_buffer << "dist-mat matrix -i profiles.tsv -t 4 -sc > output.tsv\n";
+  local_buffer << "dist-mat fast-match -i qprofiles.tsv -r profiles.tsv -t 4 "
+                  "-sc > output.tsv\n";
+  std::cout << local_buffer.str();
+}
+
 void print_help() {
+  print_parser_help();
+  std::cout << "\n";
+  std::cout << "Command Options\n\n";
   for (const Option &opt : long_opts) {
     if (!opt.print) {
       continue;
@@ -236,15 +253,6 @@ void print_help() {
     std::cout << std::endl;
   }
 }
-
-void print_parser_help() {
-  std::cout << "matrix - Create distance matrix with an input profile."
-            << std::endl;
-  std::cout
-      << "fast-match - Compare a set of profiles to a set of query profiles."
-      << std::endl;
-}
-
 std::string read_profiles(const char *file, std::vector<DMPair> &data,
                           char delimiter, std::string zero_value) {
   std::ifstream fo(file);
@@ -309,6 +317,15 @@ int main(int argc, char *argv[]) {
   bool count_missing = false;
   Program program = MATRIX;
 
+  auto hide_option = [](char opt) {
+    for (auto &o : long_opts) {
+      if (o.long_opt.val == opt) {
+        o.print = false;
+        break;
+      }
+    }
+  };
+
   if (argc <= 1) {
     std::cout << "No args passed" << std::endl;
     print_parser_help();
@@ -317,10 +334,10 @@ int main(int argc, char *argv[]) {
   std::string mat = "matrix";
   std::string fast_match = "fast-match";
 
-  int REFERENCE_OPT = 1;
-  if (argv[1] == mat) {
-    long_opts[REFERENCE_OPT].print = false;
-  } else if (argv[1] == fast_match) {
+  std::string_view arg1(argv[1]);
+  if (arg1 == mat) {
+    hide_option('r');
+  } else if (arg1 == fast_match) {
     program = FASTMATCH;
   } else {
     print_parser_help();
@@ -338,7 +355,18 @@ int main(int argc, char *argv[]) {
       input_file = optarg;
       break;
     case 't':
-      threads = (uint8_t)std::stoi(std::string(optarg));
+      try {
+
+        // threads = (uint8_t)std::stoi(std::string(optarg));
+        int t = std::stoi(std::string(optarg));
+        if (t < 1) {
+          std::cerr << "Error: Threads must be greater than 1 \n.";
+          exit(EXIT_FAILURE);
+        }
+      } catch (const std::exception &e) {
+        std::cerr << "Error: invalid thread count. \n";
+        exit(EXIT_FAILURE);
+      }
       break;
     case 's':
       scaled = true;
