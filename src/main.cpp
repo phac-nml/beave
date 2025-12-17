@@ -27,7 +27,7 @@ enum Program { FASTMATCH, MATRIX };
 constexpr size_t MISSING_VALUE = 0;
 constexpr size_t INITIAL_VEC_SIZE = 10000;
 
-typedef uint_fast32_t uint32f;
+typedef uint32_t uint32f;
 
 union Output {
   float scaled;
@@ -95,7 +95,9 @@ Output hamming_distance(const DMPair &p1, const DMPair &p2, const bool scaled,
 
   dist_out.hamming = dist;
   if (scaled) {
-    dist_out.scaled = ((float)dist / (float)compared_sites) * 100.0f;
+    dist_out.scaled =
+        (static_cast<float>(dist) / static_cast<float>(compared_sites)) *
+        100.0f;
   }
 
   return dist_out;
