@@ -280,7 +280,6 @@ std::string read_profiles(const char *file, std::vector<DMPair> &data,
 std::vector<size_t> get_thread_ranges(size_t threads, size_t data_size) {
   std::vector<size_t> ranges;
   if (threads <= 1 || data_size <= threads) {
-    threads = 1;
     ranges.push_back(0);
     ranges.push_back(data_size);
   } else {
