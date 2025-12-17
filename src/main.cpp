@@ -76,10 +76,12 @@ Output hamming_distance(const DMPair &p1, const DMPair &p2, const bool scaled,
   Output dist_out;
   uint32f dist = 0;
   uint32f compared_sites = p1.profile.size();
+  const size_t *__restrict__ p1_data = p1.profile.data();
+  const size_t *__restrict__ p2_data = p2.profile.data();
 
   if (count_missing) {
     for (size_t i = 0; i < p1.profile.size(); i++) {
-      if (p1.profile[i] != p2.profile[i]) {
+      if (p1_data[i] != p2_data[i]) {
         dist++;
       }
     }
@@ -87,9 +89,9 @@ Output hamming_distance(const DMPair &p1, const DMPair &p2, const bool scaled,
     compared_sites = 0;
     for (size_t i = 0; i < p1.profile.size(); i++) {
       const bool valid =
-          (p1.profile[i] != MISSING_VALUE) & (p2.profile[i] != MISSING_VALUE);
+          (p1_data[i] != MISSING_VALUE) & (p2_data[i] != MISSING_VALUE);
       compared_sites += valid;
-      dist += valid & (p1.profile[i] != p2.profile[i]);
+      dist += valid & (p1_data[i] != p2_data[i]);
     }
   }
 
@@ -105,7 +107,7 @@ Output hamming_distance(const DMPair &p1, const DMPair &p2, const bool scaled,
 
 void populate_dist_matrix(size_t start, size_t end, size_t pdata_size,
                           const bool scaled, const bool count_missing,
-                          std::vector<DMPair> &profile_data,
+                          const std::vector<DMPair> &profile_data,
                           std::vector<Output> &output_matrix) {
 
   for (size_t i = start; i < end; i++) {
@@ -120,7 +122,7 @@ void populate_dist_matrix(size_t start, size_t end, size_t pdata_size,
 
 void fast_match_func(size_t start, size_t end, const bool scaled,
                      const bool count_missing,
-                     std::vector<DMPair> &query_data) {
+                     const std::vector<DMPair> &query_data) {
   std::ostringstream local_buffer;
   if (scaled) {
     for (size_t i = start; i < end; i++) {
@@ -407,7 +409,7 @@ int main(int argc, char *argv[]) {
     for (size_t i = 0; i < ranges.size() - 1; i++) {
       pool.push_back(std::thread(populate_dist_matrix, ranges[i], ranges[i + 1],
                                  profile_data.size(), scaled, count_missing,
-                                 std::ref(profile_data),
+                                 std::cref(profile_data),
                                  std::ref(output_matrix)));
     }
 
@@ -450,7 +452,7 @@ int main(int argc, char *argv[]) {
     std::vector<std::thread> pool;
     for (size_t i = 0; i < ranges.size() - 1; i++) {
       pool.push_back(std::thread(fast_match_func, ranges[i], ranges[i + 1],
-                                 scaled, count_missing, std::ref(query_data)));
+                                 scaled, count_missing, std::cref(query_data)));
     }
 
     for (std::thread &th : pool) {
