@@ -6,7 +6,9 @@
 #include <fstream>
 #include <functional>
 #include <getopt.h>
+#include <immintrin.h>
 #include <iostream>
+#include <smmintrin.h>
 #include <sstream>
 #include <stdexcept>
 #include <stdint.h>
@@ -90,7 +92,69 @@ Output hamming_distance(const std::vector<size_t> &p1,
     }
   } else {
     compared_sites = 0;
-    for (size_t i = 0; i < p1.size(); i++) {
+    size_t i = 0;
+    // Can likely compute the below using simd instructions loading in multiple
+    // values. then slicing the value up
+    // TODO validate the program can run on all cpus like this
+#if defined __AVX2__ || defined __SSE2__
+    if (p1.size() >= 4) {
+      // Getting roll overs in digits
+      __m256i vcount = _mm256_set1_epi64x(0);
+      __m256i vcomp = _mm256_set1_epi64x(0);
+      for (; i + 4 < p1.size(); i += 4) {
+        // logic
+        // const bool valid =
+        //     (p1_data[i] != MISSING_VALUE) & (p2_data[i] != MISSING_VALUE);
+        // compared_sites += valid;
+        // dist += valid & (p1_data[i] != p2_data[i]);
+        //  Load the vectors
+        __m256i comp_vec = _mm256_set1_epi64x(0);
+
+        __m256i dist_vec = _mm256_set1_epi64x(0);
+
+        __m256i vec_a = _mm256_set_epi64x(p1_data[i], p1_data[i + 1],
+                                          p1_data[i + 2], p1_data[i + 3]);
+        __m256i vec_b = _mm256_set_epi64x(p2_data[i], p2_data[i + 1],
+                                          p2_data[i + 2], p2_data[i + 3]);
+        __m256i missing_vec = _mm256_set1_epi64x(0);
+        // thes need to be neq comparisons but the operation, but the
+        // instruciont only exists in AVX512. The exclamation mark may work?
+        __m256i all_ones = _mm256_set1_epi64x(-1);
+        __m256i a1_missing =
+            _mm256_xor_si256(_mm256_cmpeq_epi64(vec_a, missing_vec), all_ones);
+
+        __m256i a2_missing =
+            _mm256_xor_si256(_mm256_cmpeq_epi64(vec_b, missing_vec), all_ones);
+        __m256i valid = _mm256_and_si256(a1_missing, a2_missing);
+
+        vcomp = _mm256_add_epi64(valid, comp_vec);
+        __m256i dist_vec_tmp =
+            _mm256_xor_si256(_mm256_cmpeq_epi64(vec_a, vec_b), all_ones);
+
+        dist_vec = _mm256_and_si256(valid, dist_vec_tmp);
+        vcount = _mm256_add_epi64(vcount, dist_vec);
+      }
+      // Need to do unpacking here
+      // dist += static_cast<size_t>(_mm256_extract_epi64(vcount, 0));
+      // dist += static_cast<size_t>(_mm256_extract_epi64(vcount, 1));
+      // dist += static_cast<size_t>(_mm256_extract_epi64(vcount, 2));
+      // dist += static_cast<size_t>(_mm256_extract_epi64(vcount, 3));
+      dist += _mm256_extract_epi64(vcount, 0);
+      dist += _mm256_extract_epi64(vcount, 1);
+      dist += _mm256_extract_epi64(vcount, 2);
+      dist += _mm256_extract_epi64(vcount, 3);
+
+      compared_sites += _mm256_extract_epi64(vcomp, 0);
+      compared_sites += _mm256_extract_epi64(vcomp, 1);
+      compared_sites += _mm256_extract_epi64(vcomp, 2);
+      compared_sites += _mm256_extract_epi64(vcomp, 3);
+      // Need to have these wrap around for some reason, definately need to
+      // figure out why...
+      dist = 0 - dist;
+      compared_sites = 0 - compared_sites;
+    }
+#endif
+    for (; i < p1.size(); i++) {
       const bool valid =
           (p1_data[i] != MISSING_VALUE) & (p2_data[i] != MISSING_VALUE);
       compared_sites += valid;
@@ -173,7 +237,6 @@ void write_scaled(std::vector<Output> &output_matrix,
 
 void write_hamming(std::vector<Output> &output_matrix,
                    std::vector<std::string> &profiles) {
-
   std::cout << "dists" << "\t";
   for (const std::string &d : profiles) {
     std::cout << d << "\t";
