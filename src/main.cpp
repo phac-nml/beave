@@ -8,6 +8,7 @@
 #include <getopt.h>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <stdint.h>
 #include <string>
 #include <string_view>
@@ -72,23 +73,24 @@ public:
   }
 };
 
-Output hamming_distance(const DMPair &p1, const DMPair &p2, const bool scaled,
+Output hamming_distance(const std::vector<size_t> &p1,
+                        const std::vector<size_t> &p2, const bool scaled,
                         const bool count_missing) {
   Output dist_out;
   uint32f dist = 0;
-  uint32f compared_sites = p1.profile.size();
-  const size_t *__restrict__ p1_data = p1.profile.data();
-  const size_t *__restrict__ p2_data = p2.profile.data();
+  uint32f compared_sites = p1.size();
+  const size_t *__restrict__ p1_data = p1.data();
+  const size_t *__restrict__ p2_data = p2.data();
 
   if (count_missing) {
-    for (size_t i = 0; i < p1.profile.size(); i++) {
+    for (size_t i = 0; i < p1.size(); i++) {
       if (p1_data[i] != p2_data[i]) {
         dist++;
       }
     }
   } else {
     compared_sites = 0;
-    for (size_t i = 0; i < p1.profile.size(); i++) {
+    for (size_t i = 0; i < p1.size(); i++) {
       const bool valid =
           (p1_data[i] != MISSING_VALUE) & (p2_data[i] != MISSING_VALUE);
       compared_sites += valid;
@@ -108,7 +110,7 @@ Output hamming_distance(const DMPair &p1, const DMPair &p2, const bool scaled,
 
 void populate_dist_matrix(size_t start, size_t end, size_t pdata_size,
                           const bool scaled, const bool count_missing,
-                          const std::vector<DMPair> &profile_data,
+                          const std::vector<std::vector<size_t>> &profile_data,
                           std::vector<Output> &output_matrix) {
 
   for (size_t i = start; i < end; i++) {
@@ -123,15 +125,16 @@ void populate_dist_matrix(size_t start, size_t end, size_t pdata_size,
 
 void fast_match_func(size_t start, size_t end, const bool scaled,
                      const bool count_missing,
-                     const std::vector<DMPair> &query_data) {
+                     const std::vector<std::string> &query_names,
+                     const std::vector<std::vector<size_t>> &query_data) {
   std::ostringstream local_buffer;
   if (scaled) {
     for (size_t i = start; i < end; i++) {
       for (size_t f = 0; f < query_data.size(); f++) {
         Output dist_out = hamming_distance(query_data[i], query_data[f], scaled,
                                            count_missing);
-        local_buffer << query_data[i].sample << "\t" << query_data[f].sample
-                     << "\t" << std::format("{:.6f}", dist_out.scaled) << "\n";
+        local_buffer << query_names[i] << "\t" << query_names[f] << "\t"
+                     << std::format("{:.6f}", dist_out.scaled) << "\n";
       }
     }
   } else {
@@ -139,8 +142,8 @@ void fast_match_func(size_t start, size_t end, const bool scaled,
       for (size_t f = 0; f < query_data.size(); f++) {
         Output dist_out = hamming_distance(query_data[i], query_data[f], scaled,
                                            count_missing);
-        local_buffer << query_data[i].sample << "\t" << query_data[f].sample
-                     << "\t" << dist_out.hamming << "\n";
+        local_buffer << query_names[i] << "\t" << query_names[f] << "\t"
+                     << dist_out.hamming << "\n";
       }
     }
   }
@@ -148,17 +151,17 @@ void fast_match_func(size_t start, size_t end, const bool scaled,
 }
 
 void write_scaled(std::vector<Output> &output_matrix,
-                  std::vector<DMPair> &profiles) {
+                  std::vector<std::string> &profiles) {
 
   std::cout << "dists" << "\t";
-  for (const DMPair &d : profiles) {
-    std::cout << d.sample << "\t";
+  for (const std::string &d : profiles) {
+    std::cout << d << "\t";
   }
 
   size_t idx = 0;
   size_t mat_idx = 0;
   do {
-    std::cout << '\n' << profiles[idx].sample << "\t";
+    std::cout << '\n' << profiles[idx] << "\t";
     size_t i = mat_idx;
     for (; i < mat_idx + profiles.size(); i++) {
       std::cout << std::format("{:.6f}", output_matrix[i].scaled) << "\t";
@@ -169,17 +172,17 @@ void write_scaled(std::vector<Output> &output_matrix,
 }
 
 void write_hamming(std::vector<Output> &output_matrix,
-                   std::vector<DMPair> &profiles) {
+                   std::vector<std::string> &profiles) {
 
   std::cout << "dists" << "\t";
-  for (const DMPair &d : profiles) {
-    std::cout << d.sample << "\t";
+  for (const std::string &d : profiles) {
+    std::cout << d << "\t";
   }
 
   size_t idx = 0;
   size_t mat_idx = 0;
   do {
-    std::cout << '\n' << profiles[idx].sample << "\t";
+    std::cout << '\n' << profiles[idx] << "\t";
     size_t i = mat_idx;
     for (; i < mat_idx + profiles.size(); i++) {
       std::cout << output_matrix[i].hamming << "\t";
@@ -253,7 +256,9 @@ void print_help() {
     std::cout << std::endl;
   }
 }
-std::string read_profiles(const char *file, std::vector<DMPair> &data,
+std::string read_profiles(const char *file,
+                          std::vector<std::string> &data_names,
+                          std::vector<std::vector<size_t>> &data_profiles,
                           char delimiter, std::string zero_value) {
   std::ifstream fo(file);
   if (!fo.is_open()) {
@@ -280,10 +285,16 @@ std::string read_profiles(const char *file, std::vector<DMPair> &data,
       }
       idx++;
     }
-    DMPair new_sample(std::move(sample), std::move(profile));
-    data.emplace_back(new_sample);
+    // DMPair new_sample(std::move(sample), std::move(profile));
+    // data.emplace_back(new_sample);
+    data_names.emplace_back(std::move(sample));
+    data_profiles.emplace_back(std::move(profile));
   }
   fo.close();
+  if (data_names.size() != data_profiles.size()) {
+    throw std::length_error(
+        "number of profiles names does not match number of profiles ingested.");
+  }
   return header;
 }
 
@@ -357,7 +368,6 @@ int main(int argc, char *argv[]) {
     case 't':
       try {
 
-        // threads = (uint8_t)std::stoi(std::string(optarg));
         int t = std::stoi(std::string(optarg));
         if (t < 1) {
           std::cerr << "Error: Threads must be greater than 1 \n.";
@@ -419,26 +429,27 @@ int main(int argc, char *argv[]) {
   if (program == MATRIX) {
 
     // Get Profiles
-    std::vector<DMPair> profile_data;
-    profile_data.reserve(INITIAL_VEC_SIZE);
+    std::vector<std::string> profile_names;
+    std::vector<std::vector<size_t>> profiles;
+    profiles.reserve(INITIAL_VEC_SIZE);
+    profile_names.reserve(INITIAL_VEC_SIZE);
 
     // Discarding return value here on purpose
-    read_profiles(input_file, profile_data, delimiter, zero_value);
+    read_profiles(input_file, profile_names, profiles, delimiter, zero_value);
 
     std::vector<size_t> ranges =
-        get_thread_ranges(threads, profile_data.size());
+        get_thread_ranges(threads, profile_names.size());
 
     std::vector<std::thread> pool;
 
     // Can save memory making this the upper triangle array only.
-    std::vector<Output> output_matrix(profile_data.size() *
-                                      profile_data.size());
+    std::vector<Output> output_matrix(profile_names.size() *
+                                      profile_names.size());
 
     for (size_t i = 0; i < ranges.size() - 1; i++) {
       pool.push_back(std::thread(populate_dist_matrix, ranges[i], ranges[i + 1],
-                                 profile_data.size(), scaled, count_missing,
-                                 std::cref(profile_data),
-                                 std::ref(output_matrix)));
+                                 profiles.size(), scaled, count_missing,
+                                 std::cref(profiles), std::ref(output_matrix)));
     }
 
     // Join all threads
@@ -447,24 +458,26 @@ int main(int argc, char *argv[]) {
     }
 
     if (scaled) {
-      write_scaled(output_matrix, profile_data);
+      write_scaled(output_matrix, profile_names);
     } else {
-      write_hamming(output_matrix, profile_data);
+      write_hamming(output_matrix, profile_names);
     }
 
     return 0;
   } else if (program == FASTMATCH) {
-    std::vector<DMPair> query_data;
-    query_data.reserve(INITIAL_VEC_SIZE);
+    std::vector<std::string> query_names;
+    std::vector<std::vector<size_t>> query_profiles;
+    query_names.reserve(INITIAL_VEC_SIZE);
+    query_profiles.reserve(INITIAL_VEC_SIZE);
 
-    std::string input_header =
-        read_profiles(input_file, query_data, delimiter, zero_value);
+    std::string input_header = read_profiles(
+        input_file, query_names, query_profiles, delimiter, zero_value);
 
-    size_t length_input = query_data.size();
+    size_t length_input = query_names.size();
 
     // Reusing the vector to combine the data
-    std::string ref_header =
-        read_profiles(reference_file, query_data, delimiter, zero_value);
+    std::string ref_header = read_profiles(
+        reference_file, query_names, query_profiles, delimiter, zero_value);
 
     if (input_header != ref_header) {
       std::cerr
@@ -480,7 +493,8 @@ int main(int argc, char *argv[]) {
     std::vector<std::thread> pool;
     for (size_t i = 0; i < ranges.size() - 1; i++) {
       pool.push_back(std::thread(fast_match_func, ranges[i], ranges[i + 1],
-                                 scaled, count_missing, std::cref(query_data)));
+                                 scaled, count_missing, std::cref(query_names),
+                                 std::cref(query_profiles)));
     }
 
     for (std::thread &th : pool) {
