@@ -373,6 +373,7 @@ int main(int argc, char *argv[]) {
           std::cerr << "Error: Threads must be greater than 1 \n.";
           exit(EXIT_FAILURE);
         }
+        threads = t;
       } catch (const std::exception &e) {
         std::cerr << "Error: invalid thread count. \n";
         exit(EXIT_FAILURE);
