@@ -135,10 +135,6 @@ Output hamming_distance(const std::vector<size_t> &p1,
         vcount = _mm256_add_epi64(vcount, dist_vec);
       }
       // Need to do unpacking here
-      // dist += static_cast<size_t>(_mm256_extract_epi64(vcount, 0));
-      // dist += static_cast<size_t>(_mm256_extract_epi64(vcount, 1));
-      // dist += static_cast<size_t>(_mm256_extract_epi64(vcount, 2));
-      // dist += static_cast<size_t>(_mm256_extract_epi64(vcount, 3));
       dist += _mm256_extract_epi64(vcount, 0);
       dist += _mm256_extract_epi64(vcount, 1);
       dist += _mm256_extract_epi64(vcount, 2);
