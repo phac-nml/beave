@@ -30,11 +30,9 @@ enum Program { FASTMATCH, MATRIX };
 constexpr size_t MISSING_VALUE = 0;
 constexpr size_t INITIAL_VEC_SIZE = 10000;
 
-typedef uint32_t uint32f;
-
 union Output {
   float scaled;
-  uint32f hamming;
+  uint32_t hamming;
 };
 
 std::vector<size_t> sample_ranges(size_t profiles, size_t threads) {
@@ -47,39 +45,12 @@ std::vector<size_t> sample_ranges(size_t profiles, size_t threads) {
   return bins;
 }
 
-class DMPair {
-
-public:
-  const std::string sample;
-  const std::vector<size_t> profile;
-
-  DMPair(const std::string name, std::vector<size_t> prof)
-      : sample(name), profile(std::move(prof)) {}
-
-  DMPair(DMPair &&other) noexcept
-      : sample(std::move(other.sample)), profile(std::move(other.profile)) {}
-
-  DMPair(const DMPair &other) : sample(other.sample), profile(other.profile) {}
-
-  ~DMPair() = default;
-
-  friend std::ostream &operator<<(std::ostream &os, const DMPair &obj) {
-
-    os << obj.sample << ": ";
-    for (auto i : obj.profile) {
-      os << "\t" << i;
-    }
-    os << std::endl;
-    return os;
-  }
-};
-
 Output hamming_distance(const std::vector<uint32_t> &p1,
                         const std::vector<uint32_t> &p2, const bool scaled,
                         const bool count_missing) {
   Output dist_out;
-  uint32f dist = 0;
-  uint32f compared_sites = p1.size();
+  uint32_t dist = 0;
+  uint32_t compared_sites = p1.size();
   const uint32_t *__restrict__ p1_data = p1.data();
   const uint32_t *__restrict__ p2_data = p2.data();
 
@@ -277,7 +248,6 @@ std::string read_profiles(const char *file,
     std::string code;
     std::string sample;
     std::getline(tokens, sample, delimiter);
-    // std::vector<size_t> profile(columns);
     std::vector<uint32_t> profile(columns);
     size_t idx = 0;
     while (std::getline(tokens, code, delimiter)) {
@@ -289,8 +259,6 @@ std::string read_profiles(const char *file,
       }
       idx++;
     }
-    // DMPair new_sample(std::move(sample), std::move(profile));
-    // data.emplace_back(new_sample);
     data_names.emplace_back(std::move(sample));
     data_profiles.emplace_back(std::move(profile));
   }
