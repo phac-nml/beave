@@ -8,7 +8,6 @@
 #include <getopt.h>
 #include <immintrin.h>
 #include <iostream>
-#include <smmintrin.h>
 #include <sstream>
 #include <stdexcept>
 #include <stdint.h>
@@ -75,14 +74,14 @@ public:
   }
 };
 
-Output hamming_distance(const std::vector<size_t> &p1,
-                        const std::vector<size_t> &p2, const bool scaled,
+Output hamming_distance(const std::vector<uint32_t> &p1,
+                        const std::vector<uint32_t> &p2, const bool scaled,
                         const bool count_missing) {
   Output dist_out;
   uint32f dist = 0;
   uint32f compared_sites = p1.size();
-  const size_t *__restrict__ p1_data = p1.data();
-  const size_t *__restrict__ p2_data = p2.data();
+  const uint32_t *__restrict__ p1_data = p1.data();
+  const uint32_t *__restrict__ p2_data = p2.data();
 
   if (count_missing) {
     for (size_t i = 0; i < p1.size(); i++) {
@@ -96,60 +95,79 @@ Output hamming_distance(const std::vector<size_t> &p1,
     // Can likely compute the below using simd instructions loading in multiple
     // values. then slicing the value up
     // TODO validate the program can run on all cpus like this
-#if defined __AVX2__ || defined __SSE2__
-    if (p1.size() >= 4) {
-      // Getting roll overs in digits
-      __m256i vcount = _mm256_set1_epi64x(0);
-      __m256i vcomp = _mm256_set1_epi64x(0);
-      for (; i + 4 < p1.size(); i += 4) {
-        // logic
-        // const bool valid =
-        //     (p1_data[i] != MISSING_VALUE) & (p2_data[i] != MISSING_VALUE);
-        // compared_sites += valid;
-        // dist += valid & (p1_data[i] != p2_data[i]);
-        //  Load the vectors
-        __m256i comp_vec = _mm256_set1_epi64x(0);
-
-        __m256i dist_vec = _mm256_set1_epi64x(0);
-
-        __m256i vec_a = _mm256_set_epi64x(p1_data[i], p1_data[i + 1],
-                                          p1_data[i + 2], p1_data[i + 3]);
-        __m256i vec_b = _mm256_set_epi64x(p2_data[i], p2_data[i + 1],
-                                          p2_data[i + 2], p2_data[i + 3]);
-        __m256i missing_vec = _mm256_set1_epi64x(0);
-        // thes need to be neq comparisons but the operation, but the
-        // instruciont only exists in AVX512. The exclamation mark may work?
-        __m256i all_ones = _mm256_set1_epi64x(-1);
-        __m256i a1_missing =
-            _mm256_xor_si256(_mm256_cmpeq_epi64(vec_a, missing_vec), all_ones);
-
-        __m256i a2_missing =
-            _mm256_xor_si256(_mm256_cmpeq_epi64(vec_b, missing_vec), all_ones);
-        __m256i valid = _mm256_and_si256(a1_missing, a2_missing);
-
-        vcomp = _mm256_add_epi64(valid, comp_vec);
-        __m256i dist_vec_tmp =
-            _mm256_xor_si256(_mm256_cmpeq_epi64(vec_a, vec_b), all_ones);
-
-        dist_vec = _mm256_and_si256(valid, dist_vec_tmp);
-        vcount = _mm256_add_epi64(vcount, dist_vec);
-      }
-      // Need to do unpacking here
-      dist += _mm256_extract_epi64(vcount, 0);
-      dist += _mm256_extract_epi64(vcount, 1);
-      dist += _mm256_extract_epi64(vcount, 2);
-      dist += _mm256_extract_epi64(vcount, 3);
-
-      compared_sites += _mm256_extract_epi64(vcomp, 0);
-      compared_sites += _mm256_extract_epi64(vcomp, 1);
-      compared_sites += _mm256_extract_epi64(vcomp, 2);
-      compared_sites += _mm256_extract_epi64(vcomp, 3);
-      // Need to have these wrap around for some reason, definately need to
-      // figure out why...
-      dist = 0 - dist;
-      compared_sites = 0 - compared_sites;
-    }
-#endif
+    // #if defined __AVX2__ || defined __SSE2__
+    //     if (p1.size() >= 8) {
+    //       // Getting roll overs in digits
+    //       __m256i vcount = _mm256_set1_epi32(0);
+    //       __m256i vcomp = _mm256_set1_epi32(0);
+    //       for (; i + 8 < p1.size(); i += 8) {
+    //         // logic
+    //         // const bool valid =
+    //         //     (p1_data[i] != MISSING_VALUE) & (p2_data[i] !=
+    //         MISSING_VALUE);
+    //         // compared_sites += valid;
+    //         // dist += valid & (p1_data[i] != p2_data[i]);
+    //         //  Load the vectors
+    //         __m256i comp_vec = _mm256_set1_epi32(0);
+    //
+    //         __m256i dist_vec = _mm256_set1_epi32(0);
+    //
+    //         __m256i vec_a = _mm256_set_epi32(
+    //             p1_data[i], p1_data[i + 1], p1_data[i + 2], p1_data[i + 3],
+    //             p1_data[i + 4], p1_data[i + 5], p1_data[i + 6], p1_data[i +
+    //             7]);
+    //         __m256i vec_b = _mm256_set_epi32(
+    //             p2_data[i], p2_data[i + 1], p2_data[i + 2], p2_data[i + 3],
+    //             p2_data[i + 4], p2_data[i + 5], p2_data[i + 6], p2_data[i +
+    //             7]);
+    //
+    //         __m256i missing_vec = _mm256_set1_epi32(0);
+    //         // thes need to be neq comparisons but the operation, but the
+    //         // instruciont only exists in AVX512. The exclamation mark may
+    //         work?
+    //         __m256i all_ones = _mm256_set1_epi32(-1);
+    //
+    //         __m256i a1_missing =
+    //             _mm256_xor_si256(_mm256_cmpeq_epi32(vec_a, missing_vec),
+    //             all_ones);
+    //
+    //         __m256i a2_missing =
+    //             _mm256_xor_si256(_mm256_cmpeq_epi32(vec_b, missing_vec),
+    //             all_ones);
+    //         __m256i valid = _mm256_and_si256(a1_missing, a2_missing);
+    //
+    //         vcomp = _mm256_add_epi32(valid, comp_vec);
+    //         __m256i dist_vec_tmp =
+    //             _mm256_xor_si256(_mm256_cmpeq_epi32(vec_a, vec_b), all_ones);
+    //
+    //         dist_vec = _mm256_and_si256(valid, dist_vec_tmp);
+    //         vcount = _mm256_add_epi32(vcount, dist_vec);
+    //       }
+    //       // Need to do unpacking here
+    //       dist += _mm256_extract_epi32(vcount, 0);
+    //       dist += _mm256_extract_epi32(vcount, 1);
+    //       dist += _mm256_extract_epi32(vcount, 2);
+    //       dist += _mm256_extract_epi32(vcount, 3);
+    //       dist += _mm256_extract_epi32(vcount, 4);
+    //       dist += _mm256_extract_epi32(vcount, 5);
+    //       dist += _mm256_extract_epi32(vcount, 6);
+    //       dist += _mm256_extract_epi32(vcount, 7);
+    //
+    //       compared_sites += _mm256_extract_epi32(vcomp, 0);
+    //       compared_sites += _mm256_extract_epi32(vcomp, 1);
+    //       compared_sites += _mm256_extract_epi32(vcomp, 2);
+    //       compared_sites += _mm256_extract_epi32(vcomp, 3);
+    //       compared_sites += _mm256_extract_epi32(vcomp, 4);
+    //       compared_sites += _mm256_extract_epi32(vcomp, 5);
+    //       compared_sites += _mm256_extract_epi32(vcomp, 6);
+    //       compared_sites += _mm256_extract_epi32(vcomp, 7);
+    //       // Need to have these wrap around for some reason, definately need
+    //       to
+    //       // figure out why...
+    //       dist = 0 - dist;
+    //       compared_sites = 0 - compared_sites;
+    //     }
+    // #endif
     for (; i < p1.size(); i++) {
       const bool valid =
           (p1_data[i] != MISSING_VALUE) & (p2_data[i] != MISSING_VALUE);
@@ -168,10 +186,11 @@ Output hamming_distance(const std::vector<size_t> &p1,
   return dist_out;
 }
 
-void populate_dist_matrix(size_t start, size_t end, size_t pdata_size,
-                          const bool scaled, const bool count_missing,
-                          const std::vector<std::vector<size_t>> &profile_data,
-                          std::vector<Output> &output_matrix) {
+void populate_dist_matrix(
+    size_t start, size_t end, size_t pdata_size, const bool scaled,
+    const bool count_missing,
+    const std::vector<std::vector<uint32_t>> &profile_data,
+    std::vector<Output> &output_matrix) {
 
   for (size_t i = start; i < end; i++) {
     for (size_t f = i; f < pdata_size; f++) {
@@ -186,7 +205,7 @@ void populate_dist_matrix(size_t start, size_t end, size_t pdata_size,
 void fast_match_func(size_t start, size_t end, const bool scaled,
                      const bool count_missing,
                      const std::vector<std::string> &query_names,
-                     const std::vector<std::vector<size_t>> &query_data) {
+                     const std::vector<std::vector<uint32_t>> &query_data) {
   std::ostringstream local_buffer;
   if (scaled) {
     for (size_t i = start; i < end; i++) {
@@ -317,7 +336,7 @@ void print_help() {
 }
 std::string read_profiles(const char *file,
                           std::vector<std::string> &data_names,
-                          std::vector<std::vector<size_t>> &data_profiles,
+                          std::vector<std::vector<uint32_t>> &data_profiles,
                           char delimiter, std::string zero_value) {
   std::ifstream fo(file);
   if (!fo.is_open()) {
@@ -333,14 +352,15 @@ std::string read_profiles(const char *file,
     std::string code;
     std::string sample;
     std::getline(tokens, sample, delimiter);
-    std::vector<size_t> profile(columns);
+    // std::vector<size_t> profile(columns);
+    std::vector<uint32_t> profile(columns);
     size_t idx = 0;
     while (std::getline(tokens, code, delimiter)) {
 
       if (code == zero_value) {
         profile[idx] = MISSING_VALUE;
       } else {
-        profile[idx] = std::hash<std::string>{}(code);
+        profile[idx] = static_cast<uint32_t>(std::hash<std::string>{}(code));
       }
       idx++;
     }
@@ -490,7 +510,7 @@ int main(int argc, char *argv[]) {
 
     // Get Profiles
     std::vector<std::string> profile_names;
-    std::vector<std::vector<size_t>> profiles;
+    std::vector<std::vector<uint32_t>> profiles;
     profiles.reserve(INITIAL_VEC_SIZE);
     profile_names.reserve(INITIAL_VEC_SIZE);
 
@@ -526,7 +546,7 @@ int main(int argc, char *argv[]) {
     return 0;
   } else if (program == FASTMATCH) {
     std::vector<std::string> query_names;
-    std::vector<std::vector<size_t>> query_profiles;
+    std::vector<std::vector<uint32_t>> query_profiles;
     query_names.reserve(INITIAL_VEC_SIZE);
     query_profiles.reserve(INITIAL_VEC_SIZE);
 
