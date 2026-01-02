@@ -91,84 +91,9 @@ Output hamming_distance(const std::vector<uint32_t> &p1,
     }
   } else {
     compared_sites = 0;
-    size_t i = 0;
-    // Can likely compute the below using simd instructions loading in multiple
-    // values. then slicing the value up
-    // TODO validate the program can run on all cpus like this
-    // #if defined __AVX2__ || defined __SSE2__
-    //     if (p1.size() >= 8) {
-    //       // Getting roll overs in digits
-    //       __m256i vcount = _mm256_set1_epi32(0);
-    //       __m256i vcomp = _mm256_set1_epi32(0);
-    //       for (; i + 8 < p1.size(); i += 8) {
-    //         // logic
-    //         // const bool valid =
-    //         //     (p1_data[i] != MISSING_VALUE) & (p2_data[i] !=
-    //         MISSING_VALUE);
-    //         // compared_sites += valid;
-    //         // dist += valid & (p1_data[i] != p2_data[i]);
-    //         //  Load the vectors
-    //         __m256i comp_vec = _mm256_set1_epi32(0);
-    //
-    //         __m256i dist_vec = _mm256_set1_epi32(0);
-    //
-    //         __m256i vec_a = _mm256_set_epi32(
-    //             p1_data[i], p1_data[i + 1], p1_data[i + 2], p1_data[i + 3],
-    //             p1_data[i + 4], p1_data[i + 5], p1_data[i + 6], p1_data[i +
-    //             7]);
-    //         __m256i vec_b = _mm256_set_epi32(
-    //             p2_data[i], p2_data[i + 1], p2_data[i + 2], p2_data[i + 3],
-    //             p2_data[i + 4], p2_data[i + 5], p2_data[i + 6], p2_data[i +
-    //             7]);
-    //
-    //         __m256i missing_vec = _mm256_set1_epi32(0);
-    //         // thes need to be neq comparisons but the operation, but the
-    //         // instruciont only exists in AVX512. The exclamation mark may
-    //         work?
-    //         __m256i all_ones = _mm256_set1_epi32(-1);
-    //
-    //         __m256i a1_missing =
-    //             _mm256_xor_si256(_mm256_cmpeq_epi32(vec_a, missing_vec),
-    //             all_ones);
-    //
-    //         __m256i a2_missing =
-    //             _mm256_xor_si256(_mm256_cmpeq_epi32(vec_b, missing_vec),
-    //             all_ones);
-    //         __m256i valid = _mm256_and_si256(a1_missing, a2_missing);
-    //
-    //         vcomp = _mm256_add_epi32(valid, comp_vec);
-    //         __m256i dist_vec_tmp =
-    //             _mm256_xor_si256(_mm256_cmpeq_epi32(vec_a, vec_b), all_ones);
-    //
-    //         dist_vec = _mm256_and_si256(valid, dist_vec_tmp);
-    //         vcount = _mm256_add_epi32(vcount, dist_vec);
-    //       }
-    //       // Need to do unpacking here
-    //       dist += _mm256_extract_epi32(vcount, 0);
-    //       dist += _mm256_extract_epi32(vcount, 1);
-    //       dist += _mm256_extract_epi32(vcount, 2);
-    //       dist += _mm256_extract_epi32(vcount, 3);
-    //       dist += _mm256_extract_epi32(vcount, 4);
-    //       dist += _mm256_extract_epi32(vcount, 5);
-    //       dist += _mm256_extract_epi32(vcount, 6);
-    //       dist += _mm256_extract_epi32(vcount, 7);
-    //
-    //       compared_sites += _mm256_extract_epi32(vcomp, 0);
-    //       compared_sites += _mm256_extract_epi32(vcomp, 1);
-    //       compared_sites += _mm256_extract_epi32(vcomp, 2);
-    //       compared_sites += _mm256_extract_epi32(vcomp, 3);
-    //       compared_sites += _mm256_extract_epi32(vcomp, 4);
-    //       compared_sites += _mm256_extract_epi32(vcomp, 5);
-    //       compared_sites += _mm256_extract_epi32(vcomp, 6);
-    //       compared_sites += _mm256_extract_epi32(vcomp, 7);
-    //       // Need to have these wrap around for some reason, definately need
-    //       to
-    //       // figure out why...
-    //       dist = 0 - dist;
-    //       compared_sites = 0 - compared_sites;
-    //     }
-    // #endif
-    for (; i < p1.size(); i++) {
+    // Hand rolled SIMD instructions for this, but switching to uin32_t allowed
+    // the compiler to optimize this code.
+    for (size_t i = 0; i < p1.size(); i++) {
       const bool valid =
           (p1_data[i] != MISSING_VALUE) & (p2_data[i] != MISSING_VALUE);
       compared_sites += valid;
