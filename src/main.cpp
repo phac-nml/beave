@@ -284,6 +284,7 @@ std::vector<size_t> get_thread_ranges(size_t threads, size_t data_size) {
   return ranges;
 }
 
+#ifndef TEST
 int main(int argc, char *argv[]) {
 
   const option long_options[] = {long_opts[0].long_opt, long_opts[1].long_opt,
@@ -480,3 +481,4 @@ int main(int argc, char *argv[]) {
   }
   return 0;
 }
+#endif
