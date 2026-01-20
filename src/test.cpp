@@ -2,6 +2,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <ranges>
+#include <sstream>
 #include <stdexcept>
 #include <vector>
 
@@ -84,5 +85,66 @@ TEST_CASE("Distance Calculations", "[Distance Calculation]") {
     for (const auto &[e1, e2] : std::views::zip(in, out)) {
       REQUIRE(e1.hamming == e2.hamming);
     }
+  }
+
+  SECTION("Verify fasta_match_func outputs for hamming distance.") {
+    std::vector<uint32_t> t1 = {1, 2, 3, 4};
+    std::vector<uint32_t> t2 = {1, 2, 3, 4};
+    std::vector<uint32_t> t3 = {1, 2, 3, 4};
+    std::vector<std::vector<uint32_t>> data = {t1, t2, t3};
+    std::vector<std::string> data_names = {"t1", "t2", "t3"};
+    auto stdoutBuffer = std::cout.rdbuf(); // save stdout
+    std::ostringstream oss;
+    std::cout.rdbuf(oss.rdbuf());
+    fast_match_func(0, 2, false, false, data_names, data);
+    std::cout.rdbuf(stdoutBuffer);
+    std::string output_test = "t1\tt1\t0\n"
+                              "t1\tt2\t0\n"
+                              "t1\tt3\t0\n"
+                              "t2\tt1\t0\n"
+                              "t2\tt2\t0\n"
+                              "t2\tt3\t0\n";
+    REQUIRE(oss.str() == output_test);
+  }
+
+  SECTION("Verify fasta_match_func outputs for scaled distance.") {
+    std::vector<uint32_t> t1 = {1, 2, 0, 4};
+    std::vector<uint32_t> t2 = {1, 0, 3, 4};
+    std::vector<uint32_t> t3 = {0, 2, 3, 4};
+    std::vector<std::vector<uint32_t>> data = {t1, t2, t3};
+    std::vector<std::string> data_names = {"t1", "t2", "t3"};
+    auto stdoutBuffer = std::cout.rdbuf(); // save stdout
+    std::ostringstream oss;
+    std::cout.rdbuf(oss.rdbuf());
+    fast_match_func(0, 2, true, true, data_names, data);
+    std::cout.rdbuf(stdoutBuffer);
+    std::string output_test = "t1\tt1\t0.000000\n"
+                              "t1\tt2\t50.000000\n"
+                              "t1\tt3\t50.000000\n"
+                              "t2\tt1\t50.000000\n"
+                              "t2\tt2\t0.000000\n"
+                              "t2\tt3\t50.000000\n";
+    REQUIRE(oss.str() == output_test);
+  }
+
+  SECTION("Verify fasta_match_func outputs for scaled distance missing values "
+          "counted.") {
+    std::vector<uint32_t> t1 = {1, 2, 1, 1};
+    std::vector<uint32_t> t2 = {1, 0, 2, 2};
+    std::vector<uint32_t> t3 = {0, 2, 3, 3};
+    std::vector<std::vector<uint32_t>> data = {t1, t2, t3};
+    std::vector<std::string> data_names = {"t1", "t2", "t3"};
+    auto stdoutBuffer = std::cout.rdbuf(); // save stdout
+    std::ostringstream oss;
+    std::cout.rdbuf(oss.rdbuf());
+    fast_match_func(0, 2, true, false, data_names, data);
+    std::cout.rdbuf(stdoutBuffer);
+    std::string output_test = "t1\tt1\t0.000000\n"
+                              "t1\tt2\t66.666672\n"
+                              "t1\tt3\t66.666672\n"
+                              "t2\tt1\t66.666672\n"
+                              "t2\tt2\t0.000000\n"
+                              "t2\tt3\t100.000000\n";
+    REQUIRE(oss.str() == output_test);
   }
 }

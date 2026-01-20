@@ -182,13 +182,41 @@ void populate_dist_matrix(
  * of references.
  *
  * @param start The start index to begin profile calculations.
- * @param end The end set of profiles to match up too.
+ * @param end The end set of profiles to match up too, e.g. the size of the
+ * query set.
+ * @param scaled Tell the program to print the scaled distance.
+ * @param count_missing A boolean flag passed to `hamming_distance` which will
+ * tell the program to count missing values as differences
+ * @param query_names The query names to be printed along side the output
+ * samples
+ * @param query_data The query data to be matched against
+ *
+ * @return Returns no value, output stream is instead updated.
+ *
+ *
+ * @details
+ * This function runs in a multithreaded environment, relying on the osyncstream
+ * from C++ to write too stdout. While stdout is considered thread safe
+ * interlacing of outputs can occur. The actual for loop logic is duplicated in
+ * order to select the correct output type from the union, without putting an if
+ * statement in the hotloop that may not be optimized properly by the compiler.
+ * Outputs will be redirected to stdout.
+ *
+ * Floats are trunacated by C++ so instead of 66.66666 being written
+ * out, 66.666672 is
+ *
+ *
+ * @usage
+ * fast_match_func(0, 100, false, false, query_names, query_data);
  *
  */
 void fast_match_func(size_t start, size_t end, const bool scaled,
                      const bool count_missing,
                      const std::vector<std::string> &query_names,
                      const std::vector<std::vector<uint32_t>> &query_data) {
+  // TODO once tests and benchmarks are setup some kind of dynamic dispatch
+  // for the outputs written outputs should be tested either through partial
+  // functions or using std::variant
   std::ostringstream local_buffer;
   if (scaled) {
     for (size_t i = start; i < end; i++) {
@@ -212,6 +240,25 @@ void fast_match_func(size_t start, size_t end, const bool scaled,
   std::osyncstream(std::cout) << local_buffer.str();
 }
 
+/**
+ * @brief Write the final scaled distance matrix to stdout.
+ *
+ * @param output_matrix The calculated distance matrix.
+ * @param profiles The labels associated with each output result.
+ *
+ * @return Writes to stdout.
+ *
+ * @details
+ * This function writes the final distance matrix to standard output, the logic
+ * for this function and the one for writing the hamming distance is identical
+ * and will likely be refactored in the future. This function is called after
+ * the `populate_dist_matrix` has been called.
+ *
+ * @usage
+ *
+ * write_scaled(output_matrix, profiles);
+ *
+ */
 void write_scaled(std::vector<Output> &output_matrix,
                   std::vector<std::string> &profiles) {
 
@@ -233,6 +280,25 @@ void write_scaled(std::vector<Output> &output_matrix,
   } while (idx < profiles.size());
 }
 
+/**
+ * @brief Write the final hamming distance matrix to stdout.
+ *
+ * @param output_matrix The calculated distance matrix.
+ * @param profiles The labels associated with each output result.
+ *
+ * @return Writes to stdout.
+ *
+ * @details
+ * This function writes the final distance matrix to standard output, the logic
+ * for this function and the one for writing the scaled distance is identical
+ * and will likely be refactored in the future. This function is called after
+ * the `populate_dist_matrix` has been called.
+ *
+ * @usage
+ *
+ * write_scaled(output_matrix, profiles);
+ *
+ */
 void write_hamming(std::vector<Output> &output_matrix,
                    std::vector<std::string> &profiles) {
   std::cout << "dists" << "\t";
