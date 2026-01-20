@@ -35,16 +35,70 @@ union Output {
   uint32_t hamming;
 };
 
+constexpr size_t MINIMUM_PROFILES = 2;
+
+/**
+ * @brief Determine the sample ranges to be calculated based on
+ * the number of threads used.
+ *
+ * @param profiles The number of profiles to be processed
+ * @param threads the number of threads used by the program
+ *
+ * @return A vector of indexes containing the ranges of samples to be dispatched
+ *
+ * @details
+ * The number of threads is handled externally by the program, therefore
+ * a value of size 0 should never be passed to the threads argument. There
+ * must be atleast 2 profiles for any comparison to take place as well.
+ *
+ * @usage
+ * std::vector<size_t> bins = sample_rnages(profiles.size(), threads)
+ */
 std::vector<size_t> sample_ranges(size_t profiles, size_t threads) {
+  if (threads < 1 || profiles < MINIMUM_PROFILES) {
+    throw std::invalid_argument("Threads passed must be a positive integer, "
+                                "and atleast 2 profiles must be passed.");
+  }
   size_t samples_bin = profiles / threads;
   std::vector<size_t> bins;
   for (size_t i = 0; i < profiles; i = i + samples_bin) {
     bins.push_back(i);
   }
+  bins.push_back(profiles);
 
   return bins;
 }
 
+/**
+ * @brief The main driver function for calculating the hamming distance scaled
+ * and unsacled.
+ *
+ * @param p1 Profile one for comparison
+ * @param p2 Profile two used for comparison
+ * @param scaled A boolean value determining if the hamming distance should be
+ * scaled to the number of comparisons made.
+ * @param count_missing A boolean value determining if missing values e.g. those
+ * set to 0 should be counted as differences.
+ *
+ * @return The function returns a union type of `Output` too allow for the same
+ * function to be used for both scaled and un-scaled distances.
+ *
+ * @details
+ * This function is the main driver for determining the hamming distance, as it
+ * is in a hot loop it has been written to allow for the aggressive optimization
+ * by the compiler. SIMD instructions were hand rolled however using uint32_t
+ * allowed for the compiler to SIMD optimize the logic of excluding missing
+ * counted values. Resulting in speed ups, compiler options should be added to
+ * allow for SIMD optimizations with AVX-512 instruction sets for CPUs that
+ * offer them.
+ *
+ *
+ * @usage
+ * Output o.hamming = hamming_distance(std::vector<uint32_t>{1, 2, 3, 4},
+ * std::vector<uint32_t>{1, 2, 3, 4}, flase, true)
+ *
+ *
+ */
 Output hamming_distance(const std::vector<uint32_t> &p1,
                         const std::vector<uint32_t> &p2, const bool scaled,
                         const bool count_missing) {
@@ -82,6 +136,31 @@ Output hamming_distance(const std::vector<uint32_t> &p1,
   return dist_out;
 }
 
+/**
+ * @brief Populate the output distance matrix.
+ *
+ * @param start Index to begin begin calculation of the profiles on.
+ * @param end Index to halt cacluation of the profiles on.
+ * @param pdata_size The size of the profiles being used.
+ * @param scaled Boolean value inidcating whether a scaled distance should be
+ * used.
+ * @param count_missing Boolean value for deciding if missing values are counted
+ * as differences.
+ * @param profile_data A reference to the passed in profiles.
+ * @param output_matrix A refernce to the matrix handling the final results.
+ *
+ * @return No return value the function works through side effects as the final
+ * matrix is shared betweent threads.
+ *
+ * @details
+ * This function is the main program responsible for calculating the final
+ * results and the subsequent distance matrix. This function is meant to be
+ * called from multiple threads at one time, therefore there is no return value.
+ *
+ * @usage
+ * populate_dist_matrix(0, 100, profiles.size(), false, false, profiles,
+ * output_matrix)
+ */
 void populate_dist_matrix(
     size_t start, size_t end, size_t pdata_size, const bool scaled,
     const bool count_missing,
@@ -98,6 +177,14 @@ void populate_dist_matrix(
   }
 }
 
+/**
+ * @brief Calculate pairwise distances between a subset of profiles and a group
+ * of references.
+ *
+ * @param start The start index to begin profile calculations.
+ * @param end The end set of profiles to match up too.
+ *
+ */
 void fast_match_func(size_t start, size_t end, const bool scaled,
                      const bool count_missing,
                      const std::vector<std::string> &query_names,
@@ -272,6 +359,24 @@ std::string read_profiles(const char *file,
 
 // Evenly space the profiles so each thread can get a bundle of profiles to
 // process they can then all write to the output matrix
+/**
+ *@brief Retrieve the index ranges required for dispatch of each range of
+ * samples to a given thread.
+ *
+ * @param threads The number of threads passed to the program.
+ * @param data_size The number of profiles used by the program
+ *
+ * @return a vector of sample ranges
+ *
+ * @details
+ * This function calls the `sample_ranges` function, however it is a seperate
+ * function as it gaurds the logic required for verifying the case when the
+ * number of threads passed to program exceeds the number of profiles passed to
+ * the program.
+ *
+ * @usage
+ * std::vector<size_t> bins = get_thread_ranges(threads, profiles.size())
+ */
 std::vector<size_t> get_thread_ranges(size_t threads, size_t data_size) {
   std::vector<size_t> ranges;
   if (threads <= 1 || data_size <= threads) {
@@ -279,11 +384,12 @@ std::vector<size_t> get_thread_ranges(size_t threads, size_t data_size) {
     ranges.push_back(data_size);
   } else {
     ranges = sample_ranges(data_size, threads);
-    ranges.push_back(data_size);
   }
   return ranges;
 }
 
+// Catch2 provides its own main function and allows for the above functions to
+// be included in the test files as a header
 #ifndef TEST
 int main(int argc, char *argv[]) {
 
