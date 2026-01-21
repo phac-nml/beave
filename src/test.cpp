@@ -1,6 +1,9 @@
 #include "main.cpp"
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <ranges>
 #include <sstream>
 #include <stdexcept>
@@ -179,6 +182,135 @@ TEST_CASE("Distance Calculations", "[Distance Calculation]") {
         // compiler
         CHECK(allele == profile_hashes[index]);
         index++;
+      }
+    }
+  }
+}
+
+TEST_CASE("Distance Calculations E2E", "[Matrix Calculations]") {
+
+  SECTION("Test hamming distance logic on file input with known output with 3 "
+          "threads.") {
+    /*
+     * This test is recreates the main logic required for the but it allows for
+     * the correctness of outputs to be tested
+     */
+    const char *file = "data/R1KC1K.tsv";
+    char delimiter = '\t';
+    std::string zero_value = "0";
+    bool count_missing = true;
+    bool scaled = false;
+    uint8_t threads = 3; // use an odd number of threads to mix things up
+    std::vector<std::string> profile_names;
+    std::vector<std::vector<uint32_t>> profiles;
+    profiles.reserve(INITIAL_VEC_SIZE);
+    profile_names.reserve(INITIAL_VEC_SIZE);
+
+    // Discarding return value here on purpose
+    read_profiles(file, profile_names, profiles, delimiter, zero_value);
+
+    std::vector<size_t> ranges =
+        get_thread_ranges(threads, profile_names.size());
+
+    std::vector<std::thread> pool;
+
+    // Can save memory making this the upper triangle array only.
+    std::vector<Output> output_matrix(profile_names.size() *
+                                      profile_names.size());
+
+    for (size_t i = 0; i < ranges.size() - 1; i++) {
+      pool.push_back(std::thread(populate_dist_matrix, ranges[i], ranges[i + 1],
+                                 profiles.size(), scaled, count_missing,
+                                 std::cref(profiles), std::ref(output_matrix)));
+    }
+
+    // Join all threads
+    for (std::thread &th : pool) {
+      th.join();
+    }
+
+    // Input sample IDs are integers
+    std::vector<int> names;
+    names.reserve(profile_names.size());
+    for (const auto &name : profile_names) {
+      names.emplace_back(std::stoi(name));
+    }
+
+    for (size_t i = 0; i < profile_names.size(); i++) {
+      int sample1 = names[i];
+      for (size_t f = 0; f < profile_names.size(); f++) {
+        int sample2 = names[f];
+        uint32_t dist = static_cast<uint32_t>(std::abs(sample2 - sample1));
+        REQUIRE(output_matrix[(i * profile_names.size()) + f].hamming == dist);
+        REQUIRE(output_matrix[(f * profile_names.size()) + i].hamming == dist);
+      }
+    }
+  }
+
+  SECTION("Test scaled distance logic on file input with known output with 2 "
+          "threads.") {
+    /*
+     * This test is recreates the main logic required for the but it allows for
+     * the correctness of outputs to be tested
+     *
+     * Result is always within 4 decimals as it is formatted to 6, with
+     * ffast-math enabled
+     */
+    const char *file = "data/R1KC1K.tsv";
+    char delimiter = '\t';
+    std::string zero_value = "0";
+    bool count_missing = true;
+    bool scaled = true;
+    uint8_t threads = 2; // use an odd number of threads to mix things up
+    std::vector<std::string> profile_names;
+    std::vector<std::vector<uint32_t>> profiles;
+    profiles.reserve(INITIAL_VEC_SIZE);
+    profile_names.reserve(INITIAL_VEC_SIZE);
+
+    // Discarding return value here on purpose
+    read_profiles(file, profile_names, profiles, delimiter, zero_value);
+
+    std::vector<size_t> ranges =
+        get_thread_ranges(threads, profile_names.size());
+
+    std::vector<std::thread> pool;
+
+    // Can save memory making this the upper triangle array only.
+    std::vector<Output> output_matrix(profile_names.size() *
+                                      profile_names.size());
+
+    for (size_t i = 0; i < ranges.size() - 1; i++) {
+      pool.push_back(std::thread(populate_dist_matrix, ranges[i], ranges[i + 1],
+                                 profiles.size(), scaled, count_missing,
+                                 std::cref(profiles), std::ref(output_matrix)));
+    }
+
+    // Join all threads
+    for (std::thread &th : pool) {
+      th.join();
+    }
+
+    // Input sample IDs are integers
+    std::vector<int> names;
+    names.reserve(profile_names.size());
+    for (const auto &name : profile_names) {
+      names.emplace_back(std::stoi(name));
+    }
+
+    for (size_t i = 0; i < profile_names.size(); i++) {
+      int sample1 = names[i];
+      for (size_t f = 0; f < profile_names.size(); f++) {
+        int sample2 = names[f];
+        float dist = static_cast<float>(std::abs(sample2 - sample1)) /
+                     static_cast<float>(profile_names.size()) * 100.0f;
+        INFO("Sample 1: " << sample1);
+        INFO("Sample 2: " << sample2);
+        INFO("Distance: " << dist);
+        INFO("Profiles: " << profile_names.size());
+        REQUIRE(output_matrix[(i * profile_names.size()) + f].scaled ==
+                Catch::Approx(dist).epsilon(0.0001));
+        REQUIRE(output_matrix[(f * profile_names.size()) + i].scaled ==
+                Catch::Approx(dist).epsilon(0.0001));
       }
     }
   }
