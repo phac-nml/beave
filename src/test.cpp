@@ -139,6 +139,7 @@ TEST_CASE("Distance Calculations", "[Distance Calculation]") {
     std::cout.rdbuf(oss.rdbuf());
     fast_match_func(0, 2, true, false, data_names, data);
     std::cout.rdbuf(stdoutBuffer);
+    // Rounding may be getting weird due to enabling -ffast-math
     std::string output_test = "t1\tt1\t0.000000\n"
                               "t1\tt2\t66.666672\n"
                               "t1\tt3\t66.666672\n"
@@ -153,14 +154,15 @@ TEST_CASE("Distance Calculations", "[Distance Calculation]") {
     std::string header = std::string("FILE\tG1\tG2\tG3\tG4\tG5\tG6");
     std::vector<std::string> names;
     std::vector<std::vector<uint32_t>> profiles;
-    const char *file = "tests/data/boring.tab";
+    const char *file = "data/boring.tab";
 
     std::string output = read_profiles(file, names, profiles, '\t', "0");
     auto columns = std::count(output.begin(), output.end(), '\t');
     auto header_cols = std::count(header.begin(), header.end(), '\t');
     REQUIRE(columns == header_cols);
     CHECK(output == header); // different editors may swap tabs and spaces
-    std::vector<std::string> expected_names = {"S1", "S2", "S3", "S4", "S5"};
+    std::vector<std::string> expected_names = {"S1", "S2", "S3",
+                                               "S4", "S5", "S6"};
     REQUIRE(expected_names == names);
     std::vector<uint32_t> profile_hashes = {
         4207644323, 1874210838, 3148536061, 1874210838, 4207644323, 1447751201,
@@ -168,6 +170,7 @@ TEST_CASE("Distance Calculations", "[Distance Calculation]") {
         4207644323, 1874210838, 3148536061, 3337028520, 4207644323, 3148536061,
         4207644323, 3342405555, 1874210838, 3337028520, 4207644323, 3148536061,
         4207644323, 1874210838, 3883143127, 1874210838, 4207644323, 3148536061,
+        4207644323, 1874210838, 3883143127, 1874210838, 0,          3148536061,
     };
     uint32_t index = 0;
     for (const auto &profile : profiles) {

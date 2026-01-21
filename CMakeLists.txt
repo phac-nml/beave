@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.15)
-include(FetchContent)
 
 project(dist-mat
   VERSION 0.0.1
   DESCRIPTION "Simple test of distance matrix generation"
   LANGUAGES CXX)
+include(FetchContent)
+include(CTest)
 
 set(TARGET_GROUP production CACHE STRING "BUILD OPTION")
 
@@ -23,10 +24,6 @@ if(TARGET_GROUP STREQUAL release)
 elseif(TARGET_GROUP STREQUAL test)
 
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "tests")
-  set(CMAKE_CXX_FLAGS
-  "-Wall -Wextra -g -O3 -mfpmath=sse -flto \
-  -ffast-math -ftree-vectorize -funroll-loops \
-  -std=c++23 -DTEST")
 
   fetchcontent_declare(
   Catch2
