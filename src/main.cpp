@@ -29,13 +29,12 @@ enum Program { FASTMATCH, MATRIX };
 
 constexpr size_t MISSING_VALUE = 0;
 constexpr size_t INITIAL_VEC_SIZE = 10000;
+constexpr size_t MINIMUM_PROFILES = 2;
 
 union Output {
   float scaled;
   uint32_t hamming;
 };
-
-constexpr size_t MINIMUM_PROFILES = 2;
 
 /**
  * @brief Determine the sample ranges to be calculated based on
@@ -95,7 +94,7 @@ std::vector<size_t> sample_ranges(size_t profiles, size_t threads) {
  *
  * @usage
  * Output o.hamming = hamming_distance(std::vector<uint32_t>{1, 2, 3, 4},
- * std::vector<uint32_t>{1, 2, 3, 4}, flase, true)
+ * std::vector<uint32_t>{1, 2, 3, 4}, false, true)
  *
  *
  */
@@ -319,6 +318,9 @@ void write_hamming(std::vector<Output> &output_matrix,
   } while (idx < profiles.size());
 }
 
+/**
+ * @brief An array containing the options passed to the CLI parser.
+ */
 Option long_opts[] = {
     {{"input", required_argument, 0, 'i'},
      "Input file file of profiles.",
@@ -343,6 +345,9 @@ Option long_opts[] = {
      true},
 };
 
+/**
+ * @brief Top level help message for the parser to print.
+ */
 void print_parser_help() {
   std::ostringstream local_buffer;
   local_buffer << "Subcommands:\n";
@@ -356,6 +361,9 @@ void print_parser_help() {
   std::cout << local_buffer.str();
 }
 
+/**
+ * @brief The main help message to print to the terminal.
+ */
 void print_help() {
   print_parser_help();
   std::cout << "\n";
@@ -383,6 +391,29 @@ void print_help() {
     std::cout << std::endl;
   }
 }
+
+/**
+ * @brief Convert the passed profiles into the required data structures for
+ * processing.
+ *
+ * @param file The file containing the passed profiles to be used.
+ * @param data_names An initialized vector for populating the profile names.
+ * @param data_profiles An initialized vector to be populated with the hashed
+ * allelic profiles.
+ * @param delimiter A character delimiter that can be passed to match the
+ * corresponding input file.
+ * @param zero_value The zero value used to specify alleles that do not contain
+ * a value.
+ *
+ * @return The header of the file passed.
+ *
+ * @details
+ * This function is responsible for ingestion of the passed input file. It
+ * populates the required vectors which contain the data and returns the headers
+ * line of the file. The header column is returned so that it can be compared to
+ * the header of the second file used by fast matching for verification of a
+ * match.
+ */
 std::string read_profiles(const char *file,
                           std::vector<std::string> &data_names,
                           std::vector<std::vector<uint32_t>> &data_profiles,
@@ -423,8 +454,6 @@ std::string read_profiles(const char *file,
   return header;
 }
 
-// Evenly space the profiles so each thread can get a bundle of profiles to
-// process they can then all write to the output matrix
 /**
  *@brief Retrieve the index ranges required for dispatch of each range of
  * samples to a given thread.
