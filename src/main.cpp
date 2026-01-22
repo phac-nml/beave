@@ -261,18 +261,18 @@ void fast_match_func(size_t start, size_t end, const bool scaled,
 void write_scaled(std::vector<Output> &output_matrix,
                   std::vector<std::string> &profiles) {
 
-  std::cout << "dists" << "\t";
+  std::cout << "dists";
   for (const std::string &d : profiles) {
-    std::cout << d << "\t";
+    std::cout << "\t" << d;
   }
 
   size_t idx = 0;
   size_t mat_idx = 0;
   do {
-    std::cout << '\n' << profiles[idx] << "\t";
+    std::cout << '\n' << profiles[idx];
     size_t i = mat_idx;
     for (; i < mat_idx + profiles.size(); i++) {
-      std::cout << std::format("{:.6f}", output_matrix[i].scaled) << "\t";
+      std::cout << "\t" << std::format("{:.6f}", output_matrix[i].scaled);
     }
     mat_idx = i;
     ++idx;
@@ -300,18 +300,18 @@ void write_scaled(std::vector<Output> &output_matrix,
  */
 void write_hamming(std::vector<Output> &output_matrix,
                    std::vector<std::string> &profiles) {
-  std::cout << "dists" << "\t";
+  std::cout << "dists";
   for (const std::string &d : profiles) {
-    std::cout << d << "\t";
+    std::cout << "\t" << d;
   }
 
   size_t idx = 0;
   size_t mat_idx = 0;
   do {
-    std::cout << '\n' << profiles[idx] << "\t";
+    std::cout << '\n' << profiles[idx];
     size_t i = mat_idx;
     for (; i < mat_idx + profiles.size(); i++) {
-      std::cout << output_matrix[i].hamming << "\t";
+      std::cout << "\t" << output_matrix[i].hamming;
     }
     mat_idx = i;
     ++idx;
