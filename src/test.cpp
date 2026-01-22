@@ -1,6 +1,6 @@
 #include "main.cpp"
-#include <catch2/catch_approx.hpp>
-#include <catch2/catch_test_macros.hpp>
+#define CATCH_CONFIG_MAIN
+#include <catch2/catch_all.hpp>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -194,6 +194,45 @@ TEST_CASE("Distance Calculations", "[Distance Calculation]") {
     std::vector<std::vector<uint32_t>> profiles;
     CHECK_THROWS(read_profiles(file, names, profiles, '\t', "0"));
   }
+}
+
+TEST_CASE("Benchmark populate_dist_matrix") {
+  const char *file = "data/R1KC1K.tsv";
+  char delimiter = '\t';
+  std::string zero_value = "0";
+  std::vector<std::string> profile_names;
+  std::vector<std::vector<uint32_t>> profiles;
+  profiles.reserve(INITIAL_VEC_SIZE);
+  profile_names.reserve(INITIAL_VEC_SIZE);
+
+  // Discarding return value here on purpose
+  read_profiles(file, profile_names, profiles, delimiter, zero_value);
+
+  std::vector<Output> output_matrix(profile_names.size() *
+                                    profile_names.size());
+
+  BENCHMARK("Benchmark scaled counting missing.") {
+    return populate_dist_matrix(0, profiles.size(), profiles.size(), true, true,
+                                std::cref(profiles), std::ref(output_matrix));
+  };
+
+  BENCHMARK("Benchmark hamming counting missing.") {
+    return populate_dist_matrix(0, profiles.size(), profiles.size(), false,
+                                true, std::cref(profiles),
+                                std::ref(output_matrix));
+  };
+
+  BENCHMARK("Benchmark hamming not couting missing.") {
+    return populate_dist_matrix(0, profiles.size(), profiles.size(), false,
+                                false, std::cref(profiles),
+                                std::ref(output_matrix));
+  };
+
+  BENCHMARK("Benchmark scaled not counting missing.") {
+    return populate_dist_matrix(0, profiles.size(), profiles.size(), true,
+                                false, std::cref(profiles),
+                                std::ref(output_matrix));
+  };
 }
 
 TEST_CASE("Distance Calculations E2E", "[Matrix Calculations]") {

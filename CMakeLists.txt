@@ -24,7 +24,6 @@ if(TARGET_GROUP STREQUAL release)
 elseif(TARGET_GROUP STREQUAL test)
 
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "tests")
-
   fetchcontent_declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
