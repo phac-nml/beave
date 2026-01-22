@@ -427,15 +427,28 @@ std::string read_profiles(const char *file,
   std::string header;
   std::getline(fo, header);
   auto columns = std::count(header.begin(), header.end(), delimiter);
+  auto line_number = 1; // Starting at 1, as the header value is first.
   while (std::getline(fo, line)) {
+    line_number++;
     std::istringstream tokens(line);
     std::string code;
     std::string sample;
     std::getline(tokens, sample, delimiter);
     std::vector<uint32_t> profile(columns);
     size_t idx = 0;
-    while (std::getline(tokens, code, delimiter)) {
 
+    if (line.empty()) {
+      continue;
+    }
+    auto columns_in_line = std::count(line.begin(), line.end(), delimiter);
+    if (columns_in_line != columns) {
+      throw std::length_error(
+          "Incomplete line in input file: " + std::string(file) +
+          " line: " + std::to_string(line_number) + " header has columns " +
+          std::to_string(columns) + " only " + std::to_string(columns_in_line) +
+          " found.");
+    }
+    while (std::getline(tokens, code, delimiter)) {
       if (code == zero_value) {
         profile[idx] = MISSING_VALUE;
       } else {
@@ -666,6 +679,7 @@ int main(int argc, char *argv[]) {
     std::vector<size_t> ranges = get_thread_ranges(threads, length_input);
 
     std::vector<std::thread> pool;
+    std::cout << "Query\tReference\tDistance" << std::endl;
     for (size_t i = 0; i < ranges.size() - 1; i++) {
       pool.push_back(std::thread(fast_match_func, ranges[i], ranges[i + 1],
                                  scaled, count_missing, std::cref(query_names),

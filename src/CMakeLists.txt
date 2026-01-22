@@ -80,6 +80,8 @@ elseif(TARGET_GROUP STREQUAL test)
     to $<TARGET_FILE_DIR:tests-exe>"
   )
 
+  # TODO need to add benchmarks for disabling -ffast-math
+
 else()
   add_executable(dist-mat-debug ${SOURCES})
   target_include_directories(dist-mat-debug PUBLIC ${CMAKE_CURRENT_LIST_DIR})
