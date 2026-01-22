@@ -70,6 +70,15 @@ elseif(TARGET_GROUP STREQUAL test)
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
   COMMAND ${CMAKE_COMMAND} -E md5sum data/R1KC1K.out.4.threads.count-missing.scaled.tab data/R1KC1K.threaded.scaled.test.out)
 
+  add_test(NAME E2E-FASTMATCH-1-THREADS-FAILS
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
+  COMMAND sh -c "$<TARGET_FILE:tests-exe> fast-match -q data/boring.fmatch.q.tsv -r data/boring.fmatch.r.missing_column.tsv > should_fail.txt")
+
+  set_property(
+    TEST E2E-FASTMATCH-1-THREADS-FAILS
+    PROPERTY WILL_FAIL TRUE
+  )
+
   add_custom_command(
     TARGET tests-exe
     PRE_BUILD
