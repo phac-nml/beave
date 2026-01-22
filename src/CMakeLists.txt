@@ -48,11 +48,11 @@ elseif(TARGET_GROUP STREQUAL test)
 
   add_test(NAME E2E-MATRIX-CMP
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
-  COMMAND ${CMAKE_COMMAND} -E md5sum data/boring.defaults.out.tab data/boring.defaults.reference.tab)
+  COMMAND ${CMAKE_COMMAND} -E compare_files --ignore-eol data/boring.defaults.out.tab data/boring.defaults.reference.tab)
 
   add_test(NAME E2E-MATRIX-CMP-PDISTS-HAMMING
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
-  COMMAND ${CMAKE_COMMAND} -E md5sum data/boring.defaults.out.tab data/boring.tab.pdists.hamming)
+  COMMAND ${CMAKE_COMMAND} -E compare_files --ignore-eol data/boring.defaults.out.tab data/boring.tab.pdists.hamming)
 
   add_test(NAME E2E-MATRIX-4-THREADS
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
@@ -60,7 +60,7 @@ elseif(TARGET_GROUP STREQUAL test)
 
   add_test(NAME E2E-MATRIX-4-THREADS-COMP
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
-  COMMAND ${CMAKE_COMMAND} -E md5sum data/R1KC1K.out.4.threads.count-missing.tab data/R1KC1K.threaded.test.out)
+  COMMAND ${CMAKE_COMMAND} -E compare_files --ignore-eol data/R1KC1K.out.4.threads.count-missing.tab data/R1KC1K.threaded.test.out)
 
   add_test(NAME E2E-MATRIX-4-THREADS-SCALED
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
@@ -68,7 +68,15 @@ elseif(TARGET_GROUP STREQUAL test)
 
   add_test(NAME E2E-MATRIX-4-THREADS-COMP-SCALED
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
-  COMMAND ${CMAKE_COMMAND} -E md5sum data/R1KC1K.out.4.threads.count-missing.scaled.tab data/R1KC1K.threaded.scaled.test.out)
+  COMMAND ${CMAKE_COMMAND} -E compare_files --ignore-eol data/R1KC1K.out.4.threads.count-missing.scaled.tab data/R1KC1K.threaded.scaled.test.out)
+
+  add_test(NAME E2E-MATRIX-NIPH-AS-ZERO
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
+  COMMAND sh -c "$<TARGET_FILE:tests-exe> matrix -i data/boring.tab -m NIPH > data/boring.test.NIPH.out")
+
+  add_test(NAME E2E-MATRIX-NIPH-AS-ZERO-TEST
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
+  COMMAND ${CMAKE_COMMAND} -E compare_files --ignore-eol data/boring.test.NIPH.out data/boring.out.NIPH-is-zero.tsv)
 
   add_test(NAME E2E-FASTMATCH-1-THREADS-FAILS
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
