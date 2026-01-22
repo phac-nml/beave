@@ -456,6 +456,7 @@ std::string read_profiles(const char *file,
       }
       idx++;
     }
+
     data_names.emplace_back(std::move(sample));
     data_profiles.emplace_back(std::move(profile));
   }

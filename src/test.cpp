@@ -187,6 +187,13 @@ TEST_CASE("Distance Calculations", "[Distance Calculation]") {
       }
     }
   }
+
+  SECTION("Verify read_profiles throws errors.") {
+    const char *file = "data/boring.mangled.tab";
+    std::vector<std::string> names;
+    std::vector<std::vector<uint32_t>> profiles;
+    CHECK_THROWS(read_profiles(file, names, profiles, '\t', "0"));
+  }
 }
 
 TEST_CASE("Distance Calculations E2E", "[Matrix Calculations]") {
