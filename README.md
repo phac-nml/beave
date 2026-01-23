@@ -38,7 +38,7 @@ To build the program pull the latest branch and follow the proceeding instructio
 ```
 cd ./dist-mat
 mkdir build && cd build
-cmake .. -DTARGET_GROUP=Release
+cmake .. -DTARGET_GROUP=release
 make -j4
 ```
 
