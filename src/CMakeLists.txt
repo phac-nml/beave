@@ -1,4 +1,4 @@
-file(GLOB SOURCES ./main.cpp ./*.hpp)
+file(GLOB SOURCES ./main.cpp ./py-binding.cpp ./*.hpp)
 
 if(TARGET_GROUP STREQUAL release)
   add_executable(dist-mat ${SOURCES})
@@ -98,6 +98,28 @@ elseif(TARGET_GROUP STREQUAL test)
   )
 
   # TODO need to add benchmarks for disabling -ffast-math
+elseif(TARGET_GROUP STREQUAL python)
+
+  add_library(dist_mat SHARED ${SOURCES})
+
+  target_link_libraries(dist_mat PRIVATE ${Boost_LIBRARIES})
+
+  target_include_directories(dist_mat PUBLIC
+  ${Boost_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} ${Python_INCLUDE_DIRS})
+
+  set_target_properties(dist_mat PROPERTIES
+    PREFIX ""
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python"
+  )
+
+  target_link_libraries(dist_mat PRIVATE ${Boost_LIBRARIES})
+
+  target_compile_options(dist_mat PUBLIC
+  -Wall -Wextra -g -O3 -mfpmath=sse -fPIC
+  -ffast-math -ftree-vectorize -funroll-loops
+  -std=c++23 -DPYTHON_BUILD)
+
 
 else()
   add_executable(dist-mat-debug ${SOURCES})

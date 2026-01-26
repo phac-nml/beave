@@ -499,7 +499,7 @@ std::vector<size_t> get_thread_ranges(size_t threads, size_t data_size) {
 
 // Catch2 provides its own main function and allows for the above functions to
 // be included in the test files as a header
-#ifndef TEST
+#if !defined(TEST) && !defined(PYTHON_BUILD)
 int main(int argc, char *argv[]) {
 
   const option long_options[] = {long_opts[0].long_opt, long_opts[1].long_opt,
