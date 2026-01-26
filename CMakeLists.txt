@@ -52,9 +52,10 @@ elseif(TARGET_GROUP STREQUAL python)
   set(BOOST_TAG boost-1.90.0)
   set(BOOST_VERSION 1.90.0)
 
-  find_package(Python3 REQUIRED COMPONENTS Development NumPy)
-  find_package(Boost ${BOOST_VERSION} REQUIRED python)
+  #find_package(Python3 REQUIRED COMPONENTS Development NumPy)
+  find_package(Boost ${BOOST_VERSION} REQUIRED python numpy)
 
+  find_package(Python3 COMPONENTS Development NumPy REQUIRED)
 
   if(Boost_VERSION_MINOR LESS 90)
     message(STATUS "Boost minor version less than, 90, fetching content.")

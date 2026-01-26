@@ -1,23 +1,8 @@
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <format>
-#include <fstream>
-#include <functional>
-#include <getopt.h>
-#include <immintrin.h>
-#include <iostream>
-#include <sstream>
-#include <stdexcept>
-#include <stdint.h>
-#include <string>
-#include <string_view>
-#include <syncstream>
-#include <sys/types.h>
-#include <thread>
-#include <utility>
-#include <vector>
+#include "main.hpp"
+
+constexpr size_t MISSING_VALUE = 0;
+constexpr size_t INITIAL_VEC_SIZE = 10000;
+constexpr size_t MINIMUM_PROFILES = 2;
 
 typedef struct Option {
   option long_opt;
@@ -26,15 +11,6 @@ typedef struct Option {
 } Option;
 
 enum Program { FASTMATCH, MATRIX };
-
-constexpr size_t MISSING_VALUE = 0;
-constexpr size_t INITIAL_VEC_SIZE = 10000;
-constexpr size_t MINIMUM_PROFILES = 2;
-
-union Output {
-  float scaled;
-  uint32_t hamming;
-};
 
 /**
  * @brief Determine the sample ranges to be calculated based on
@@ -417,7 +393,7 @@ void print_help() {
 std::string read_profiles(const char *file,
                           std::vector<std::string> &data_names,
                           std::vector<std::vector<uint32_t>> &data_profiles,
-                          char delimiter, std::string zero_value) {
+                          const char delimiter, const std::string zero_value) {
   std::ifstream fo(file);
   if (!fo.is_open()) {
     std::cerr << "Could not open " << file << std::endl;

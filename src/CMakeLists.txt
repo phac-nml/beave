@@ -99,13 +99,13 @@ elseif(TARGET_GROUP STREQUAL test)
 
   # TODO need to add benchmarks for disabling -ffast-math
 elseif(TARGET_GROUP STREQUAL python)
-
+  # need to do sudo apt install python3-dev and python3-numpy then build boost after numpy is included..
   add_library(dist_mat SHARED ${SOURCES})
 
-  target_link_libraries(dist_mat PRIVATE ${Boost_LIBRARIES})
+  target_link_libraries(dist_mat PRIVATE ${Boost_LIBRARIES} Python3::NumPy)
 
   target_include_directories(dist_mat PUBLIC
-  ${Boost_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} ${Python_INCLUDE_DIRS})
+  ${Boost_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} ${Python3_INCLUDE_DIRS})
 
   set_target_properties(dist_mat PROPERTIES
     PREFIX ""
