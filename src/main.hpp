@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+constexpr size_t MISSING_VALUE = 0;
 union Output {
   float scaled;
   uint32_t hamming;

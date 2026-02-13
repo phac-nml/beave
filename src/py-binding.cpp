@@ -14,8 +14,6 @@
 
 namespace nb = nanobind;
 
-constexpr size_t MISSING_VALUE = 0;
-
 float _hamming_distance(const uint32_t *__restrict__ p1_data,
                         const uint32_t *__restrict__ p2_data, size_t size,
                         const bool scaled, const bool count_missing) {
@@ -109,6 +107,16 @@ array_out calculate_distances(array np_in, size_t threads, bool scaled,
   return array_out(output, {total_upper_elements}, owner);
 }
 
+// define Python module, expose py_cube function as "cube" to python
+NB_MODULE(dist_mat, m) {
+
+  m.doc() = "Fast distance matrix computation exploiting simd intrinsics and "
+            "C++ parallelism."; // module docstring
+  m.def("calc_dists", &calculate_distances);
+  m.attr("missing_value") = MISSING_VALUE;
+}
+
+// Example code below
 // C/C++ implementation of the function to be wrapped
 // void c_cube(const double *v_in, double *v_out, size_t n_elem) {
 //  for (size_t i = 0; i < n_elem; ++i) {
@@ -133,14 +141,3 @@ array_out calculate_distances(array np_in, size_t threads, bool scaled,
 //   return array(out_buffer, np_in.ndim(), (const size_t *)np_in.shape_ptr(),
 //                owner);
 // }
-
-// define Python module, expose py_cube function as "cube" to python
-NB_MODULE(dist_mat, m) {
-  m.doc() = "Fast distance matrix computation exploiting simd intrinsics and "
-            "C++ parallelism."; // module
-                                // docstring
-  m.def("calc_dists", &calculate_distances);
-
-  //  m.def("cube", &py_cube,
-  //        "a function that cubes a double-precision numpy array");
-}

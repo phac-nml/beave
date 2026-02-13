@@ -1,6 +1,5 @@
 #include "main.hpp"
 
-constexpr size_t MISSING_VALUE = 0;
 constexpr size_t INITIAL_VEC_SIZE = 10000;
 constexpr size_t MINIMUM_PROFILES = 2;
 
