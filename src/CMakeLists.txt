@@ -100,12 +100,18 @@ elseif(TARGET_GROUP STREQUAL test)
   # TODO need to add benchmarks for disabling -ffast-math
 elseif(TARGET_GROUP STREQUAL python)
   # need to do sudo apt install python3-dev and python3-numpy then build boost after numpy is included..
-  add_library(dist_mat SHARED ${SOURCES})
+  #add_library(dist_mat SHARED ${SOURCES})
 
-  target_link_libraries(dist_mat PRIVATE ${Boost_LIBRARIES} Python3::NumPy)
+  #target_link_libraries(dist_mat PRIVATE ${Boost_LIBRARIES} Python3::NumPy)
 
-  target_include_directories(dist_mat PUBLIC
-  ${Boost_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} ${Python3_INCLUDE_DIRS})
+  #target_include_directories(dist_mat PUBLIC
+  #${Boost_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR} ${Python3_INCLUDE_DIRS})
+  nanobind_add_module(dist_mat ${SOURCES})
+
+  target_compile_options(dist_mat PUBLIC
+  -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive
+  -ffast-math -ftree-vectorize -funroll-loops
+  -std=c++23 -DPYTHON_BUILD)
 
   set_target_properties(dist_mat PROPERTIES
     PREFIX ""
@@ -113,12 +119,8 @@ elseif(TARGET_GROUP STREQUAL python)
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python"
   )
 
-  target_link_libraries(dist_mat PRIVATE ${Boost_LIBRARIES})
+  # target_link_libraries(dist_mat PRIVATE ${Boost_LIBRARIES})
 
-  target_compile_options(dist_mat PUBLIC
-  -Wall -Wextra -g -O3 -mfpmath=sse -fPIC
-  -ffast-math -ftree-vectorize -funroll-loops
-  -std=c++23 -DPYTHON_BUILD)
 
 
 else()

@@ -9,18 +9,7 @@ include(CTest)
 
 set(TARGET_GROUP production CACHE STRING "BUILD OPTION")
 
-# Pull boost
-macro(pull_boost)
-  set(BOOST_ENABLE_PYTHON ON)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-  fetchcontent_declare(Boost
-    GIT_REPOSITORY https://github.com/boostorg/boost.git
-    GIT_TAG  ${BOOST_TAG})
-  message(STATUS "Fetching boost ${BOOST_TAG} this may take a bit...")
-  fetchcontent_makeavailable(Boost)
-  message(STATUS "Retrieved boost ${BOOST_TAG}.")
-
-endmacro()
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(TARGET_GROUP STREQUAL release)
 
@@ -49,23 +38,14 @@ elseif(TARGET_GROUP STREQUAL test)
 
 elseif(TARGET_GROUP STREQUAL python)
 
-  set(BOOST_TAG boost-1.90.0)
-  set(BOOST_VERSION 1.90.0)
-
-  #find_package(Python3 REQUIRED COMPONENTS Development NumPy)
-  find_package(Boost ${BOOST_VERSION} REQUIRED python numpy)
-
-  find_package(Python3 COMPONENTS Development NumPy REQUIRED)
-
-  if(Boost_VERSION_MINOR LESS 90)
-    message(STATUS "Boost minor version less than, 90, fetching content.")
-    pull_boost()
-  elseif(Boost_FOUND)
-    message(STATUS "Boost found, skipping fetch content.")
+  if(CMAKE_VERSION VERSION_LESS 3.18)
+    set(DEV_MODULE Development)
   else()
-    message(STATUS "Boost not found, fetching content.")
-    pull_boost()
+    set(DEV_MODULE Development.Module)
   endif()
+
+  find_package(Python 3.13.0 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nanobind)
   add_subdirectory(src)
 
 
