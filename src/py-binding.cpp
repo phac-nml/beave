@@ -5,6 +5,7 @@
  */
 
 #include "main.hpp"
+#include <cstddef>
 #include <cstdint>
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
@@ -49,9 +50,13 @@ float _hamming_distance(const uint32_t *__restrict__ p1_data,
 }
 
 /*
- * Interface will take in a numpy array of profiles 2x2, and return the upper
+ * Interface will take in a numpy array of profiles -1x-1, and return the upper
  * triangle distance matrix only.
+ *
+ * Need to add method for readiing in an processing the data.
  */
+
+constexpr size_t PROFILES_LENGTHS_IDX = 1;
 
 using array = nb::ndarray<uint32_t, nb::numpy, nb::c_contig, nb::device::cpu>;
 using array_out = nb::ndarray<float, nb::numpy, nb::c_contig, nb::device::cpu>;
@@ -63,7 +68,7 @@ void populate_outputs(size_t start, size_t end, size_t pdata_size,
   auto profile_data = profiles.data();
 
   // get the length of the profiles used
-  size_t profiles_used = profiles.shape(1);
+  size_t profiles_used = profiles.shape(PROFILES_LENGTHS_IDX);
   for (size_t i = start; i < end; i++) {
     for (size_t f = i; f < pdata_size; f++) {
       float dist_out = _hamming_distance(&profile_data[i], &profile_data[f],
