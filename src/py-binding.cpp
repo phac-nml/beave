@@ -40,7 +40,7 @@ float _hamming_distance(const uint32_t *__restrict__ p1_data,
     }
   }
 
-  dist_out = dist;
+  dist_out = static_cast<float>(dist);
   if (scaled) {
     dist_out = (static_cast<float>(dist) / static_cast<float>(compared_sites)) *
                100.0f;
@@ -58,14 +58,17 @@ float _hamming_distance(const uint32_t *__restrict__ p1_data,
 
 constexpr size_t PROFILES_LENGTHS_IDX = 1;
 
-using array = nb::ndarray<uint32_t, nb::numpy, nb::c_contig, nb::device::cpu>;
-using array_out = nb::ndarray<float, nb::numpy, nb::c_contig, nb::device::cpu>;
+using array = nb::ndarray<uint32_t, nb::numpy, nb::shape<-1, -1>, nb::c_contig,
+                          nb::device::cpu>;
+using array_out =
+    nb::ndarray<float, nb::numpy, nb::shape<-1>, nb::c_contig, nb::device::cpu>;
 
 void populate_outputs(size_t start, size_t end, size_t pdata_size,
                       const bool scaled, const bool count_missing,
                       const array profiles, float *output_matrix) {
 
   auto profile_data = profiles.data();
+  size_t length_of_top_row = pdata_size - 1;
 
   // get the length of the profiles used
   size_t profiles_used = profiles.shape(PROFILES_LENGTHS_IDX);
@@ -76,7 +79,10 @@ void populate_outputs(size_t start, size_t end, size_t pdata_size,
 
       // Compute upper triangle position
       size_t upper_triangle_pos =
-          (i * profiles_used) - ((i * (i - 1)) / 2) + (f - i);
+          ((length_of_top_row * (length_of_top_row - 1)) / 2) -
+          ((length_of_top_row - i) * (length_of_top_row - i - 1) / 2) + f - i -
+          1;
+
       output_matrix[upper_triangle_pos] = dist_out;
     }
   }
@@ -94,9 +100,13 @@ array_out calculate_distances(array np_in, size_t threads, bool scaled,
   std::vector<std::thread> pool;
 
   // Calculate the total space needed to contain the final number of outputs in
-  // the upper triangle
-  size_t total_upper_elements = (number_profiles * (number_profiles + 1)) / 2;
+  // the upper triangle, reducing the size of profiles by 1, as self comparisons
+  // are not included
+  size_t upper_triangle_row_len = number_profiles - 1;
+  size_t total_upper_elements =
+      (upper_triangle_row_len * (upper_triangle_row_len - 1)) / 2;
 
+  // std::vector<float> output(total_upper_elements);
   float *output = new float[total_upper_elements];
 
   for (size_t i = 0; i < ranges.size() - 1; i++) {
