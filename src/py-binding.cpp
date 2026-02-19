@@ -67,21 +67,27 @@ void populate_outputs(size_t start, size_t end, size_t pdata_size,
                       const bool scaled, const bool count_missing,
                       const array profiles, float *output_matrix) {
 
-  auto profile_data = profiles.data();
-  size_t length_of_top_row = pdata_size - 1;
+  auto profile_data = profiles.view();
+  size_t number_of_loci = profile_data.shape(1);
 
   // get the length of the profiles used
-  size_t profiles_used = profiles.shape(PROFILES_LENGTHS_IDX);
   for (size_t i = start; i < end; i++) {
-    for (size_t f = i; f < pdata_size; f++) {
-      float dist_out = _hamming_distance(&profile_data[i], &profile_data[f],
-                                         profiles_used, scaled, count_missing);
+    for (size_t f = i; f < profile_data.shape(0); f++) {
+      if (i == f) {
+        // TODO optimize this out
+        continue;
+      }
+      // Multipling the index by the array length as nd-arrays are stored
+      // linearly
+      float dist_out =
+          _hamming_distance(&profile_data.data()[i * number_of_loci],
+                            &profile_data.data()[f * number_of_loci],
+                            number_of_loci, scaled, count_missing);
 
       // Compute upper triangle position
       size_t upper_triangle_pos =
-          ((length_of_top_row * (length_of_top_row - 1)) / 2) -
-          ((length_of_top_row - i) * (length_of_top_row - i - 1) / 2) + f - i -
-          1;
+          ((pdata_size * (pdata_size - 1)) / 2) -
+          ((pdata_size - i) * (pdata_size - i - 1) / 2) + f - i - 1;
 
       output_matrix[upper_triangle_pos] = dist_out;
     }
@@ -93,18 +99,15 @@ array_out calculate_distances(array np_in, size_t threads, bool scaled,
 
   // Store the number of profiles required
   size_t number_profiles = np_in.shape(0);
-  std::vector<std::vector<uint32_t>> profiles(number_profiles);
+  // std::vector<std::vector<uint32_t>> profiles(number_profiles);
 
   // Determine the thread ranges to be used
   std::vector<size_t> ranges = get_thread_ranges(threads, number_profiles);
   std::vector<std::thread> pool;
 
   // Calculate the total space needed to contain the final number of outputs in
-  // the upper triangle, reducing the size of profiles by 1, as self comparisons
-  // are not included
-  size_t upper_triangle_row_len = number_profiles - 1;
-  size_t total_upper_elements =
-      (upper_triangle_row_len * (upper_triangle_row_len - 1)) / 2;
+  // the upper triangle.
+  size_t total_upper_elements = (number_profiles * (number_profiles - 1)) / 2;
 
   // std::vector<float> output(total_upper_elements);
   float *output = new float[total_upper_elements];
