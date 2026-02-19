@@ -56,8 +56,6 @@ float _hamming_distance(const uint32_t *__restrict__ p1_data,
  * Need to add method for readiing in an processing the data.
  */
 
-constexpr size_t PROFILES_LENGTHS_IDX = 1;
-
 using array = nb::ndarray<uint32_t, nb::numpy, nb::shape<-1, -1>, nb::c_contig,
                           nb::device::cpu>;
 using array_out =
@@ -72,13 +70,9 @@ void populate_outputs(size_t start, size_t end, size_t pdata_size,
 
   // get the length of the profiles used
   for (size_t i = start; i < end; i++) {
-    for (size_t f = i; f < profile_data.shape(0); f++) {
-      if (i == f) {
-        // TODO optimize this out
-        continue;
-      }
-      // Multipling the index by the array length as nd-arrays are stored
-      // linearly
+    for (size_t f = i + 1; f < profile_data.shape(0); f++) {
+      //  Multipling the index by the array length as nd-arrays are stored
+      //  linearly
       float dist_out =
           _hamming_distance(&profile_data.data()[i * number_of_loci],
                             &profile_data.data()[f * number_of_loci],
