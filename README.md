@@ -29,7 +29,13 @@ _Include how to cite the tool_
 
 [NAME] : <FAKE@phac-aspc.gc.ca>
 
-# Install
+## Install
+
+## Pull the Repository
+
+`git pull --recurse-submodules https://github.com/mattheww95/dist-mat`
+
+## Building C++ cli
 
 This program is written entirely in C++ 23, the only dependencies are a g++ compiler and CMake. Catch2 is required for testing however the library is only required for testing and is managed by CMake, this means an internet connection is required when first building the program.
 
@@ -64,11 +70,23 @@ make -j4
 
 The output binary will be in the debug directory.
 
-### Compatibility
+## Building the Python Package
+
+To build and install the python package you must have the following python dependencies, `scikit-build-core` and `nanobind` which can be installed with `pip install nanobind scikit-build-core[pyproject]`.
+
+Developers can run `pip install --no-build-isolation -ve .` or `pip install --no-build-isolation -Ceditable.rebuild=true -ve .`. Further examples can be found in the nanobind documentation here [nanobind packaging](https://nanobind.readthedocs.io/en/latest/packaging.html).
+
+To build a wheel that can be distributed instead of installed simply run `pip wheel .`
+
+# Compatibility
 
 `dist-mat` has only been tested on linux, any system that supports g++ can compile the program. As only the C++ 23 standard library is used, the program may be able to be compiled on windows system.
 
 This program relies heavily on the compiler to optimize the program and add SIMD instructions, it is recommended too compile the program on your local computer to get the full benefit of the potential instruction sets your CPU may offer especially if AVX-512 instructions are available.
+
+To build the python package `dist-mat` dependencies are listed in the `pyproject.toml`, python version 3.13 or greater is required, along with scikit-build-core and the nanobind python package.
+
+Runtime dependencies only include numpy >= 2.4.0 and polars >= 1.38.1 and scipy >= 1.17.0. These packages are not required for building the program however.
 
 # Getting Started
 
