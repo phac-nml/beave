@@ -108,12 +108,12 @@ elseif(TARGET_GROUP STREQUAL python)
 
   find_package(nanobind CONFIG REQUIRED)
 
-  add_library(dist_mat_lib STATIC ${SOURCES})
+  #add_library(dist_mat_lib STATIC ${SOURCES})
 
-  target_compile_options(dist_mat_lib PRIVATE
-    -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive
-    -ffast-math -ftree-vectorize -funroll-loops -flto
-    -std=c++23 -DPYTHON_BUILD)
+  #target_compile_options(dist_mat_lib PRIVATE
+  #  -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive
+  #  -ffast-math -ftree-vectorize -funroll-loops -flto
+  #  -std=c++23 -DPYTHON_BUILD)
 
   nanobind_add_module(
       dist_mat_ext
@@ -122,8 +122,12 @@ elseif(TARGET_GROUP STREQUAL python)
       ./dist_mat.cpp ./main.cpp ./main.hpp
   )
 
-  target_compile_options(dist_mat_ext PRIVATE -std=c++23 -DPYTHON_BUILD -flto)
-  target_link_libraries(dist_mat_ext PRIVATE dist_mat_lib)
+  target_compile_options(dist_mat_ext PRIVATE
+      -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive
+    -ffast-math -ftree-vectorize -funroll-loops -flto
+    -std=c++23 -DPYTHON_BUILD)
+
+  #target_link_libraries(dist_mat_ext PRIVATE dist_mat_lib)
 
 
   #set_target_properties(dist_mat_ext PROPERTIES

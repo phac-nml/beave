@@ -2,11 +2,9 @@
 
 import numpy as np
 
-# import pandas as pd
 import polars as pd
 import scipy as sp
 import time
-import matplotlib.pyplot as plt
 import sys
 import dist_mat
 
@@ -63,8 +61,7 @@ def to_newick(tree, leaf_names) -> str:
 prog_time = time.perf_counter()
 
 start_time = time.perf_counter()
-# test_path = "/tmp/KData/merged/profile.tsv"
-test_path = "ADD PROFILE PATH HERE"
+test_path = "/tmp/KData/merged/profile.tsv"
 locidex_data = pd.read_csv(test_path, separator="\t", n_threads=4, has_header=True)
 end_time = time.perf_counter()
 print(f"Read table: {end_time - start_time:.4f} seconds.")
