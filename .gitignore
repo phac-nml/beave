@@ -1,2 +1,6 @@
 build
 benchmark
+*.pyc
+*.whl
+__pycache__
+
