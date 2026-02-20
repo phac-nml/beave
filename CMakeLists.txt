@@ -61,7 +61,6 @@ elseif(TARGET_GROUP STREQUAL python)
     after editing C++ files.")
   endif()
 
-
   if(CMAKE_VERSION VERSION_LESS 3.18)
     set(DEV_MODULE Development)
   else()
@@ -69,13 +68,9 @@ elseif(TARGET_GROUP STREQUAL python)
   endif()
 
   #find_package(Python 3.13 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED)
-  find_package(Python 3.13
-    REQUIRED COMPONENTS Interpreter ${DEV_MODULE}
-    OPTIONAL_COMPONENTS Development.SABIModule)
 
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nanobind)
   add_subdirectory(src)
-
 
 else()
   set(CMAKE_CXX_FLAGS "-Wall -O0 -Wextra -g -fanalyzer -std=c++23")

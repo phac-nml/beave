@@ -1,4 +1,4 @@
-file(GLOB SOURCES ./main.cpp ./py-binding.cpp ./*.hpp)
+file(GLOB SOURCES ./main.cpp ./*.hpp)
 
 if(TARGET_GROUP STREQUAL release)
   add_executable(dist-mat ${SOURCES})
@@ -100,21 +100,39 @@ elseif(TARGET_GROUP STREQUAL test)
   # TODO need to add benchmarks for disabling -ffast-math
 elseif(TARGET_GROUP STREQUAL python)
 
-  # need to do sudo apt install python3-dev and python3-numpy
+  set(CMAKE_CXX_COMPILER "g++")
+  find_package(Python 3.13
+      REQUIRED COMPONENTS Interpreter Development.Module
+      ${SKBUILD_SABI_COMPONENT})
+  #OPTIONAL_COMPONENTS Development.SABIModule)
 
-  nanobind_add_module(_dist_mat STABLE_ABI ${SOURCES})
+  find_package(nanobind CONFIG REQUIRED)
 
-  target_compile_options(_dist_mat PUBLIC
-  -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive
-  -ffast-math -ftree-vectorize -funroll-loops
-  -std=c++23 -DPYTHON_BUILD)
+  add_library(dist_mat_lib STATIC ${SOURCES})
 
-  set_target_properties(_dist_mat PROPERTIES
-    PREFIX ""
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python"
+  target_compile_options(dist_mat_lib PRIVATE
+    -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive
+    -ffast-math -ftree-vectorize -funroll-loops -flto
+    -std=c++23 -DPYTHON_BUILD)
+
+  nanobind_add_module(
+      dist_mat_ext
+      STABLE_ABI
+      NB_STATIC
+      ./dist_mat.cpp ./main.cpp ./main.hpp
   )
-  install(TARGETS _dist_mat LIBRARY DESTINATION dist_mat)
+
+  target_compile_options(dist_mat_ext PRIVATE -std=c++23 -DPYTHON_BUILD -flto)
+  target_link_libraries(dist_mat_ext PRIVATE dist_mat_lib)
+
+
+  #set_target_properties(dist_mat_ext PROPERTIES
+  #  PREFIX ""
+  #  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python"
+  #  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python"
+  #)
+
+  install(TARGETS dist_mat_ext LIBRARY DESTINATION dist_mat)
 
 else()
   add_executable(dist-mat-debug ${SOURCES})
