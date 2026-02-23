@@ -72,11 +72,23 @@ The output binary will be in the debug directory.
 
 ## Building the Python Package
 
+### Without Conda
+
 To build and install the python package you must have the following python dependencies, `scikit-build-core` and `nanobind` which can be installed with `pip install nanobind scikit-build-core[pyproject]`.
 
 Developers can run `pip install --no-build-isolation -ve .` or `pip install --no-build-isolation -Ceditable.rebuild=true -ve .`. Further examples can be found in the nanobind documentation here [nanobind packaging](https://nanobind.readthedocs.io/en/latest/packaging.html).
 
 To build a wheel that can be distributed instead of installed simply run `pip wheel .`
+
+### With Conda
+
+1. Pull the github repository as described above.
+
+2. Create the conda environment by running `conda env create -f environment.yml`
+
+3. Activate the environment with : `conda activate dist-mat`
+
+4. Enjoy
 
 # Compatibility
 
