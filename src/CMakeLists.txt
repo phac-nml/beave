@@ -104,16 +104,9 @@ elseif(TARGET_GROUP STREQUAL python)
   find_package(Python 3.13
       REQUIRED COMPONENTS Interpreter Development.Module
       ${SKBUILD_SABI_COMPONENT})
-  #OPTIONAL_COMPONENTS Development.SABIModule)
 
   find_package(nanobind CONFIG REQUIRED)
 
-  #add_library(dist_mat_lib STATIC ${SOURCES})
-
-  #target_compile_options(dist_mat_lib PRIVATE
-  #  -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive
-  #  -ffast-math -ftree-vectorize -funroll-loops -flto
-  #  -std=c++23 -DPYTHON_BUILD)
 
   nanobind_add_module(
       dist_mat_ext
@@ -128,25 +121,14 @@ elseif(TARGET_GROUP STREQUAL python)
     -ffast-math -ftree-vectorize -funroll-loops -flto
     -std=c++23 -DPYTHON_BUILD)
 
-  #target_link_libraries(dist_mat_ext PRIVATE dist_mat_lib)
-
-
-  #set_target_properties(dist_mat_ext PROPERTIES
-  #  PREFIX ""
-  #  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python"
-  #  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python"
-  #)
-
-  #nanobind_add_stub(
-  #  dist_mat_stub
-  #  MODULE dist_mat_ext
-  #  PYTHON_PATH $<TARGET_FILE_DIR:dist_mat_ext>
-  #  OUTPUT dist_mat.pyi
-  #  MARKER_FILE dist_mat/py.typed
-  #)
 
   install(TARGETS dist_mat_ext LIBRARY DESTINATION dist_mat)
-  install(FILES dist_mat/py.typed dist_mat/dist_mat.pyi DESTINATION dist_mat)
+  install(FILES
+    dist_mat/py.typed
+    # name must match the name of the file in the imported
+    # E.G. function is defined in __init__.py so annotation file in __init__.py
+    dist_mat/__init__.pyi
+    DESTINATION dist_mat)
 
 
 
