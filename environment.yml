@@ -51,7 +51,6 @@ dependencies:
   - zipp=3.23.0=pyhcf101f3_1
   - zstd=1.5.7=hb78ec9c_6
   - pip:
-    - dist-mat==0.0.1
     - librt==0.8.1
     - mypy==1.19.1
     - mypy_extensions==1.1.0

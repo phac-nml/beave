@@ -33,7 +33,9 @@ _Include how to cite the tool_
 
 ## Pull the Repository
 
-`git pull --recurse-submodules https://github.com/mattheww95/dist-mat`
+`git clone https://github.com/mattheww95/dist-mat`
+`git pull --recurse-submodules`
+`git submodule update --init --recursive`
 
 ## Building C++ cli
 
@@ -88,7 +90,7 @@ To build a wheel that can be distributed instead of installed simply run `pip wh
 
 3. Activate the environment with : `conda activate dist-mat`
 
-4. Enjoy
+4. `pip install .`
 
 # Compatibility
 
