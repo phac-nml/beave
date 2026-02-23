@@ -122,6 +122,7 @@ elseif(TARGET_GROUP STREQUAL python)
       ./dist_mat.cpp ./main.cpp ./main.hpp
   )
 
+
   target_compile_options(dist_mat_ext PRIVATE
       -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive
     -ffast-math -ftree-vectorize -funroll-loops -flto
@@ -136,7 +137,20 @@ elseif(TARGET_GROUP STREQUAL python)
   #  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python"
   #)
 
+  #nanobind_add_stub(
+  #  dist_mat_stub
+  #  MODULE dist_mat_ext
+  #  PYTHON_PATH $<TARGET_FILE_DIR:dist_mat_ext>
+  #  OUTPUT dist_mat.pyi
+  #  MARKER_FILE dist_mat/py.typed
+  #)
+
   install(TARGETS dist_mat_ext LIBRARY DESTINATION dist_mat)
+  install(FILES dist_mat/py.typed dist_mat/dist_mat.pyi DESTINATION dist_mat)
+
+
+
+
 
 else()
   add_executable(dist-mat-debug ${SOURCES})

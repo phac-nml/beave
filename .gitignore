@@ -4,3 +4,5 @@ benchmark
 *.whl
 __pycache__
 .venv
+*.nwk
+compile_commands.json

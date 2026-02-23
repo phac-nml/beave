@@ -9,6 +9,7 @@ array = np.array(
 )
 
 
+print(dm.__annotations__)
 sp_mat = sp.spatial.distance.pdist(array, metric="hamming")
 print(sp_mat)
 print(dm.calc_dists(array, 1, True, False))
