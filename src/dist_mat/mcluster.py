@@ -157,14 +157,14 @@ def assign_clusters(
     Thresholds are assumed to be sorted on input
     """
 
-    cluster_members = pl.Schema(
-        [("Sample", pl.String), *[(str(k), pl.UInt32) for k in thresholds]]
-    )
+    # cluster_members = pl.Schema(
+    #    [("Sample", pl.String), *[(f"level_{str(k)}", pl.UInt32) for k in thresholds]]
+    # )
     data_to_populate = [pl.Series(name="SampleID", values=labels)]
     cols_concat = []
 
     for threshold in thresholds:
-        col_name = str(threshold)
+        col_name = f"level_{str(threshold)}"
         data_to_populate.append(
             pl.Series(
                 name=col_name,
@@ -185,7 +185,7 @@ def assign_clusters(
 def mcluster(
     input: p.Path,
     delimiter: str,
-    thresholds: list[int | float],
+    thresholds: list[float],
     methods: str,
     n_threads: int,
     columns: p.Path | None,

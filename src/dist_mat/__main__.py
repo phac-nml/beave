@@ -150,7 +150,8 @@ def main():
                 args.cluster_output,
             )
         case _:
-            print("nothing selected.")
+            parser.print_help()
+            sys.exit()
 
 
 if __name__ == "__main__":
