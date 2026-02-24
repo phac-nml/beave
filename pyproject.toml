@@ -13,6 +13,9 @@ authors = [{ name = "Matthew Wells", email = "matthew.wells@phac-aspc.gc.ca" }]
 classifiers = ["License :: Apache-2.0"]
 dependencies = ["numpy >= 2.4.0", "polars >=1.38.0", "scipy >= 1.17.0"]
 
+[project.scripts]
+dist-mat = "dist_mat.__main__:main"
+
 [tool.scikit-build]
 minimum-version = "0.8"
 build-dir = "build/{wheel_tag}"
