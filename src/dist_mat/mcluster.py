@@ -2,15 +2,24 @@
 Re-implementation of mcluster
 """
 
-from os import link
 import sys
+import logging
 import pathlib as p
+
 
 import dist_mat as dm
 import scipy as sp
 import polars as pl
 import numpy as np
 from numpy import typing as npt
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    stream=sys.stderr,
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 def _scipy_tree_to_newick_list(node, newick, parentdist, leaf_names):
@@ -192,31 +201,31 @@ def mcluster(
     """
 
     profiles = read_input_profiles(input, columns, delimiter, n_threads)
-    print("Ingested profiles")
+    logger.info("Ingested profiles")
     distances = compute_dists(profiles, count_missing, scaled, n_threads)
-    print("Computed distances")
+    logger.info("Computed distances")
     linkages = comp_linkage_matrix(distances, methods)
-    print("Computed linkage matrix")
+    logger.info("Computed linkage matrix")
     thresholds.sort(reverse=True)
 
     sample_names = profiles.select(pl.nth(0)).to_series().to_list()
     # write out the tree
     cluster_memberships = assign_clusters(linkages, thresholds, sample_names)
-    print("assigned clusters")
+    logger.info("assigned clusters")
 
     sys.setrecursionlimit(4000)  # raise recursion limit for generating the tree
     tree = sp.cluster.hierarchy.to_tree(linkages)
     newick = to_newick(tree, sample_names)
     with tree_output.open("w") as to:
         to.write(newick)
-    print("Wrote out newick")
+    logger.info("Wrote out newick")
 
     # using polars for this output would greatly speed it up and simplify the code
 
     cluster_memberships.write_csv(
         cluster_outputs, separator=delimiter, include_header=True
     )
-    print("wrote out cluster memberships")
+    logger.info("wrote out cluster memberships")
     # with cluster_outputs.open("w") as co:
     #    co.write("\t".join(["sample_id", *[str(i) for i in thresholds], "\n"]))
     #    for k, v in cluster_memberships.items():
