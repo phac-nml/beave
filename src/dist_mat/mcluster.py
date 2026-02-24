@@ -207,6 +207,7 @@ def mcluster(
     linkages = comp_linkage_matrix(distances, methods)
     logger.info("Computed linkage matrix")
     thresholds.sort(reverse=True)
+    logger.info(f"Thresholds being used for generating lingakes: {thresholds}")
 
     sample_names = profiles.select(pl.nth(0)).to_series().to_list()
     # write out the tree
@@ -216,20 +217,12 @@ def mcluster(
     sys.setrecursionlimit(4000)  # raise recursion limit for generating the tree
     tree = sp.cluster.hierarchy.to_tree(linkages)
     newick = to_newick(tree, sample_names)
+
     with tree_output.open("w") as to:
         to.write(newick)
-    logger.info("Wrote out newick")
-
-    # using polars for this output would greatly speed it up and simplify the code
+    logger.info(f"Wrote newick tree to: {str(tree_output)}")
 
     cluster_memberships.write_csv(
         cluster_outputs, separator=delimiter, include_header=True
     )
-    logger.info("wrote out cluster memberships")
-    # with cluster_outputs.open("w") as co:
-    #    co.write("\t".join(["sample_id", *[str(i) for i in thresholds], "\n"]))
-    #    for k, v in cluster_memberships.items():
-    #        co.write("\t".join([k, *[str(i) for i in v], "\n"]))
-
-    # write out the threshold groupoings
-    #
+    logger.info(f"Wrote cluster memberships to: {str(cluster_outputs)}")
