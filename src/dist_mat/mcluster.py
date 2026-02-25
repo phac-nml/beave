@@ -5,6 +5,7 @@ Re-implementation of mcluster
 import sys
 import logging
 import pathlib as p
+from enum import StrEnum, Enum, auto
 
 
 import dist_mat as dm
@@ -20,6 +21,27 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+
+
+class DistanceMetrics(StrEnum):
+    WARD = "ward"
+    SINGLE = "single"
+    AVERAGE = "average"
+    CENTROID = "centroid"
+    MEDIAN = "median"
+    COMPLETE = "complete"
+
+
+class BranchLengths(StrEnum):
+    PATRISTIC = "patristic"
+    COPHENETIC = "cophenetic"
+
+
+class LinkageMatrixFields(Enum):
+    OBS1 = 0
+    OBS2 = 1
+    DISTANCE = 2
+    NUM_OBSERVATIONS = 3
 
 
 def _scipy_tree_to_newick_list(node, newick, parentdist, leaf_names):
@@ -157,9 +179,6 @@ def assign_clusters(
     Thresholds are assumed to be sorted on input
     """
 
-    # cluster_members = pl.Schema(
-    #    [("Sample", pl.String), *[(f"level_{str(k)}", pl.UInt32) for k in thresholds]]
-    # )
     data_to_populate = [pl.Series(name="SampleID", values=labels)]
     cols_concat = []
 
@@ -182,6 +201,18 @@ def assign_clusters(
     return outputs
 
 
+def convert_branch_lengths(
+    linkage_matrix: npt.NDArray, bl_type: BranchLengths
+) -> npt.NDArray:
+    """
+    Convert linkage matrix to to cophenetic distance if needed.
+    """
+    if bl_type == BranchLengths.COPHENETIC:
+        for row in linkage_matrix:
+            row[LinkageMatrixFields.DISTANCE.value] *= 2
+    return linkage_matrix
+
+
 def mcluster(
     input: p.Path,
     delimiter: str,
@@ -193,6 +224,7 @@ def mcluster(
     scaled: bool,
     tree_output: p.Path,
     cluster_outputs: p.Path,
+    tree_distances: BranchLengths,
     *args,
     **kwargs,
 ):
@@ -215,6 +247,9 @@ def mcluster(
     logger.info("assigned clusters")
 
     sys.setrecursionlimit(4000)  # raise recursion limit for generating the tree
+    linkages = convert_branch_lengths(
+        linkages, tree_distances
+    )  # convert branch lengths for tree display if needed
     tree = sp.cluster.hierarchy.to_tree(linkages)
     newick = to_newick(tree, sample_names)
 

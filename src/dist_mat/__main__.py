@@ -4,20 +4,11 @@ import os
 import pathlib as p
 from enum import StrEnum
 
-from dist_mat import mcluster
+from dist_mat.mcluster import mcluster, DistanceMetrics, BranchLengths
 
 
 class Commands(StrEnum):
     MCLUSTER = "mcluster"
-
-
-class DistanceMetrics(StrEnum):
-    WARD = "ward"
-    SINGLE = "single"
-    AVERAGE = "average"
-    CENTROID = "centroid"
-    MEDIAN = "median"
-    COMPLETE = "complete"
 
 
 def main():
@@ -92,7 +83,7 @@ def main():
     parser_mcluster.add_argument(
         "--thresholds",
         "-p",
-        help="List of threshold values to use, can be Float or Int",
+        help="List of threshold values to use.",
         nargs="+",
         required=True,
         action="extend",
@@ -125,8 +116,17 @@ def main():
     parser_mcluster.add_argument(
         "--scaled",
         "-s",
-        help="Compute the scaled distance.",
+        help="Compute the scaled distance. Distance is presented as a percentage, or a value between 0.0-100.0",
         action="store_true",
+    )
+
+    parser_mcluster.add_argument(
+        # TODO finish implementing logic for selecting the branch lengths
+        "--tree-distances",
+        "-b",
+        default=BranchLengths.COPHENETIC.value,
+        choices=[i.value for i in BranchLengths],
+        help="Determine how to display tree lenghts in the newick file. [default %(default)s]",
     )
 
     args = parser.parse_args(sys.argv[1:])
@@ -137,7 +137,7 @@ def main():
 
     match args.command:
         case Commands.MCLUSTER:
-            mcluster.mcluster(
+            mcluster(
                 args.input,
                 args.delimiter,
                 args.thresholds,
@@ -148,6 +148,7 @@ def main():
                 args.scaled,
                 args.tree_output,
                 args.cluster_output,
+                args.tree_distances,
             )
         case _:
             parser.print_help()
