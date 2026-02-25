@@ -5,7 +5,7 @@ Re-implementation of mcluster
 import sys
 import logging
 import pathlib as p
-from enum import StrEnum, Enum, auto
+from enum import StrEnum, Enum
 
 
 import dist_mat as dm
@@ -23,7 +23,7 @@ logging.basicConfig(
 )
 
 
-class DistanceMetrics(StrEnum):
+class LinkageMetrics(StrEnum):
     WARD = "ward"
     SINGLE = "single"
     AVERAGE = "average"
@@ -42,6 +42,17 @@ class LinkageMatrixFields(Enum):
     OBS2 = 1
     DISTANCE = 2
     NUM_OBSERVATIONS = 3
+
+
+MISSING_VALUE = np.uint32(0)
+REPLACE_CHARS = {
+    "?": MISSING_VALUE,
+    " ": MISSING_VALUE,
+    "-": MISSING_VALUE,
+    "": MISSING_VALUE,
+    "_": MISSING_VALUE,
+    # pl.Null: missing_value,
+}  # mappings to replace fields with zeroes
 
 
 def _scipy_tree_to_newick_list(node, newick, parentdist, leaf_names):
@@ -93,6 +104,20 @@ def to_newick(tree, leaf_names) -> str:
     return "".join(newick_list[::-1])
 
 
+def subset_columns(profiles: pl.DataFrame, columns_keep: p.Path) -> pl.DataFrame:
+    """
+    Subset only the required columns to use for distance matrix calculation
+    """
+    columns_to_keep: set[str] | None = None
+    with columns_keep.open("r") as ck:
+        columns_to_keep = set([line.strip() for line in ck.readlines()])
+
+    sample_col = profiles.columns[0]
+    profile_cols = set(profiles.columns[1:])  # keep all columns but first
+    columns_keep_set = list(profile_cols & columns_to_keep)
+    return profiles.select(sample_col, *columns_keep_set)
+
+
 def read_input_profiles(
     input: p.Path, columns_keep: p.Path | None, delimiter: str, threads: int
 ) -> pl.DataFrame:
@@ -105,16 +130,8 @@ def read_input_profiles(
     )
 
     if columns_keep is not None:
-        columns_to_keep: set[str] | None = None
-        with columns_keep.open("r") as ck:
-            columns_to_keep = set([line.strip() for line in ck.readlines()])
+        profiles = subset_columns(profiles, columns_keep)
 
-        sample_col = profiles.columns[0]
-        profile_cols = set(profiles.columns[1:])  # keep all columns but first
-        columns_keep_set = list(profile_cols & columns_to_keep)
-        profiles = profiles.select(sample_col, *columns_keep_set)
-
-    ## Can add additional filtering logic here
     return profiles
 
 
@@ -123,22 +140,16 @@ def prep_data(profiles: pl.DataFrame) -> npt.NDArray:
     Prepare profiles for ingestion by the the calc_dists function of dist_mat.
     """
 
+    # Can add additonal qc filtering here
+
     data_columns = profiles.columns[1:]  # only apply functions to test columns
-    missing_value = np.uint32(0)
-    mapping_replace = {
-        "?": missing_value,
-        " ": missing_value,
-        "-": missing_value,
-        "": missing_value,
-        "_": missing_value,
-    }  # mappings to replace fields with zeroes
     profiles = profiles.with_columns(
-        [pl.col(i).replace(mapping_replace) for i in data_columns]
+        [pl.col(i).replace(REPLACE_CHARS) for i in data_columns]
     )
 
     profiles = profiles.with_columns(
         [
-            pl.when(pl.col(i) != str(missing_value))
+            pl.when(pl.col(i) != str(MISSING_VALUE))
             .then(pl.col(i).hash(42, 42, 42, 42))
             .otherwise(pl.lit(0))
             for i in data_columns

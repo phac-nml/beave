@@ -78,7 +78,7 @@ The output binary will be in the debug directory.
 
 To build and install the python package you must have the following python dependencies, `scikit-build-core` and `nanobind` which can be installed with `pip install nanobind scikit-build-core[pyproject]`.
 
-Developers can run `pip install --no-build-isolation -ve .` or `pip install --no-build-isolation -Ceditable.rebuild=true -ve .`. Further examples can be found in the nanobind documentation here [nanobind packaging](https://nanobind.readthedocs.io/en/latest/packaging.html).
+Developers can run `pip install --no-build-isolation -ve .[dev]` or `pip install --no-build-isolation -Ceditable.rebuild=true -ve .[dev]`. Further examples can be found in the nanobind documentation here [nanobind packaging](https://nanobind.readthedocs.io/en/latest/packaging.html).
 
 To build a wheel that can be distributed instead of installed simply run `pip wheel .`
 
@@ -90,7 +90,7 @@ To build a wheel that can be distributed instead of installed simply run `pip wh
 
 3. Activate the environment with : `conda activate dist-mat`
 
-4. `pip install .`
+4. `pip install .` to install for development `pip install --no-build-isolation -ve .[dev]`
 
 # Compatibility
 

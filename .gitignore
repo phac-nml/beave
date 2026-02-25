@@ -7,3 +7,6 @@ __pycache__
 *.nwk
 compile_commands.json
 .cache
+.mypy_cache
+.pytest_cache
+.hypothesis

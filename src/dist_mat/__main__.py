@@ -4,7 +4,7 @@ import os
 import pathlib as p
 from enum import StrEnum
 
-from dist_mat.mcluster import mcluster, DistanceMetrics, BranchLengths
+from dist_mat.mcluster import mcluster, LinkageMetrics, BranchLengths
 
 
 class Commands(StrEnum):
@@ -93,9 +93,9 @@ def main():
     parser_mcluster.add_argument(
         "--method",
         "-m",
-        default=DistanceMetrics.AVERAGE.value,
+        default=LinkageMetrics.AVERAGE.value,
         help="Linkage method to use. [default: %(default)s]",
-        choices=[i.value for i in DistanceMetrics],
+        choices=[i.value for i in LinkageMetrics],
     )
 
     parser_mcluster.add_argument(
