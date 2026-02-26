@@ -1,0 +1,8 @@
+- name: Run mcluster
+  # need to add tests passing values to thresholds like 0.1.0
+  command: dist-mat mcluster --input data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b patristic -n 2 --thresholds 10.0 9.0 8.0
+  files:
+    - path: "tree.out"
+      should_exist: true
+    - path: clusters.tsv
+      should_exist: true

@@ -296,7 +296,7 @@ def mcluster(
     linkages = comp_linkage_matrix(distances, methods)
     logger.info("Computed linkage matrix")
     thresholds.sort(reverse=True)
-    logger.info(f"Thresholds being used for generating lingakes: {thresholds}")
+    logger.info(f"Thresholds being used for generating linkages: {thresholds}")
 
     sample_names = profiles.select(pl.nth(0)).to_series().to_list()
     # write out the tree
