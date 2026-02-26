@@ -1,3 +1,4 @@
+import enum
 import pytest
 import dist_mat.mcluster as mc
 import polars as pl
@@ -5,6 +6,7 @@ from polars.testing.parametric import dataframes, column
 from hypothesis import given, settings, HealthCheck, strategies as st
 import numpy as np
 import pathlib as p
+import scipy as sp
 
 
 @pytest.mark.parametrize(
@@ -281,3 +283,33 @@ def test_assign_clusters_(linkage, thresholds, labels, expected):
 )
 def test_convert_branch_lengths(linkage, bl_type, expected):
     assert np.allclose(mc.convert_branch_lengths(linkage, bl_type), expected)
+
+
+@pytest.mark.parametrize(
+    "profiles,count_missing,scaled,threads,delimiter,all_zeroes",
+    [
+        (p.Path("data/R1KC1K.tsv"), True, True, 1, "\t", False),
+        (p.Path("data/R1KC1K.tsv"), True, False, 1, "\t", False),
+        (p.Path("data/R1KC1K.2-zeroes.csv"), False, False, 1, ",", False),
+        (p.Path("data/R1KC1K.2-zeroes.csv"), False, True, 1, ",", False),
+        (p.Path("data/R1KC1K.tsv"), False, True, 1, "\t", True),
+        (p.Path("data/R1KC1K.tsv"), False, False, 1, "\t", True),
+    ],
+)
+def test_compute_dists(profiles, count_missing, scaled, threads, delimiter, all_zeroes):
+    profiles = mc.read_input_profiles(profiles, None, delimiter, 1)
+    dists = mc.compute_dists(profiles, count_missing, scaled, threads)
+    square = sp.spatial.distance.squareform(dists)
+    labels = profiles.select(pl.nth(0)).to_series()
+    for k, row in enumerate(square):
+        for k2, col in enumerate(row):
+            if all_zeroes:
+                assert col == pytest.approx(0.0, rel=0.00001)
+            elif scaled:
+                computed_dist = (
+                    abs(int(labels[k]) - int(labels[k2])) / len(row)
+                ) * 100.0
+                assert computed_dist == pytest.approx(col, rel=0.0001)
+            else:
+                hamming = float(abs(int(labels[k]) - int(labels[k2])))
+                assert hamming == col
