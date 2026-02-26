@@ -20,6 +20,14 @@ class Commands(StrEnum):
     MCLUSTER = "mcluster"
 
 
+def path_exists(file) -> p.Path:
+    fp = p.Path(file)
+    if fp.is_file():
+        return fp
+    logger.critical(f"Input file does not exist. {file}")
+    raise FileNotFoundError
+
+
 def main():
     # specify global arguments shared here
     parent_parser = argparse.ArgumentParser(
@@ -47,7 +55,6 @@ def main():
     )
 
     parser = argparse.ArgumentParser(
-        "Example program",
         description="A quick proof of concept of generic utilities for nomenclature assignment.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=[parent_parser],
@@ -68,7 +75,7 @@ def main():
     )
 
     parser_mcluster.add_argument(
-        "--input", "-i", help="Input alleles.", type=p.Path, required=True
+        "--input", "-i", help="Input alleles.", type=path_exists, required=True
     )
 
     parser_mcluster.add_argument(

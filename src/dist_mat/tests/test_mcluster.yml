@@ -1,4 +1,4 @@
-- name: Run mcluster
+- name: Run mcluster pass
   # need to add tests passing values to thresholds like 0.1.0
   command: dist-mat mcluster --input data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b patristic -n 2 --thresholds 10.0 9.0 8.0
   files:
@@ -6,3 +6,94 @@
       should_exist: true
     - path: clusters.tsv
       should_exist: true
+
+- name: Run mcluster pass cophenetic
+  tags:
+    - should pass
+  # need to add tests passing values to thresholds like 0.1.0
+  command: dist-mat mcluster --input data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 --thresholds 10.0 9.0 8.0
+  files:
+    - path: "tree.out"
+      should_exist: true
+    - path: clusters.tsv
+      should_exist: true
+
+- name: Run mcluster pass cophenetic no scaled metric
+  tags:
+    - should pass
+  # need to add tests passing values to thresholds like 0.1.0
+  command: dist-mat mcluster --input data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -c -b cophenetic -n 1 --thresholds 10.0 9.0 8.0
+  files:
+    - path: "tree.out"
+      should_exist: true
+    - path: clusters.tsv
+      should_exist: true
+
+- name: Run mcluster pass cophenetic no scaled or missing counted metric
+  tags:
+    - should pass
+  # need to add tests passing values to thresholds like 0.1.0
+  command: dist-mat mcluster --input data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 3 --thresholds 10.0 9.0 8.0
+  files:
+    - path: "tree.out"
+      should_exist: true
+    - path: clusters.tsv
+      should_exist: true
+
+- name: Run mcluster pass cophenetic no scaled or missing counted metric, passing 0 cores program should default to 1
+  tags:
+    - should pass
+  # need to add tests passing values to thresholds like 0.1.0
+  command: dist-mat mcluster --input data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10.0 9.0 8.0
+  files:
+    - path: "tree.out"
+      should_exist: true
+    - path: clusters.tsv
+      should_exist: true
+
+- name: Run mcluster cophenetic fail thresholds
+  tags:
+    - should fail
+  # need to add tests passing values to thresholds like 0.1.0
+  command: dist-mat mcluster --input data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 --thresholds 0.1.0
+  exit_code: 2
+  files:
+    - path: "tree.out"
+      should_exist: false
+    - path: clusters.tsv
+      should_exist: false
+
+- name: Run mcluster pass cophenetic fail thresholds missing argument
+  tags:
+    - should fail
+  # need to add tests passing values to thresholds like 0.1.0
+  command: dist-mat mcluster --input data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 --thresholds
+  exit_code: 2
+  files:
+    - path: "tree.out"
+      should_exist: false
+    - path: clusters.tsv
+      should_exist: false
+
+- name: Run mcluster csv
+  tags:
+    - should pass
+  # need to add tests passing values to thresholds like 0.1.0
+  command: dist-mat mcluster --input data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
+  files:
+    - path: "tree.out"
+      should_exist: true
+    - path: clusters.tsv
+      should_exist: true
+
+- name: Run mcluster file does not exist
+  tags:
+    - should fail
+  # need to add tests passing values to thresholds like 0.1.0
+  command: dist-mat mcluster --input data/R1KC1K.2-zeroes.does-not-exist.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
+  exit_code: 1
+  files:
+    - path: "tree.out"
+      should_exist: false
+    - path: clusters.tsv
+      should_exist: false
