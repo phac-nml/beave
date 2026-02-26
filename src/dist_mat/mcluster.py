@@ -51,6 +51,7 @@ REPLACE_CHARS = {
     "-": MISSING_VALUE,
     "": MISSING_VALUE,
     "_": MISSING_VALUE,
+    "0": MISSING_VALUE,
     # pl.Null: missing_value,
 }  # mappings to replace fields with zeroes
 
@@ -123,11 +124,55 @@ def read_input_profiles(
 ) -> pl.DataFrame:
     """
     Ingest the allelic profiles and perform any filtering and conversions required.
+
+    Check for nulls in sample id column and enforces uniqueness
+
+    Maybe faster to set the `null_values` option in polars for specifying what values are null rather then
+    subsetting later.
+
+    Polars mangles columns with ptotential duplicate names on ingestion, potential bug*
     """
 
     profiles = pl.read_csv(
-        input, separator=delimiter, n_threads=threads, has_header=True
+        input,
+        separator=delimiter,
+        n_threads=threads,
+        has_header=True,
+        raise_if_empty=True,
+        missing_utf8_is_empty_string=True,
+        infer_schema=False,
     )
+    if profiles.shape[1] <= 1:
+        logger.critical(
+            f"Only {profiles.shape[1]} in allele profiles, you need atleast two columns."
+        )
+        raise pl.exceptions.ShapeError(
+            f"Only {profiles.shape[1]} in allele profiles, you need atleast two columns."
+        )
+
+    if profiles.shape[0] <= 1:
+        logger.critical(
+            f"Only {profiles.shape[0]} in allele profiles, you need atleast two rows."
+        )
+        raise pl.exceptions.RowsError(
+            f"Only {profiles.shape[0]} in allele profiles, you need atleast two rows."
+        )
+
+    if profiles.select(pl.nth(0)).null_count()[0, 0] >= 1:
+        logger.critical(
+            "Missing values identified in left most column, leftmost column can have no missing values."
+        )
+        raise pl.exceptions.RowsError(
+            "Missing values identified in left most column, leftmost column can have no missing values."
+        )
+
+    if not profiles.select(pl.nth(0)).is_unique().all():
+        logger.critical(
+            "Duplicate values identified in left most column, leftmost column can have no missing values."
+        )
+        raise pl.exceptions.DuplicateError(
+            "Duplicate values identified in left most column, leftmost column can have no missing values."
+        )
 
     if columns_keep is not None:
         profiles = subset_columns(profiles, columns_keep)
@@ -183,7 +228,7 @@ def comp_linkage_matrix(
 
 def assign_clusters(
     linkage: npt.NDArray, thresholds: list[int | float], labels: list[str]
-):
+) -> pl.DataFrame:
     """
     Roll the new cluster membership code.
 

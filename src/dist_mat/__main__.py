@@ -1,10 +1,19 @@
 import argparse
 import sys
 import os
+import logging
 import pathlib as p
 from enum import StrEnum
 
 from dist_mat.mcluster import mcluster, LinkageMetrics, BranchLengths
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    stream=sys.stderr,
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 class Commands(StrEnum):

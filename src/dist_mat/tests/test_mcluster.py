@@ -1,3 +1,4 @@
+from sys import exception
 import pytest
 import dist_mat.mcluster as mc
 import polars as pl
@@ -17,24 +18,50 @@ import pathlib as p
             1,
             pl.DataFrame(
                 {
-                    "SampleID": [1, 2, 3],
-                    "A": [1, 4, 7],
-                    "B": [2, 5, 8],
-                    "C": [3, 6, 9],
+                    "SampleID": [str(1), str(2), str(3)],
+                    "A": [str(1), str(4), str(7)],
+                    "B": [str(2), str(5), str(8)],
+                    "C": [str(3), str(6), str(9)],
                 }
             ),
-        )
+        ),
+        (
+            p.Path("src/dist_mat/tests/data/test_profiles.tsv"),
+            None,
+            "\t",
+            1,
+            pl.DataFrame(
+                {
+                    "SampleID": [str(1), str(2), str(3)],
+                    "A": [str(1), str(4), str(7)],
+                    "B": ["", str(5), str(8)],
+                    "C": [str(3), str(6), str(9)],
+                },
+                strict=False,
+            ),
+        ),
     ],
 )
 def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) -> None:
     """
     Tests for ingestion of the input profiles
-
-    TODO add tests for nulls and other types
     """
-    assert mc.read_input_profiles(input, columns_keep, delimiter, threads).equals(
-        expected
-    )
+
+    input_profiles = mc.read_input_profiles(input, columns_keep, delimiter, threads)
+    assert input_profiles.equals(expected)
+
+
+@pytest.mark.parametrize(
+    "input,exception",
+    [
+        p.Path("src/dist_mat/tests/data/test_profiles.csv"),
+        pl.exceptions.DuplicateError,
+        "Duplicate values identified in left most column, leftmost column can have no missing values.",
+    ],
+)
+def test_read_input_profiles_raises_exception(input, exc, message):
+    with pytest.raises(exc, match=message):
+        mc.read_input_profiles(input, None, ",", 1)
 
 
 @given(
@@ -145,3 +172,89 @@ def test_comp_linkage_matrix(method, expected):
     input_array = np.array([1.41421356, 2.82842712, 1.41421356])
     output = mc.comp_linkage_matrix(input_array, method)
     assert np.allclose(output, expected)
+
+
+@pytest.mark.parametrize(
+    "linkage,thresholds,labels,expected_columns",
+    [
+        (
+            np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
+            [1.0],
+            ["A", "B", "C"],
+            ["SampleID", "level_1.0", "denovo_address"],
+        ),
+        (
+            np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
+            [2.0, 1.0, 0.0],
+            ["A", "B", "C"],
+            ["SampleID", "level_2.0", "level_1.0", "level_0.0", "denovo_address"],
+        ),
+        (
+            np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
+            [float(i) for i in range(100, 0, -1)],
+            ["A", "B", "C"],
+            [
+                "SampleID",
+                *[f"level_{float(i)}" for i in range(100, 0, -1)],
+                "denovo_address",
+            ],
+        ),
+    ],
+)
+def test_assign_clusters_columns(linkage, thresholds, labels, expected_columns):
+    output = mc.assign_clusters(linkage, thresholds, labels).columns
+    assert output == expected_columns
+
+
+@pytest.mark.parametrize(
+    "linkage,thresholds,labels,expected",
+    [
+        (
+            np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
+            [4.0],
+            ["A", "B", "C"],
+            pl.DataFrame(
+                {
+                    "SampleID": ["A", "B", "C"],
+                    "level_4.0": [1, 1, 1],
+                    "denovo_address": ["1", "1", "1"],
+                }
+            ),
+        ),
+        (
+            np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
+            [4.0, 0.01],
+            ["A", "B", "C"],
+            pl.DataFrame(
+                {
+                    "SampleID": ["A", "B", "C"],
+                    "level_4.0": [1, 1, 1],
+                    "level_0.01": [1, 2, 3],
+                    "denovo_address": ["1.1", "1.2", "1.3"],
+                }
+            ),
+        ),
+    ],
+)
+def test_assign_clusters_(linkage, thresholds, labels, expected):
+    out = mc.assign_clusters(linkage, thresholds, labels)
+    assert out.equals(expected)
+
+
+@pytest.mark.parametrize(
+    "linkage,bl_type,expected",
+    [
+        (
+            np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
+            mc.BranchLengths.PATRISTIC,
+            np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
+        ),
+        (
+            np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
+            mc.BranchLengths.COPHENETIC,
+            np.array([[0, 1, 2.82842712, 2], [2, 3, 2.82842712, 3]], dtype=float),
+        ),
+    ],
+)
+def test_convert_branch_lengths(linkage, bl_type, expected):
+    assert np.allclose(mc.convert_branch_lengths(linkage, bl_type), expected)
