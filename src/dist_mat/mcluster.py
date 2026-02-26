@@ -158,12 +158,13 @@ def read_input_profiles(
             f"Only {profiles.shape[0]} in allele profiles, you need atleast two rows."
         )
 
-    if profiles.select(pl.nth(0)).null_count()[0, 0] >= 1:
+    # Cannot use null_count in polars for this, as we convert all null values into empty strings
+    if profiles.select((pl.nth(0) == "").sum())[0, 0] >= 1:
         logger.critical(
-            "Missing values identified in left most column, leftmost column can have no missing values."
+            "Missing values identified in left most column, left most column can have no missing values."
         )
         raise pl.exceptions.RowsError(
-            "Missing values identified in left most column, leftmost column can have no missing values."
+            "Missing values identified in left most column, left most column can have no missing values."
         )
 
     if not profiles.select(pl.nth(0)).is_unique().all():

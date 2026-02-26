@@ -1,4 +1,3 @@
-from sys import exception
 import pytest
 import dist_mat.mcluster as mc
 import polars as pl
@@ -32,7 +31,7 @@ import pathlib as p
             1,
             pl.DataFrame(
                 {
-                    "SampleID": [str(1), str(2), str(3)],
+                    "SampleID": ["1", "2", "3"],
                     "A": [str(1), str(4), str(7)],
                     "B": ["", str(5), str(8)],
                     "C": [str(3), str(6), str(9)],
@@ -45,6 +44,8 @@ import pathlib as p
 def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) -> None:
     """
     Tests for ingestion of the input profiles
+
+    TODO add tests for nulls and other types
     """
 
     input_profiles = mc.read_input_profiles(input, columns_keep, delimiter, threads)
@@ -52,14 +53,36 @@ def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) 
 
 
 @pytest.mark.parametrize(
-    "input,exception",
+    "input,exc,message",
     [
-        p.Path("src/dist_mat/tests/data/test_profiles.csv"),
-        pl.exceptions.DuplicateError,
-        "Duplicate values identified in left most column, leftmost column can have no missing values.",
+        (
+            p.Path("src/dist_mat/tests/data/test_profiles_duplicate_id.csv"),
+            pl.exceptions.DuplicateError,
+            r"Duplicate values identified in left most column",
+        ),
+        (
+            p.Path("src/dist_mat/tests/data/test_profiles_missing_sample_id.csv"),
+            pl.exceptions.RowsError,
+            r"Missing values identified in left most column",
+        ),
+        (
+            p.Path("src/dist_mat/tests/data/test_profiles_one_columns.csv"),
+            pl.exceptions.ShapeError,
+            r"you need atleast two columns.",
+        ),
+        (
+            p.Path("src/dist_mat/tests/data/test_profiles_no_rows.csv"),
+            pl.exceptions.RowsError,
+            r"you need atleast two rows.",
+        ),
+        (
+            p.Path("src/dist_mat/tests/data/test_profiles_one_row.csv"),
+            pl.exceptions.RowsError,
+            r"you need atleast two rows.",
+        ),
     ],
 )
-def test_read_input_profiles_raises_exception(input, exc, message):
+def test_read_input_profiles_assertions(input, exc, message):
     with pytest.raises(exc, match=message):
         mc.read_input_profiles(input, None, ",", 1)
 
