@@ -9,6 +9,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: 'recursive'
 
       - name: Install the latest CMake
         uses: lukka/get-cmake@latest
