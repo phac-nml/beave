@@ -14,9 +14,29 @@ jobs:
         uses: actions/setup-python@v5
         with:
           # Semantic version range syntax or exact version of a Python version
-          python-version: '3.x'
+          python-version: '3.14'
           # Optional - x64 or x86 architecture, defaults to x64
           architecture: 'x64'
+          cache: 'pip'
       # You can test your matrix by printing the current Python version
-      - name: Display Python version
-        run: python -c "import sys; print(sys.version)"
+      - name: Install dependencies
+        run: |
+        python -m pip install --upgrade pip
+        pip install --no-build-isolation -ve .[dev]
+      - name: Lint with mypy
+        run: |
+          mypy
+      - name: Run pytest
+        run: |
+          pytest
+
+  complexity:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - name: Check Python Code Complexity
+      uses: rohaquinlop/complexipy-action@v3
+      with:
+        paths: './src/dist-mat/*.py'  # Analyze the entire repository
+        ignore_complexity: false 
+        output_json: true
