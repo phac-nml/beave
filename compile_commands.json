@@ -1,0 +1,74 @@
+[
+{
+  "directory": "/home/CSCScience.ca/mwells/Development/dist-mat/build/src",
+  "command": "/usr/bin/c++  -I/home/CSCScience.ca/mwells/.local/share/hatch/pythons/3.13/python/include/python3.13 -I/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/include -isystem /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/ext/robin_map/include -fPIC -fvisibility=hidden -fno-strict-aliasing -o CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/nb_internals.cpp.o -c /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/nb_internals.cpp",
+  "file": "/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/nb_internals.cpp",
+  "output": "src/CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/nb_internals.cpp.o"
+},
+{
+  "directory": "/home/CSCScience.ca/mwells/Development/dist-mat/build/src",
+  "command": "/usr/bin/c++  -I/home/CSCScience.ca/mwells/.local/share/hatch/pythons/3.13/python/include/python3.13 -I/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/include -isystem /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/ext/robin_map/include -fPIC -fvisibility=hidden -fno-strict-aliasing -o CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/nb_func.cpp.o -c /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/nb_func.cpp",
+  "file": "/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/nb_func.cpp",
+  "output": "src/CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/nb_func.cpp.o"
+},
+{
+  "directory": "/home/CSCScience.ca/mwells/Development/dist-mat/build/src",
+  "command": "/usr/bin/c++  -I/home/CSCScience.ca/mwells/.local/share/hatch/pythons/3.13/python/include/python3.13 -I/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/include -isystem /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/ext/robin_map/include -fPIC -fvisibility=hidden -fno-strict-aliasing -o CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/nb_type.cpp.o -c /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/nb_type.cpp",
+  "file": "/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/nb_type.cpp",
+  "output": "src/CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/nb_type.cpp.o"
+},
+{
+  "directory": "/home/CSCScience.ca/mwells/Development/dist-mat/build/src",
+  "command": "/usr/bin/c++  -I/home/CSCScience.ca/mwells/.local/share/hatch/pythons/3.13/python/include/python3.13 -I/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/include -isystem /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/ext/robin_map/include -fPIC -fvisibility=hidden -fno-strict-aliasing -o CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/nb_enum.cpp.o -c /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/nb_enum.cpp",
+  "file": "/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/nb_enum.cpp",
+  "output": "src/CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/nb_enum.cpp.o"
+},
+{
+  "directory": "/home/CSCScience.ca/mwells/Development/dist-mat/build/src",
+  "command": "/usr/bin/c++  -I/home/CSCScience.ca/mwells/.local/share/hatch/pythons/3.13/python/include/python3.13 -I/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/include -isystem /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/ext/robin_map/include -fPIC -fvisibility=hidden -fno-strict-aliasing -o CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/nb_ndarray.cpp.o -c /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/nb_ndarray.cpp",
+  "file": "/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/nb_ndarray.cpp",
+  "output": "src/CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/nb_ndarray.cpp.o"
+},
+{
+  "directory": "/home/CSCScience.ca/mwells/Development/dist-mat/build/src",
+  "command": "/usr/bin/c++  -I/home/CSCScience.ca/mwells/.local/share/hatch/pythons/3.13/python/include/python3.13 -I/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/include -isystem /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/ext/robin_map/include -fPIC -fvisibility=hidden -fno-strict-aliasing -o CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/nb_static_property.cpp.o -c /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/nb_static_property.cpp",
+  "file": "/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/nb_static_property.cpp",
+  "output": "src/CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/nb_static_property.cpp.o"
+},
+{
+  "directory": "/home/CSCScience.ca/mwells/Development/dist-mat/build/src",
+  "command": "/usr/bin/c++  -I/home/CSCScience.ca/mwells/.local/share/hatch/pythons/3.13/python/include/python3.13 -I/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/include -isystem /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/ext/robin_map/include -fPIC -fvisibility=hidden -fno-strict-aliasing -o CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/common.cpp.o -c /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/common.cpp",
+  "file": "/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/common.cpp",
+  "output": "src/CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/common.cpp.o"
+},
+{
+  "directory": "/home/CSCScience.ca/mwells/Development/dist-mat/build/src",
+  "command": "/usr/bin/c++  -I/home/CSCScience.ca/mwells/.local/share/hatch/pythons/3.13/python/include/python3.13 -I/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/include -isystem /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/ext/robin_map/include -fPIC -fvisibility=hidden -fno-strict-aliasing -o CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/error.cpp.o -c /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/error.cpp",
+  "file": "/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/error.cpp",
+  "output": "src/CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/error.cpp.o"
+},
+{
+  "directory": "/home/CSCScience.ca/mwells/Development/dist-mat/build/src",
+  "command": "/usr/bin/c++  -I/home/CSCScience.ca/mwells/.local/share/hatch/pythons/3.13/python/include/python3.13 -I/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/include -isystem /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/ext/robin_map/include -fPIC -fvisibility=hidden -fno-strict-aliasing -o CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/trampoline.cpp.o -c /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/trampoline.cpp",
+  "file": "/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/trampoline.cpp",
+  "output": "src/CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/trampoline.cpp.o"
+},
+{
+  "directory": "/home/CSCScience.ca/mwells/Development/dist-mat/build/src",
+  "command": "/usr/bin/c++  -I/home/CSCScience.ca/mwells/.local/share/hatch/pythons/3.13/python/include/python3.13 -I/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/include -isystem /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/ext/robin_map/include -fPIC -fvisibility=hidden -fno-strict-aliasing -o CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/implicit.cpp.o -c /home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/implicit.cpp",
+  "file": "/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/src/implicit.cpp",
+  "output": "src/CMakeFiles/nanobind-static.dir/__/extern/nanobind/src/implicit.cpp.o"
+},
+{
+  "directory": "/home/CSCScience.ca/mwells/Development/dist-mat/build/src",
+  "command": "/usr/bin/c++ -Ddist_mat_EXPORTS -I/home/CSCScience.ca/mwells/.local/share/hatch/pythons/3.13/python/include/python3.13 -I/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/include -fPIC -fvisibility=hidden -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive -ffast-math -ftree-vectorize -funroll-loops -std=c++23 -DPYTHON_BUILD -o CMakeFiles/dist_mat.dir/main.cpp.o -c /home/CSCScience.ca/mwells/Development/dist-mat/src/main.cpp",
+  "file": "/home/CSCScience.ca/mwells/Development/dist-mat/src/main.cpp",
+  "output": "src/CMakeFiles/dist_mat.dir/main.cpp.o"
+},
+{
+  "directory": "/home/CSCScience.ca/mwells/Development/dist-mat/build/src",
+  "command": "/usr/bin/c++ -Ddist_mat_EXPORTS -I/home/CSCScience.ca/mwells/.local/share/hatch/pythons/3.13/python/include/python3.13 -I/home/CSCScience.ca/mwells/Development/dist-mat/extern/nanobind/include -fPIC -fvisibility=hidden -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive -ffast-math -ftree-vectorize -funroll-loops -std=c++23 -DPYTHON_BUILD -o CMakeFiles/dist_mat.dir/py-binding.cpp.o -c /home/CSCScience.ca/mwells/Development/dist-mat/src/py-binding.cpp",
+  "file": "/home/CSCScience.ca/mwells/Development/dist-mat/src/py-binding.cpp",
+  "output": "src/CMakeFiles/dist_mat.dir/py-binding.cpp.o"
+}
+]
