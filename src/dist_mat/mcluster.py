@@ -25,7 +25,6 @@ logging.basicConfig(
 
 
 class LinkageMetrics(StrEnum):
-    WARD = "ward"
     SINGLE = "single"
     AVERAGE = "average"
     CENTROID = "centroid"
