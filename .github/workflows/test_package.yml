@@ -55,6 +55,6 @@ jobs:
     - name: Check Python Code Complexity
       uses: rohaquinlop/complexipy-action@v3
       with:
-        paths: ${{ github.workspace }}/src/dist-mat/*.py  # Analyze the entire repository
+        paths: src/dist-mat/*.py  # Analyze the entire repository
         ignore_complexity: false 
         output_json: true
