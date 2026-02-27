@@ -10,10 +10,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v2.1
-        with:
-          cmake-version: '3.25.x'
+      - name: Install the latest CMake
+        uses: lukka/get-cmake@latest
 
       - name: Set up Python
         # This is the version of the action for setting up Python, not the Python version.
@@ -25,15 +23,25 @@ jobs:
           architecture: 'x64'
           cache: 'pip'
 
+      - name: Install PyTest
+        run: |
+          python -m pip install pytest pytest-github-actions-annotate-failures typing_extensions
+
+      - name: Install NumPy
+        run: |
+          python -m pip install numpy scipy
+
       # You can test your matrix by printing the current Python version
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install cmake
+          pip install scikit-build-core nanobind
           pip install --no-build-isolation -ve .[dev]
+
       - name: Lint with mypy
         run: |
           mypy
+
       - name: Run pytest
         run: |
           pytest
