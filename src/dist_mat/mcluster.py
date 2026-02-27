@@ -3,6 +3,7 @@ Re-implementation of mcluster
 """
 
 import sys
+import typing as t
 import logging
 import pathlib as p
 from enum import StrEnum, Enum
@@ -56,7 +57,12 @@ REPLACE_CHARS = {
 }  # mappings to replace fields with zeroes
 
 
-def _scipy_tree_to_newick_list(node, newick, parentdist, leaf_names):
+def _scipy_tree_to_newick_list(
+    node: sp.cluster.hierarchy.ClusterNode | None,
+    newick: list[str],
+    parentdist: float,
+    leaf_names: list[str],
+) -> list[str]:
     """Construct Newick tree from SciPy hierarchical clustering ClusterNode
 
     This is a recursive function to help build a Newick output string from a scipy.cluster.hierarchy.to_tree input with
@@ -74,6 +80,11 @@ def _scipy_tree_to_newick_list(node, newick, parentdist, leaf_names):
     Returns:
         (list of string): Returns `newick` list of Newick output strings
     """
+
+    if node is None:
+        # TODO need to test that this does not break stuff
+        return newick
+
     if node.is_leaf():
         return newick + [f"{leaf_names[node.id]}:{parentdist - node.dist}"]
 
@@ -88,7 +99,7 @@ def _scipy_tree_to_newick_list(node, newick, parentdist, leaf_names):
     return newick
 
 
-def to_newick(tree, leaf_names) -> str:
+def to_newick(tree: sp.cluster.hierarchy.ClusterNode, leaf_names: list[str]) -> str:
     """Newick tree output string from SciPy hierarchical clustering tree
 
     Convert a SciPy ClusterNode tree to a Newick format string.
@@ -282,9 +293,9 @@ def mcluster(
     tree_output: p.Path,
     cluster_outputs: p.Path,
     tree_distances: BranchLengths,
-    *args,
-    **kwargs,
-):
+    *args: list[t.Any],
+    **kwargs: dict[t.Any, t.Any],
+) -> None:
     """
     Main runner function for mcluster.
     """

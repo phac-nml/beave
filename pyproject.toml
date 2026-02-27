@@ -35,3 +35,10 @@ messages.after-failure = """
 {bold.red}Sorry{normal}, build failed. Your platform is {platform.platform}.
 """
 logging.level = "DEBUG"
+
+
+[tool.mypy]
+exclude = ["^test", "src/dist-mat/test\\.py$"]
+files = ["src/dist_mat/*.py"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true

@@ -20,7 +20,7 @@ class Commands(StrEnum):
     MCLUSTER = "mcluster"
 
 
-def path_exists(file) -> p.Path:
+def path_exists(file: str) -> p.Path:
     fp = p.Path(file)
     if fp.is_file():
         return fp
@@ -28,7 +28,7 @@ def path_exists(file) -> p.Path:
     raise FileNotFoundError
 
 
-def main():
+def main() -> None:
     # specify global arguments shared here
     parent_parser = argparse.ArgumentParser(
         add_help=False,

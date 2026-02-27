@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+# mypy: ignore-errors
 
 import numpy as np
 
@@ -9,7 +10,7 @@ import sys
 import dist_mat
 
 
-def _scipy_tree_to_newick_list(node, newick, parentdist, leaf_names):
+def _scipy_tree_to_newick_list(node, newick, parentdist, leaf_names):  # type: ignore[]
     """Construct Newick tree from SciPy hierarchical clustering ClusterNode
 
     This is a recursive function to help build a Newick output string from a scipy.cluster.hierarchy.to_tree input with
@@ -41,7 +42,7 @@ def _scipy_tree_to_newick_list(node, newick, parentdist, leaf_names):
     return newick
 
 
-def to_newick(tree, leaf_names) -> str:
+def to_newick(tree, leaf_names) -> str:  # type: ignore[]
     """Newick tree output string from SciPy hierarchical clustering tree
 
     Convert a SciPy ClusterNode tree to a Newick format string.
