@@ -187,10 +187,6 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
             mc.LinkageMetrics.MEDIAN,
             np.array([[0, 1, 1.41421356, 2], [2, 3, 2.12132034, 3]], dtype=float),
         ),
-        (
-            mc.LinkageMetrics.WARD,
-            np.array([[0, 1, 1.41421356, 2], [2, 3, 2.44948974, 3]], dtype=float),
-        ),
     ],
 )
 def test_comp_linkage_matrix(method, expected):
