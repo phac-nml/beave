@@ -4,12 +4,23 @@
   - [Citation](#citation)
   - [Contact](#contact)
 - [Install](#install)
+  - [Get Started](#get-started)
   - [Compatibility](#compatibility)
+  - [Python](#python)
+    - [Without Conda](#without-conda)
+    - [With Conda](#with-conda)
+  - [C++](#c++)
 - [Getting Started](#getting-started)
-  - [Usage](#usage)
-  - [Configuration and Settings](#configuration-and-settings)
-  - [Data Input](#data-input)
-  - [Data Output](#data-output)
+  - [Using Python](#using-python)
+    - [Usage](#usage)
+    - [Configuration and Settings](#configuration-and-settings)
+    - [Data Input](#data-input)
+    - [Data Output](#data-output)
+  - [Using C++ Binary](#using-c++-binary)
+    - [Usage](#usage)
+    - [Configuration and Settings](#configuration-and-settings)
+    - [Data Input](#data-input)
+    - [Data Output](#data-output)
 - [Troubleshooting and FAQs](#troubleshooting-and-faqs)
 - [Other information](#other-information)
 - [Legal and Compliance Information](#legal-and-compliance-information)
@@ -18,6 +29,12 @@
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
 # Introduction
+
+## Python CLI
+
+A program for generating genomic nomenclature and newick trees from allelic profiles.
+
+## C++ CLI
 
 This program is under active development and is used for creating distance matrices from allelic profiles, or for comparing groups of isolates against multiple. This program is similar to [cgmlst-dists](https://github.com/tseemann/cgmlst-dists) from Torstein Tseeman, and uses test data from his original program.
 
@@ -31,13 +48,47 @@ _Include how to cite the tool_
 
 ## Install
 
-## Pull the Repository
+## Get Started
+
+Start by pulling the repository.
 
 `git clone https://github.com/mattheww95/dist-mat`
 `git pull --recurse-submodules`
 `git submodule update --init --recursive`
 
-## Building C++ cli
+## Compatibility
+
+`dist-mat` has only been tested on linux, any system that supports g++ can compile the program. As only the C++ 23 standard library is used, the program may be able to be compiled on windows system.
+
+This program relies heavily on the compiler to optimize the program and add SIMD instructions, it is recommended too compile the program on your local computer to get the full benefit of the potential instruction sets your CPU may offer especially if AVX-512 instructions are available.
+
+To build the python package `dist-mat` dependencies are listed in the `pyproject.toml`, python version 3.13 or greater is required, along with scikit-build-core and the nanobind python package.
+
+Runtime dependencies only include numpy >= 2.4.0 and polars >= 1.38.1 and scipy >= 1.17.0. These packages are not required for building the program however.
+
+## Python
+
+### Without Conda
+
+To build and install the python package you must have the following python dependencies, `scikit-build-core` and `nanobind` which can be installed with `pip install nanobind scikit-build-core[pyproject]`.
+
+Developers can run `pip install --no-build-isolation -ve .[dev]` or `pip install --no-build-isolation -Ceditable.rebuild=true -ve .[dev]`. Further examples can be found in the nanobind documentation here [nanobind packaging](https://nanobind.readthedocs.io/en/latest/packaging.html).
+
+To build a wheel that can be distributed instead of installed simply run `pip wheel .`
+
+### With Conda
+
+1. Pull the github repository as described above.
+
+2. Create the conda environment by running `conda env create -f environment.yml`
+
+3. Activate the environment with : `conda activate dist-mat`
+
+4. `pip install .` to install for development `pip install --no-build-isolation -ve .[dev]`
+
+5. Python can then be run with `pytest`.
+
+## C++
 
 This program is written entirely in C++ 23, the only dependencies are a g++ compiler and CMake. Catch2 is required for testing however the library is only required for testing and is managed by CMake, this means an internet connection is required when first building the program.
 
@@ -72,39 +123,69 @@ make -j4
 
 The output binary will be in the debug directory.
 
-## Building the Python Package
-
-### Without Conda
-
-To build and install the python package you must have the following python dependencies, `scikit-build-core` and `nanobind` which can be installed with `pip install nanobind scikit-build-core[pyproject]`.
-
-Developers can run `pip install --no-build-isolation -ve .[dev]` or `pip install --no-build-isolation -Ceditable.rebuild=true -ve .[dev]`. Further examples can be found in the nanobind documentation here [nanobind packaging](https://nanobind.readthedocs.io/en/latest/packaging.html).
-
-To build a wheel that can be distributed instead of installed simply run `pip wheel .`
-
-### With Conda
-
-1. Pull the github repository as described above.
-
-2. Create the conda environment by running `conda env create -f environment.yml`
-
-3. Activate the environment with : `conda activate dist-mat`
-
-4. `pip install .` to install for development `pip install --no-build-isolation -ve .[dev]`
-
-# Compatibility
-
-`dist-mat` has only been tested on linux, any system that supports g++ can compile the program. As only the C++ 23 standard library is used, the program may be able to be compiled on windows system.
-
-This program relies heavily on the compiler to optimize the program and add SIMD instructions, it is recommended too compile the program on your local computer to get the full benefit of the potential instruction sets your CPU may offer especially if AVX-512 instructions are available.
-
-To build the python package `dist-mat` dependencies are listed in the `pyproject.toml`, python version 3.13 or greater is required, along with scikit-build-core and the nanobind python package.
-
-Runtime dependencies only include numpy >= 2.4.0 and polars >= 1.38.1 and scipy >= 1.17.0. These packages are not required for building the program however.
-
 # Getting Started
 
-## Usage
+## Using Python
+
+### Usage
+
+Th main help message for the program is shown below:
+
+```
+>>> dist-mat -h
+usage: dist-mat [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--version] {mcluster} ...
+
+A quick proof of concept of generic utilities for nomenclature assignment.
+
+positional arguments:
+  {mcluster}            Select a program to run.
+    mcluster            Run denovo clustering.
+
+options:
+  -h, --help            show this help message and exit
+  --n-threads, -n N_THREADS
+                        Specify the number of threads to be used. [default 12]
+  --delimiter, -d DELIMITER
+                        Input alleles delimiter. [default \t] (default: )
+  --version, -v         Print version and exit. (default: False)
+
+```
+
+Currently only on program is available: `mcluster` the options for the program are shown below:
+
+```
+>>> dist-mat mcluster --help
+usage: dist-mat mcluster [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] --input INPUT [--tree-output TREE_OUTPUT]
+                         [--cluster-output CLUSTER_OUTPUT] --thresholds THRESHOLDS [THRESHOLDS ...]
+                         [--method {ward,single,average,centroid,median,complete}] [--columns COLUMNS] [--count-missing] [--scaled]
+                         [--tree-distances {patristic,cophenetic}]
+
+options:
+  -h, --help            show this help message and exit
+  --n-threads, -n N_THREADS
+                        Specify the number of threads to be used. [default 12]
+  --delimiter, -d DELIMITER
+                        Input alleles delimiter. [default \t]
+  --input, -i INPUT     Input alleles.
+  --tree-output, -t TREE_OUTPUT
+                        Output tree name. [default clusters.nwk]
+  --cluster-output, -l CLUSTER_OUTPUT
+                        Output clusters file. [default clusters.tsv]
+  --thresholds, -p THRESHOLDS [THRESHOLDS ...]
+                        List of threshold values to use.
+  --method, -m {ward,single,average,centroid,median,complete}
+                        Linkage method to use. [default: average]
+  --columns, -k COLUMNS
+                        A file containing a list of columns to subset from the allele profiles.
+  --count-missing, -c   Count missing values as differences.
+  --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between 0.0-100.0
+  --tree-distances, -b {patristic,cophenetic}
+                        Determine how to display tree lenghts in the newick file. [default cophenetic]
+```
+
+## Using C++ Binary
+
+### Usage
 
 The help message for the program can be brought up by executing as shown below, (-h|--help) can be used to print the help message at any time as well:
 

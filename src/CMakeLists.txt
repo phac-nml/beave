@@ -119,7 +119,7 @@ elseif(TARGET_GROUP STREQUAL python)
   target_compile_options(dist_mat_ext PRIVATE
       -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive
     -ffast-math -ftree-vectorize -funroll-loops -flto
-    -std=c++23 -DPYTHON_BUILD)
+    -std=c++23 -DPYTHON_BUILD) # Benchmark adding -mavx2
 
 
   install(TARGETS dist_mat_ext LIBRARY DESTINATION dist_mat)

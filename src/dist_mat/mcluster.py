@@ -223,7 +223,7 @@ def compute_dists(
 def comp_linkage_matrix(
     profiles_computed: npt.NDArray, linkage_method: str
 ) -> npt.NDArray:
-    linkage = sp.cluster.hierarchy.linkage(profiles_computed, method=linkage_method)
+    linkage = sp.cluster.hierarchy.linkage(profiles_computed, method=linkage_method)  # type: ignore[arg-type]
     return linkage
 
 
