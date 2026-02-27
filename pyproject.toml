@@ -43,3 +43,8 @@ exclude = ["^test", "src/dist-mat/test\\.py$"]
 files = ["src/dist_mat/*.py"]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
+
+
+[tool.complexipy]
+paths = ["src/dist_mat"]
+max-complexity-allowed = 10
