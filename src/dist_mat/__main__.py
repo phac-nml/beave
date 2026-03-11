@@ -25,7 +25,27 @@ def path_exists(file: str) -> p.Path:
     if fp.is_file():
         return fp
     logger.critical(f"Input file does not exist. {file}")
-    raise FileNotFoundError
+    raise FileNotFoundError(f"Input file {file} does not exist.")
+
+
+def percentage_range(f_input: str) -> float:
+    try:
+        coerced_input: float = float(f_input)
+    except ValueError:
+        logger.critical(f"Filter threshold  {f_input} cannot be coerced to a float.")
+        # I do not know if this is the best way to bubble up a handled exception
+        # but it allows me to raise the error without exiting directly and produce
+        # a log message
+        raise ValueError(f"Filter threshold {f_input} cannot be coerced to a float.")
+    else:
+        if coerced_input < 0.00 or coerced_input > 100.0:
+            logger.critical(
+                f"Filter threshold must be between 0.00 and 100.0. You passed: {f_input}"
+            )
+            raise ValueError(
+                f"Filter threshold must be between 0.00 and 100.0. You passed: {f_input}"
+            )
+        return coerced_input
 
 
 def main() -> None:
@@ -137,12 +157,19 @@ def main() -> None:
     )
 
     parser_mcluster.add_argument(
-        # TODO finish implementing logic for selecting the branch lengths
         "--tree-distances",
         "-b",
         default=BranchLengths.COPHENETIC.value,
         choices=[i.value for i in BranchLengths],
         help="Determine how to display tree lenghts in the newick file. [default %(default)s]",
+    )
+
+    parser_mcluster.add_argument(
+        "--filter-threshold",
+        "-f",
+        help="Excluded samples from clustering missing more than a certain percentage of alleles must be between 0.0 and 100.0. [default %(default)s]",
+        default=0.00,
+        type=percentage_range,
     )
 
     args = parser.parse_args(sys.argv[1:])

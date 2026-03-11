@@ -3,9 +3,10 @@ Re-implementation of mcluster
 """
 
 import sys
-import typing as t
 import logging
+import math
 import pathlib as p
+import typing as t
 from enum import StrEnum, Enum
 
 
@@ -27,8 +28,6 @@ logging.basicConfig(
 class LinkageMetrics(StrEnum):
     SINGLE = "single"
     AVERAGE = "average"
-    CENTROID = "centroid"
-    MEDIAN = "median"
     COMPLETE = "complete"
 
 
@@ -191,16 +190,47 @@ def read_input_profiles(
     return profiles
 
 
+def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
+    """
+    Remove rows from the dataframe that have are missing more than
+    the thresholds set limit for missing data.
+
+
+    """
+    if threshold == 0.00:
+        return profiles
+
+    number_of_columns = profiles.width - 1  # -1 to ignore the labels column
+    threshold_columns = math.ceil(number_of_columns * threshold)
+    logger.info(
+        f"Setting filter threshold to excluded columns missing {threshold_columns} or more loci."
+    )
+    rows_before_filtering = profiles.height
+    profiles = profiles.filter(
+        pl.sum_horizontal(
+            pl.all().exclude(profiles.columns[0]) == MISSING_VALUE
+        )  # select all columns but first id col
+        < threshold_columns
+    )
+
+    logger.info(f"Removed {rows_before_filtering - profiles.height} after filtering.")
+
+    return profiles
+
+
 def prep_data(profiles: pl.DataFrame) -> npt.NDArray:
     """
     Prepare profiles for ingestion by the the calc_dists function of dist_mat.
     """
 
     # Can add additonal qc filtering here
-
     data_columns = profiles.columns[1:]  # only apply functions to test columns
     profiles = profiles.with_columns(
-        [pl.col(i).replace(REPLACE_CHARS) for i in data_columns]
+        # TODO drop dead code before merging
+        # [pl.col(i).replace(REPLACE_CHARS) for i in data_columns]
+        pl.all()
+        .exclude(profiles.columns[0])  # skip id column
+        .replace(REPLACE_CHARS)  # want to test this further
     )
 
     profiles = profiles.with_columns(
@@ -284,7 +314,7 @@ def mcluster(
     input: p.Path,
     delimiter: str,
     thresholds: list[float],
-    methods: str,
+    method: str,
     n_threads: int,
     columns: p.Path | None,
     count_missing: bool,
@@ -292,6 +322,7 @@ def mcluster(
     tree_output: p.Path,
     cluster_outputs: p.Path,
     tree_distances: BranchLengths,
+    filter_threshold: float,
     *args: list[t.Any],
     **kwargs: dict[t.Any, t.Any],
 ) -> None:
@@ -303,7 +334,7 @@ def mcluster(
     logger.info("Ingested profiles")
     distances = compute_dists(profiles, count_missing, scaled, n_threads)
     logger.info("Computed distances")
-    linkages = comp_linkage_matrix(distances, methods)
+    linkages = comp_linkage_matrix(distances, method)
     logger.info("Computed linkage matrix")
     thresholds.sort(reverse=True)
     logger.info(f"Thresholds being used for generating linkages: {thresholds}")

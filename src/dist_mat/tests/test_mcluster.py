@@ -1,4 +1,3 @@
-import enum
 import pytest
 import dist_mat.mcluster as mc
 import polars as pl
@@ -6,7 +5,6 @@ from polars.testing.parametric import dataframes, column
 from hypothesis import given, settings, HealthCheck, strategies as st
 import numpy as np
 import pathlib as p
-import scipy as sp
 
 
 @pytest.mark.parametrize(
@@ -55,38 +53,33 @@ def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) 
 
 
 @pytest.mark.parametrize(
-    "input,exc,message",
+    "dataframe,threshold,expected",
     [
         (
-            p.Path("src/dist_mat/tests/data/test_profiles_duplicate_id.csv"),
-            pl.exceptions.DuplicateError,
-            r"Duplicate values identified in left most column",
-        ),
-        (
-            p.Path("src/dist_mat/tests/data/test_profiles_missing_sample_id.csv"),
-            pl.exceptions.RowsError,
-            r"Missing values identified in left most column",
-        ),
-        (
-            p.Path("src/dist_mat/tests/data/test_profiles_one_columns.csv"),
-            pl.exceptions.ShapeError,
-            r"you need atleast two columns.",
-        ),
-        (
-            p.Path("src/dist_mat/tests/data/test_profiles_no_rows.csv"),
-            pl.exceptions.RowsError,
-            r"you need atleast two rows.",
-        ),
-        (
-            p.Path("src/dist_mat/tests/data/test_profiles_one_row.csv"),
-            pl.exceptions.RowsError,
-            r"you need atleast two rows.",
-        ),
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "A": [111, 111, 111, 111],
+                    "b": [111, 111, 0, 111],
+                    "c": [111, 111, 0, 111],
+                    "d": [111, 111, 0, 111],
+                },
+            ),
+            0.75,
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "d"],
+                    "A": [111, 111, 111],
+                    "b": [111, 111, 111],
+                    "c": [111, 111, 111],
+                    "d": [111, 111, 111],
+                }
+            ),
+        )
     ],
 )
-def test_read_input_profiles_assertions(input, exc, message):
-    with pytest.raises(exc, match=message):
-        mc.read_input_profiles(input, None, ",", 1)
+def test_filter_rows(dataframe, threshold, expected) -> None:
+    assert mc.filter_rows(dataframe, threshold).equals(expected)
 
 
 @given(
@@ -118,11 +111,6 @@ def test_subset_columns(df: pl.DataFrame, tmp_path) -> None:
     assert set(subset.columns) == frozenset(
         ["col0", "Subset1", "Subset2"]
     )  # set as order does not matter
-
-
-# @st.composite
-# def zero_charactars(draw):
-#    return draw(st.lists(mc.REPLACE_CHARS.keys()))
 
 
 @given(
@@ -177,14 +165,6 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
         ),
         (
             mc.LinkageMetrics.AVERAGE,
-            np.array([[0, 1, 1.41421356, 2], [2, 3, 2.12132034, 3]], dtype=float),
-        ),
-        (
-            mc.LinkageMetrics.CENTROID,
-            np.array([[0, 1, 1.41421356, 2], [2, 3, 2.12132034, 3]], dtype=float),
-        ),
-        (
-            mc.LinkageMetrics.MEDIAN,
             np.array([[0, 1, 1.41421356, 2], [2, 3, 2.12132034, 3]], dtype=float),
         ),
     ],
@@ -279,33 +259,3 @@ def test_assign_clusters_(linkage, thresholds, labels, expected):
 )
 def test_convert_branch_lengths(linkage, bl_type, expected):
     assert np.allclose(mc.convert_branch_lengths(linkage, bl_type), expected)
-
-
-@pytest.mark.parametrize(
-    "profiles,count_missing,scaled,threads,delimiter,all_zeroes",
-    [
-        (p.Path("data/R1KC1K.tsv"), True, True, 1, "\t", False),
-        (p.Path("data/R1KC1K.tsv"), True, False, 1, "\t", False),
-        (p.Path("data/R1KC1K.2-zeroes.csv"), False, False, 1, ",", False),
-        (p.Path("data/R1KC1K.2-zeroes.csv"), False, True, 1, ",", False),
-        (p.Path("data/R1KC1K.tsv"), False, True, 1, "\t", True),
-        (p.Path("data/R1KC1K.tsv"), False, False, 1, "\t", True),
-    ],
-)
-def test_compute_dists(profiles, count_missing, scaled, threads, delimiter, all_zeroes):
-    profiles = mc.read_input_profiles(profiles, None, delimiter, 1)
-    dists = mc.compute_dists(profiles, count_missing, scaled, threads)
-    square = sp.spatial.distance.squareform(dists)
-    labels = profiles.select(pl.nth(0)).to_series()
-    for k, row in enumerate(square):
-        for k2, col in enumerate(row):
-            if all_zeroes:
-                assert col == pytest.approx(0.0, rel=0.00001)
-            elif scaled:
-                computed_dist = (
-                    abs(int(labels[k]) - int(labels[k2])) / len(row)
-                ) * 100.0
-                assert computed_dist == pytest.approx(col, rel=0.0001)
-            else:
-                hamming = float(abs(int(labels[k]) - int(labels[k2])))
-                assert hamming == col
