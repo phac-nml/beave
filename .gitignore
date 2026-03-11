@@ -10,3 +10,5 @@ compile_commands.json
 .mypy_cache
 .pytest_cache
 .hypothesis
+.complexipy_cache
+example_data
