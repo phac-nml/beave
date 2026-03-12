@@ -55,7 +55,7 @@ _Include how to cite the tool_
 Start by pulling the repository.
 
 `git clone https://github.com/mattheww95/dist-mat`
-`git pull --recurse-submodules`
+
 `git submodule update --init --recursive`
 
 ## Compatibility
@@ -187,6 +187,8 @@ options:
   --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between 0.0-100.0
   --tree-distances, -b {patristic,cophenetic}
                         Determine how to display tree lenghts in the newick file. [default cophenetic]
+ --filter-threshold, -f FILTER_THRESHOLD
+                        Excluded samples from clustering missing more than a certain percentage of alleles must be between 0.0 and 100.0. [default 0.0]
 
 
 >>> # Example programs
