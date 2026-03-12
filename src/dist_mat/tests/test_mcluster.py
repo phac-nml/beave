@@ -1,3 +1,7 @@
+"""
+Missing tests for calc_dists still
+"""
+
 import pytest
 import dist_mat.mcluster as mc
 import polars as pl
@@ -75,7 +79,28 @@ def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) 
                     "d": [111, 111, 111],
                 }
             ),
-        )
+        ),
+        (
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "A": [111, 111, 111, 111],
+                    "b": [111, 111, 0, 111],
+                    "c": [111, 111, 0, 111],
+                    "d": [111, 111, 0, 111],
+                },
+            ),
+            0.00,
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "A": [111, 111, 111, 111],
+                    "b": [111, 111, 0, 111],
+                    "c": [111, 111, 0, 111],
+                    "d": [111, 111, 0, 111],
+                }
+            ),
+        ),
     ],
 )
 def test_filter_rows(dataframe, threshold, expected) -> None:
@@ -148,7 +173,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
     array = np.zeros((profiles.height, 3), dtype=np.uint32)  # array should all be zeros
     for i in array:
         i[2] = np.uint32(2683474508)  # last value should be the hashed version of "A"
-    output = mc.prep_data(profiles)
+    output = mc.prep_data(profiles, 0.00)
     assert np.array_equal(output, array)
 
 

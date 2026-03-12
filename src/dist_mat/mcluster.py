@@ -218,16 +218,15 @@ def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     return profiles
 
 
-def prep_data(profiles: pl.DataFrame) -> npt.NDArray:
+def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     """
-    Prepare profiles for ingestion by the the calc_dists function of dist_mat.
+    Transform the dataframe of profiles by hashing the entries, converting missing allele
+    charactars to zeroes and filtering rows.
     """
 
     # Can add additonal qc filtering here
     data_columns = profiles.columns[1:]  # only apply functions to test columns
     profiles = profiles.with_columns(
-        # TODO drop dead code before merging
-        # [pl.col(i).replace(REPLACE_CHARS) for i in data_columns]
         pl.all()
         .exclude(profiles.columns[0])  # skip id column
         .replace(REPLACE_CHARS)  # want to test this further
@@ -242,6 +241,18 @@ def prep_data(profiles: pl.DataFrame) -> npt.NDArray:
         ]
     )
 
+    profiles = filter_rows(profiles, threshold)
+    return profiles
+
+
+def prep_data(profiles: pl.DataFrame, threshold: float) -> npt.NDArray:
+    """
+    Prepare profiles for ingestion by the the calc_dists function of dist_mat.
+    """
+
+    data_columns = profiles.columns[1:]  # only apply functions to test columns
+    profiles = transform_data(profiles, threshold)
+
     profiles_numpy = profiles.select([pl.col(i) for i in data_columns]).to_numpy()
     profiles_numpy = profiles_numpy.astype(
         np.uint32
@@ -250,12 +261,16 @@ def prep_data(profiles: pl.DataFrame) -> npt.NDArray:
 
 
 def compute_dists(
-    profiles: pl.DataFrame, count_missing: bool, scaled: bool, threads: int
+    profiles: pl.DataFrame,
+    count_missing: bool,
+    scaled: bool,
+    threads: int,
+    filter_threshold: float,
 ) -> npt.NDArray:
     """
     Compute the 1D array required by scipy for generation of the linkage matrix.
     """
-    prepared_profiles = prep_data(profiles)
+    prepared_profiles = prep_data(profiles, filter_threshold)
     distances = dm.calc_dists(prepared_profiles, threads, scaled, count_missing)
     return distances
 
@@ -332,7 +347,9 @@ def mcluster(
 
     profiles = read_input_profiles(input, columns, delimiter, n_threads)
     logger.info("Ingested profiles")
-    distances = compute_dists(profiles, count_missing, scaled, n_threads)
+    distances = compute_dists(
+        profiles, count_missing, scaled, n_threads, filter_threshold
+    )
     logger.info("Computed distances")
     linkages = comp_linkage_matrix(distances, method)
     logger.info("Computed linkage matrix")

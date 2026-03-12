@@ -192,6 +192,7 @@ def main() -> None:
                 args.tree_output,
                 args.cluster_output,
                 args.tree_distances,
+                args.filter_threshold,
             )
         case _:
             parser.print_help()
