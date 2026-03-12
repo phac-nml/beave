@@ -213,7 +213,9 @@ def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
         < threshold_columns
     )
 
-    logger.info(f"Removed {rows_before_filtering - profiles.height} after filtering.")
+    logger.info(
+        f"Removed {rows_before_filtering - profiles.height} rows after filtering."
+    )
 
     return profiles
 
