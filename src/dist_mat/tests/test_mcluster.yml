@@ -86,6 +86,41 @@
     - path: clusters.tsv
       should_exist: true
 
+- name: Run mcluster threshold should fail due to negative number being passed
+  tags:
+    - should fail
+  # need to add tests passing values to thresholds like 0.1.0
+  command: dist-mat mcluster --input data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d , -f -1
+  exit_code: 2
+  files:
+    - path: "tree.out"
+      should_exist: false
+    - path: clusters.tsv
+      should_exist: false
+
+- name: Run mcluster threshold should fail due to high threshold
+  tags:
+    - should fail
+  exit_code: 2
+  # need to add tests passing values to thresholds like 0.1.0
+  command: dist-mat mcluster --input data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d , -f 101
+  files:
+    - path: "tree.out"
+      should_exist: false
+    - path: clusters.tsv
+      should_exist: false
+
+- name: Run mcluster threshold should pass
+  tags:
+    - should pass
+  # need to add tests passing values to thresholds like 0.1.0
+  command: dist-mat mcluster --input data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d , -f 50.0
+  files:
+    - path: "tree.out"
+      should_exist: true
+    - path: clusters.tsv
+      should_exist: true
+
 - name: Run mcluster file does not exist
   tags:
     - should fail
