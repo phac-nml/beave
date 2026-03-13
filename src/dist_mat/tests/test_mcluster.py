@@ -4,9 +4,11 @@ Missing tests for calc_dists still
 
 import pytest
 import dist_mat.mcluster as mc
+import dist_mat as dm
 import polars as pl
 from polars.testing.parametric import dataframes, column
 from hypothesis import given, settings, HealthCheck, strategies as st
+from hypothesis.extra import numpy as nps
 import numpy as np
 import pathlib as p
 
@@ -411,3 +413,42 @@ def test_assign_clusters_(linkage, thresholds, labels, expected):
 )
 def test_convert_branch_lengths(linkage, bl_type, expected):
     assert np.allclose(mc.convert_branch_lengths(linkage, bl_type), expected)
+
+
+@pytest.mark.parametrize(
+    "profiles,count_missing,scaled,expected",
+    [
+        (
+            np.array([[np.uint32(1), np.uint32(0)], [np.uint32(0), np.uint32(1)]]),
+            False,
+            True,
+            np.array([np.float32(100.0)]),
+        ),
+        (
+            np.array([[np.uint32(1), np.uint32(0)], [np.uint32(0), np.uint32(1)]]),
+            True,
+            True,
+            np.array([np.float32(100.0)]),
+        ),
+        (
+            np.array([[np.uint32(0), np.uint32(0)], [np.uint32(0), np.uint32(0)]]),
+            False,
+            True,
+            np.array([np.float32(100.0)]),
+        ),
+    ],
+)
+def test_calc_dists(profiles, count_missing, scaled, expected):
+    output = dm.calc_dists(profiles, 1, scaled, count_missing)
+    assert np.array_equal(output, expected)
+
+
+@given(
+    arr=nps.arrays(
+        dtype=np.uint32,
+        shape=(1000, 100),
+    )
+)
+def test_calc_dists_fuzzing_hypothesis(arr):
+    output = np.isfinite(dm.calc_dists(arr, 1, True, False))
+    assert np.all(output)
