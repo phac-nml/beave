@@ -36,8 +36,13 @@ float _hamming_distance(const uint32_t *__restrict__ p1_data,
 
   dist_out = static_cast<float>(dist);
   if (scaled) {
-    dist_out = (static_cast<float>(dist) / static_cast<float>(compared_sites)) *
-               100.0f;
+    if (compared_sites) {
+      dist_out =
+          (static_cast<float>(dist) / static_cast<float>(compared_sites)) *
+          100.0f;
+    } else {
+      dist_out = 100.0f;
+    }
   }
 
   return dist_out;
