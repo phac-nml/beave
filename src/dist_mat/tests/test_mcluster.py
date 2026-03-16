@@ -10,7 +10,9 @@ from polars.testing.parametric import dataframes, column
 from hypothesis import given, settings, HealthCheck, strategies as st
 from hypothesis.extra import numpy as nps
 import numpy as np
+from numpy import typing as npt
 import pathlib as p
+import scipy as sp
 
 
 @pytest.mark.parametrize(
@@ -452,3 +454,32 @@ def test_calc_dists(profiles, count_missing, scaled, expected):
 def test_calc_dists_fuzzing_hypothesis(arr):
     output = np.isfinite(dm.calc_dists(arr, 1, True, False))
     assert np.all(output)
+
+
+@pytest.mark.parametrize(
+    "input,scaled,count_missing",
+    [
+        (p.Path("data/R1KC1K.tsv"), True, True),
+        (p.Path("data/R1KC1K.tsv"), False, True),
+        (p.Path("data/R1KC1K.tsv"), False, True),
+    ],
+)
+def test_calc_dists_file_inputs(input, scaled, count_missing):
+    profiles: pl.DataFrame = mc.read_input_profiles(input, None, "\t", 1)
+    dists: npt.NDArray = mc.compute_dists(profiles, count_missing, scaled, 1)
+    matrix: npt.NDArray = sp.spatial.distance.squareform(
+        dists
+    )  # conversion to squareform so iteration of the matrix is simpler as we do not need to calculate the
+    # column and row index from the output condensed array.
+    #
+    for i in range(0, profiles.height):
+        sample1: int = int(profiles.item(i, "sample"))
+        for f in range(0, profiles.height):
+            sample2: int = int(profiles.item(f, "sample"))
+            if scaled:
+                dist: float = (abs(sample1 - sample2) / float(profiles.height)) * 100.0
+                assert dist == pytest.approx(matrix[i][f], rel=1e-6)
+            else:
+                assert float(abs(sample1 - sample2)) == pytest.approx(
+                    matrix[i][f], rel=1e-6
+                )
