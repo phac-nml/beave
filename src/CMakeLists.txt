@@ -112,7 +112,6 @@ elseif(TARGET_GROUP STREQUAL python-avx512)
 
   find_package(nanobind CONFIG REQUIRED)
 
-
   nanobind_add_module(
       dist_mat_ext
       STABLE_ABI
@@ -123,7 +122,8 @@ elseif(TARGET_GROUP STREQUAL python-avx512)
   target_compile_options(dist_mat_ext PRIVATE
       -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive
     -ffast-math -ftree-vectorize -funroll-loops -flto
-    -std=c++23 -DPYTHON_BUILD -mavx512f -mavx512dq -mavx512bw -mavx512vl -fopt-info-vec-optimized)
+    -std=c++23 -DPYTHON_BUILD -mavx512f -mavx512dq
+    -mavx512bw -mavx512vl -fopt-info-vec-optimized)
 
   install(TARGETS dist_mat_ext LIBRARY DESTINATION dist_mat)
 

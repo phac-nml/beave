@@ -45,7 +45,7 @@ elseif(TARGET_GROUP STREQUAL test)
   fetchcontent_makeavailable(Catch2)
   add_subdirectory(src)
 
-elseif(TARGET_GROUP STREQUAL python)
+elseif(TARGET_GROUP STREQUAL python OR TARGET_GROUP STREQUAL python-avx512)
 
   if(NOT SKBUILD)
     message(WARNING "\
