@@ -28,7 +28,11 @@ dev = [
 [tool.scikit-build]
 minimum-version = "0.8"
 build-dir = "build/{wheel_tag}"
-wheel.py-api = "cp312" # build wheels for stable API Cpython 3.12+
+wheel.py-api = "cp312"          # build wheels for stable API Cpython 3.12+
+
+# To build avx512 build run: pip install --no-build-isolation 
+# --config-settings=cmake.define.TARGET_GROUP="python-avx512" 
+# --config-settings=cmake.args= -ve .[dev] 
 cmake.args = ["-DTARGET_GROUP=python"]
 cmake.version = ">=3.26.1"
 messages.after-success = "{green}Wheel successfully built"
