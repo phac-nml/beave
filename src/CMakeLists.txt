@@ -6,6 +6,12 @@ if(TARGET_GROUP STREQUAL release)
   set_target_properties(dist-mat PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/release"
 )
+elseif(TARGET_GROUP STREQUAL release-avx512)
+  add_executable(dist-mat ${SOURCES})
+  target_include_directories(dist-mat PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+  set_target_properties(dist-mat PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/release-avx512"
+)
 elseif(TARGET_GROUP STREQUAL test)
 
   add_executable(tests-catch2 test.cpp)
@@ -97,7 +103,38 @@ elseif(TARGET_GROUP STREQUAL test)
     to $<TARGET_FILE_DIR:tests-exe>"
   )
 
-  # TODO need to add benchmarks for disabling -ffast-math
+elseif(TARGET_GROUP STREQUAL python-avx512)
+
+  set(CMAKE_CXX_COMPILER "g++")
+  find_package(Python 3.13
+      REQUIRED COMPONENTS Interpreter Development.Module
+      ${SKBUILD_SABI_COMPONENT})
+
+  find_package(nanobind CONFIG REQUIRED)
+
+
+  nanobind_add_module(
+      dist_mat_ext
+      STABLE_ABI
+      NB_STATIC
+      ./dist_mat.cpp ./main.cpp ./main.hpp
+  )
+
+  target_compile_options(dist_mat_ext PRIVATE
+      -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive
+    -ffast-math -ftree-vectorize -funroll-loops -flto
+    -std=c++23 -DPYTHON_BUILD -mavx512f -mavx512dq -mavx512bw -mavx512vl -fopt-info-vec-optimized)
+
+  install(TARGETS dist_mat_ext LIBRARY DESTINATION dist_mat)
+
+  install(FILES
+    dist_mat/py.typed
+    # name must match the name of the file in the imported
+    # E.G. function is defined in __init__.py so annotation file in __init__.py
+    dist_mat/__init__.pyi
+    DESTINATION dist_mat)
+
+
 elseif(TARGET_GROUP STREQUAL python)
 
   set(CMAKE_CXX_COMPILER "g++")
@@ -129,9 +166,6 @@ elseif(TARGET_GROUP STREQUAL python)
     # E.G. function is defined in __init__.py so annotation file in __init__.py
     dist_mat/__init__.pyi
     DESTINATION dist_mat)
-
-
-
 
 
 else()
