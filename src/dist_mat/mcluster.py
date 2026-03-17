@@ -267,7 +267,7 @@ def compute_dists(
     count_missing: bool,
     scaled: bool,
     threads: int,
-    filter_threshold: float,
+    filter_threshold: float = 0.0,
 ) -> npt.NDArray:
     """
     Compute the 1D array required by scipy for generation of the linkage matrix.
