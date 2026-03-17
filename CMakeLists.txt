@@ -27,7 +27,8 @@ elseif(TARGET_GROUP STREQUAL release-avx512)
   set(CMAKE_CXX_FLAGS
   "-Wall -Wextra -g -O3 -mfpmath=sse -flto \
   -ffast-math -ftree-vectorize -funroll-loops \
-  -fopt-info-vec-optimized -std=c++23 -mavx512f -mavx512dq -mavx512bw -mavx512vl -fopt-info-vec-optimized")
+  -fopt-info-vec-optimized -std=c++23 -mavx512f -mavx512dq \
+  -mavx512bw -mavx512vl -fopt-info-vec-optimized -mprefer-vector-width=512")
   add_subdirectory(src)
 
 elseif(TARGET_GROUP STREQUAL python-avx512)

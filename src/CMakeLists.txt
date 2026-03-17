@@ -122,7 +122,7 @@ elseif(TARGET_GROUP STREQUAL python-avx512)
   target_compile_options(dist_mat_ext PRIVATE
       -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive
     -ffast-math -ftree-vectorize -funroll-loops -flto
-    -std=c++23 -DPYTHON_BUILD -mavx512f -mavx512dq
+    -std=c++23 -DPYTHON_BUILD -mavx512f -mavx512dq -mprefer-vector-width=512
     -mavx512bw -mavx512vl -fopt-info-vec-optimized)
 
   install(TARGETS dist_mat_ext LIBRARY DESTINATION dist_mat)
