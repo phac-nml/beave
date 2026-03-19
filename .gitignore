@@ -1,0 +1,14 @@
+build
+benchmark
+*.pyc
+*.whl
+__pycache__
+.venv
+*.nwk
+compile_commands.json
+.cache
+.mypy_cache
+.pytest_cache
+.hypothesis
+.complexipy_cache
+example_data

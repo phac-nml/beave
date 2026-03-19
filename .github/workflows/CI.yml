@@ -1,0 +1,60 @@
+name: Python package
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: 'recursive'
+
+      - name: Install the latest CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Set up Python
+        # This is the version of the action for setting up Python, not the Python version.
+        uses: actions/setup-python@v6
+        with:
+          # Semantic version range syntax or exact version of a Python version
+          python-version: '3.14'
+          # Optional - x64 or x86 architecture, defaults to x64
+          architecture: 'x64'
+          cache: 'pip'
+
+      - name: Install PyTest
+        run: |
+          python -m pip install pytest pytest-github-actions-annotate-failures typing_extensions
+
+      - name: Install NumPy
+        run: |
+          python -m pip install numpy scipy
+
+      # You can test your matrix by printing the current Python version
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install scikit-build-core nanobind
+          pip install --no-build-isolation -ve .[dev]
+
+      - name: Lint with mypy
+        run: |
+          mypy
+
+      - name: Run pytest
+        run: |
+          pytest
+
+  complexity:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - name: Check Python Code Complexity
+      uses: rohaquinlop/complexipy-action@v3
+      with:
+        paths: '.'  # Analyze the entire repository
+        ignore_complexity: false 
+        output_json: true
