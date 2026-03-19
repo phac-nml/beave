@@ -1,4 +1,0 @@
-[pytest]
-minversion = "9.0"
-testpaths = ["src/dist_mat/tests"]
-addopts = ["-s", "-v", "--git-aware"]
