@@ -15,7 +15,7 @@ import scipy as sp
     "input,columns_keep,delimiter,threads,expected",
     [
         (
-            p.Path("src/dist_mat/tests/data/test_profiles.csv"),
+            p.Path("src/dist_mat/tests/data/simple_test_profiles.csv"),
             None,
             ",",
             1,
@@ -29,7 +29,7 @@ import scipy as sp
             ),
         ),
         (
-            p.Path("src/dist_mat/tests/data/test_profiles.tsv"),
+            p.Path("src/dist_mat/tests/data/simple_test_profiles.tsv"),
             None,
             "\t",
             1,
@@ -48,8 +48,6 @@ import scipy as sp
 def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) -> None:
     """
     Tests for loading of the input profiles
-
-    TODO add tests for nulls and other types
     """
 
     input_profiles = mc.read_input_profiles(input, columns_keep, delimiter, threads)

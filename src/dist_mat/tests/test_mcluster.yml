@@ -56,6 +56,9 @@
       should_exist: false
     - path: clusters.tsv
       should_exist: false
+  stderr:
+    contains:
+      - "dist-mat mcluster: error: argument --thresholds/-p: invalid float value: '0.1.0'"
 
 - name: Run mcluster pass cophenetic fail thresholds missing argument
   tags:
@@ -67,6 +70,9 @@
       should_exist: false
     - path: clusters.tsv
       should_exist: false
+  stderr:
+    contains:
+      - "dist-mat mcluster: error: argument --thresholds/-p: expected at least one argument"
 
 - name: Run mcluster csv
   tags:
@@ -88,6 +94,9 @@
       should_exist: false
     - path: clusters.tsv
       should_exist: false
+  stderr:
+    contains:
+      - "dist-mat mcluster: error: argument --filter-threshold/-f: invalid percentage_range value: '-1'"
 
 - name: Run mcluster threshold should fail due to high threshold
   tags:
@@ -99,6 +108,9 @@
       should_exist: false
     - path: clusters.tsv
       should_exist: false
+  stderr:
+    contains:
+      - "dist-mat mcluster: error: argument --filter-threshold/-f: invalid percentage_range value: '101'"
 
 - name: Run mcluster threshold should pass
   tags:
@@ -120,3 +132,20 @@
       should_exist: false
     - path: clusters.tsv
       should_exist: false
+  stderr:
+    contains:
+      - "FileNotFoundError: Input file data/R1KC1K.2-zeroes.does-not-exist.csv does not exist."
+
+- name: Run mcluster id contains null value
+  tags:
+    - should fail
+  command: dist-mat mcluster --input src/dist_mat/tests/data/test_profiles_null_in_id_column.csv -d, -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5
+  exit_code: 1
+  files:
+    - path: "tree.out"
+      should_exist: false
+    - path: clusters.tsv
+      should_exist: false
+  stderr:
+    contains:
+      - "polars.exceptions.RowsError: Missing values identified in left most column (ID column), left most column can have no missing values."
