@@ -18,7 +18,7 @@ enum Program { FASTMATCH, MATRIX };
  * @param profiles The number of profiles to be processed
  * @param threads the number of threads used by the program
  *
- * @return A vector of indexes containing the ranges of samples to be dispatched
+ * @return A vector of indexes containing the ranges of samples to be patitioned
  *
  * @details
  * The number of threads is handled externally by the program, therefore
@@ -54,7 +54,7 @@ std::vector<size_t> sample_ranges(size_t profiles, size_t threads) {
  * @param count_missing A boolean value determining if missing values e.g. those
  * set to 0 should be counted as differences.
  *
- * @return The function returns a union type of `Output` too allow for the same
+ * @return The function returns a union type of `Output` to allow for the same
  * function to be used for both scaled and un-scaled distances.
  *
  * @details
@@ -123,7 +123,9 @@ Output hamming_distance(const std::vector<uint32_t> &p1,
  * @param profile_data A reference to the passed in profiles.
  * @param output_matrix A refernce to the matrix handling the final results.
  *
- * @return No return value the function works through side effects as the final
+ * @return None
+ *
+ * @post No return value the function works through side effects as the final
  * matrix is shared betweent threads.
  *
  * @details
@@ -156,16 +158,17 @@ void populate_dist_matrix(
  * of references.
  *
  * @param start The start index to begin profile calculations.
- * @param end The end set of profiles to match up too, e.g. the size of the
+ * @param end The end set of profiles to match up to, e.g. the size of the
  * query set.
- * @param scaled Tell the program to print the scaled distance.
- * @param count_missing A boolean flag passed to `hamming_distance` which will
- * tell the program to count missing values as differences
+ * @param scaled Tell the program whether or not to use scaled distances.
+ * @param count_missing Whether or not to count missing values as differences
  * @param query_names The query names to be printed along side the output
  * samples
  * @param query_data The query data to be matched against
  *
- * @return Returns no value, output stream is instead updated.
+ * @return None
+ *
+ * @post Calculated distances are written to output stream
  *
  *
  * @details
@@ -188,9 +191,6 @@ void fast_match_func(size_t start, size_t end, const bool scaled,
                      const bool count_missing,
                      const std::vector<std::string> &query_names,
                      const std::vector<std::vector<uint32_t>> &query_data) {
-  // TODO once tests and benchmarks are setup some kind of dynamic dispatch
-  // for the outputs written outputs should be tested either through partial
-  // functions or using std::variant
   std::ostringstream local_buffer;
   if (scaled) {
     for (size_t i = start; i < end; i++) {
@@ -220,7 +220,9 @@ void fast_match_func(size_t start, size_t end, const bool scaled,
  * @param output_matrix The calculated distance matrix.
  * @param profiles The labels associated with each output result.
  *
- * @return Writes to stdout.
+ * @return None
+ *
+ * @post Writes to stdout
  *
  * @details
  * This function writes the final distance matrix to standard output, the logic
@@ -264,9 +266,8 @@ void write_scaled(std::vector<Output> &output_matrix,
  *
  * @details
  * This function writes the final distance matrix to standard output, the logic
- * for this function and the one for writing the scaled distance is identical
- * and will likely be refactored in the future. This function is called after
- * the `populate_dist_matrix` has been called.
+ * for this function and the one for writing the scaled distance is identical.
+ * This function is called after the `populate_dist_matrix` has been called.
  *
  * @usage
  *
@@ -368,10 +369,11 @@ void print_help() {
 }
 
 /**
- * @brief Convert the passed profiles into the required data structures for
- * processing.
+ * @brief Convert the passed profiles into the required vectors used for data
+ * processing. One containing the labels and the other containing the allelic
+ * data.
  *
- * @param file The file containing the passed profiles to be used.
+ * @param file The file path containing the passed profiles to be used.
  * @param data_names An initialized vector for populating the profile names.
  * @param data_profiles An initialized vector to be populated with the hashed
  * allelic profiles.
@@ -383,7 +385,7 @@ void print_help() {
  * @return The header of the file passed.
  *
  * @details
- * This function is responsible for ingestion of the passed input file. It
+ * This function is responsible for reading the passed input file. It
  * populates the required vectors which contain the data and returns the headers
  * line of the file. The header column is returned so that it can be compared to
  * the header of the second file used by fast matching for verification of a
@@ -438,13 +440,13 @@ std::string read_profiles(const char *file,
   fo.close();
   if (data_names.size() != data_profiles.size()) {
     throw std::length_error(
-        "number of profiles names does not match number of profiles ingested.");
+        "number of profiles names does not match number of profiles loaded.");
   }
   return header;
 }
 
 /**
- *@brief Retrieve the index ranges required for dispatch of each range of
+ *@brief Retrieve the index ranges required for partion of each range of
  * samples to a given thread.
  *
  * @param threads The number of threads passed to the program.

@@ -37,10 +37,26 @@ class BranchLengths(StrEnum):
 
 
 class LinkageMatrixFields(Enum):
-    OBS1 = 0
-    OBS2 = 1
-    DISTANCE = 2
-    NUM_OBSERVATIONS = 3
+    """
+    From the scipy docs:
+
+    A by 4 matrix Z is returned. At the i-th iteration, clusters with indices
+    Z[i, 0] and Z[i, 1] are combined to form cluster n+1. A cluster with an
+    index less than n corresponds to one of the original observations. The
+    distance between clusters Z[i, 0] and Z[i, 1] is given by Z[i, 2].
+    The fourth value Z[i, 3] represents the number of original observations in
+    the newly formed cluster.
+
+    """
+
+    OBS1 = 0  # Observation 1, can be a sample or formed cluster
+    OBS2 = (
+        1  # Observation 2, this is a sample or cluster that is being combined wit OBS 1
+    )
+    DISTANCE = 2  # This is the distance between OBS1 and OBS2
+    NUM_OBSERVATIONS = (
+        3  # This value represents the number of orignal observations in the new cluster
+    )
 
 
 MISSING_VALUE = np.uint32(0)
@@ -51,7 +67,6 @@ REPLACE_CHARS = {
     "": MISSING_VALUE,
     "_": MISSING_VALUE,
     "0": MISSING_VALUE,
-    # pl.Null: missing_value,
 }  # mappings to replace fields with zeroes
 
 
@@ -80,7 +95,6 @@ def _scipy_tree_to_newick_list(
     """
 
     if node is None:
-        # TODO need to test that this does not break stuff
         return newick
 
     if node.is_leaf():
@@ -132,14 +146,12 @@ def read_input_profiles(
     input: p.Path, columns_keep: p.Path | None, delimiter: str, threads: int
 ) -> pl.DataFrame:
     """
-    Ingest the allelic profiles and perform any filtering and conversions required.
+    Read the allelic profiles and perform any filtering and conversions required.
 
     Check for nulls in sample id column and enforces uniqueness
 
-    Maybe faster to set the `null_values` option in polars for specifying what values are null rather then
-    subsetting later.
 
-    Polars mangles columns with ptotential duplicate names on ingestion, potential bug*
+    Polars mangles columns with ptotential duplicate names on loading, potential bug*
     """
 
     profiles = pl.read_csv(
@@ -153,35 +165,35 @@ def read_input_profiles(
     )
     if profiles.shape[1] <= 1:
         logger.critical(
-            f"Only {profiles.shape[1]} in allele profiles, you need atleast two columns."
+            f"Only {profiles.shape[1]} in allele profiles, you need atleast two loci columns."
         )
         raise pl.exceptions.ShapeError(
-            f"Only {profiles.shape[1]} in allele profiles, you need atleast two columns."
+            f"Only {profiles.shape[1]} in allele profiles, you need atleast two loci columns."
         )
 
     if profiles.shape[0] <= 1:
         logger.critical(
-            f"Only {profiles.shape[0]} in allele profiles, you need atleast two rows."
+            f"Only {profiles.shape[0]} in allele profiles, you need atleast two sample rows."
         )
         raise pl.exceptions.RowsError(
-            f"Only {profiles.shape[0]} in allele profiles, you need atleast two rows."
+            f"Only {profiles.shape[0]} in allele profiles, you need atleast two sample rows."
         )
 
     # Cannot use null_count in polars for this, as we convert all null values into empty strings
     if profiles.select((pl.nth(0) == "").sum())[0, 0] >= 1:
         logger.critical(
-            "Missing values identified in left most column, left most column can have no missing values."
+            "Missing values identified in left most column (ID column), left most column can have no missing values."
         )
         raise pl.exceptions.RowsError(
-            "Missing values identified in left most column, left most column can have no missing values."
+            "Missing values identified in left most column (ID column), left most column can have no missing values."
         )
 
     if not profiles.select(pl.nth(0)).is_unique().all():
         logger.critical(
-            "Duplicate values identified in left most column, leftmost column can have no missing values."
+            "Duplicate values identified in left most column (ID column), leftmost column can have no missing values."
         )
         raise pl.exceptions.DuplicateError(
-            "Duplicate values identified in left most column, leftmost column can have no missing values."
+            "Duplicate values identified in left most column (ID column), leftmost column can have no missing values."
         )
 
     if columns_keep is not None:
@@ -227,11 +239,11 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     """
 
     # Can add additonal qc filtering here
-    data_columns = profiles.columns[1:]  # only apply functions to test columns
+    data_columns = profiles.columns[1:]  # only apply functions to loci columns
     profiles = profiles.with_columns(
         pl.all()
         .exclude(profiles.columns[0])  # skip id column
-        .replace(REPLACE_CHARS)  # want to test this further
+        .replace(REPLACE_CHARS)
     )
 
     profiles = profiles.with_columns(
@@ -249,10 +261,10 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
 
 def prep_data(profiles: pl.DataFrame, threshold: float) -> npt.NDArray:
     """
-    Prepare profiles for ingestion by the the calc_dists function of dist_mat.
+    Prepare profiles for computation by the the calc_dists function of dist_mat.
     """
 
-    data_columns = profiles.columns[1:]  # only apply functions to test columns
+    data_columns = profiles.columns[1:]  # only apply functions to loci columns
     profiles = transform_data(profiles, threshold)
 
     profiles_numpy = profiles.select([pl.col(i) for i in data_columns]).to_numpy()
@@ -288,9 +300,9 @@ def assign_clusters(
     linkage: npt.NDArray, thresholds: list[int | float], labels: list[str]
 ) -> pl.DataFrame:
     """
-    Roll the new cluster membership code.
+    Generate the new cluster membership code for all samples at each threshold.
 
-    Thresholds are assumed to be sorted on input
+    Thresholds are assumed to be sorted in descending order e.g [10.0, 5.0, 1.0]
     """
 
     data_to_populate = [pl.Series(name="SampleID", values=labels)]
@@ -307,11 +319,14 @@ def assign_clusters(
                 dtype=pl.UInt32,
             )
         )
+
         cols_concat.append(col_name)
+
     outputs = pl.DataFrame(data_to_populate, orient="col")
     outputs = outputs.with_columns(
         pl.concat_str(cols_concat, separator=".").alias("denovo_address")
     )
+
     return outputs
 
 
@@ -348,7 +363,7 @@ def mcluster(
     """
 
     profiles = read_input_profiles(input, columns, delimiter, n_threads)
-    logger.info("Ingested profiles")
+    logger.info("Loaded profiles")
     distances = compute_dists(
         profiles, count_missing, scaled, n_threads, filter_threshold
     )

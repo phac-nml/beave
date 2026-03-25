@@ -49,7 +49,7 @@ def percentage_range(f_input: str) -> float:
 
 
 def main() -> None:
-    # specify global arguments shared here
+    # Global command-line arguments:
     parent_parser = argparse.ArgumentParser(
         add_help=False,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -101,7 +101,7 @@ def main() -> None:
     parser_mcluster.add_argument(
         "--tree-output",
         "-t",
-        help="Output tree name. [default %(default)s]",
+        help="File path to write generated tree. [default %(default)s]",
         type=p.Path,
         required=False,
         default="clusters.nwk",
@@ -110,7 +110,7 @@ def main() -> None:
     parser_mcluster.add_argument(
         "--cluster-output",
         "-l",
-        help="Output clusters file. [default %(default)s]",
+        help="File path to write generated clusters. [default %(default)s]",
         type=p.Path,
         required=False,
         default="clusters.tsv",
@@ -130,14 +130,14 @@ def main() -> None:
         "--method",
         "-m",
         default=LinkageMetrics.AVERAGE.value,
-        help="Linkage method to use. [default: %(default)s]",
+        help="Hierarchical clustering linkage to use. [default: %(default)s]",
         choices=[i.value for i in LinkageMetrics],
     )
 
     parser_mcluster.add_argument(
         "--columns",
         "-k",
-        help="A file containing a list of columns to subset from the allele profiles.",
+        help="A file containing a single column of the column names to subset from the passed allele profiles.",
         type=p.Path,
         required=False,
     )
@@ -145,7 +145,7 @@ def main() -> None:
     parser_mcluster.add_argument(
         "--count-missing",
         "-c",
-        help="Count missing values as differences.",
+        help="Count missing values in allele profiles differences.",
         action="store_true",
     )
 
@@ -167,7 +167,7 @@ def main() -> None:
     parser_mcluster.add_argument(
         "--filter-threshold",
         "-f",
-        help="Excluded samples from clustering missing more than a certain percentage of alleles must be between 0.0 and 100.0. [default %(default)s]",
+        help="Excluded samples from analysis if it is missing more than the specified percentage of data. Must be between 0.0 and 100.0. [default %(default)s]",
         default=0.00,
         type=percentage_range,
     )

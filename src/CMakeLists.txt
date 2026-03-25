@@ -97,7 +97,6 @@ elseif(TARGET_GROUP STREQUAL test)
     to $<TARGET_FILE_DIR:tests-exe>"
   )
 
-  # TODO need to add benchmarks for disabling -ffast-math
 elseif(TARGET_GROUP STREQUAL python)
 
   set(CMAKE_CXX_COMPILER "g++")
@@ -129,10 +128,6 @@ elseif(TARGET_GROUP STREQUAL python)
     # E.G. function is defined in __init__.py so annotation file in __init__.py
     dist_mat/__init__.pyi
     DESTINATION dist_mat)
-
-
-
-
 
 else()
   add_executable(dist-mat-debug ${SOURCES})

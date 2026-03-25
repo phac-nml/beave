@@ -1,7 +1,3 @@
-"""
-Missing tests for calc_dists still
-"""
-
 import pytest
 import dist_mat.mcluster as mc
 import dist_mat as dm
@@ -51,7 +47,7 @@ import scipy as sp
 )
 def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) -> None:
     """
-    Tests for ingestion of the input profiles
+    Tests for loading of the input profiles
 
     TODO add tests for nulls and other types
     """
@@ -137,11 +133,12 @@ def test_subset_columns(df: pl.DataFrame, tmp_path) -> None:
     d.write_text("SampleID\nSubset1\nSubset2\n")
     subset = mc.subset_columns(df, d)
     assert subset.columns[0] == "col0"  # Leftmost column should always be first
-    assert set(subset.columns) == frozenset(
+    assert set(subset.columns) == set(
         ["col0", "Subset1", "Subset2"]
     )  # set as order does not matter
 
 
+@settings(derandomize=True)
 @given(
     profiles=dataframes(
         cols=[

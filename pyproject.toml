@@ -5,8 +5,8 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "dist-mat"
-version = "0.0.1"
-description = "A brief proof of concept for fast clustering"
+version = "0.0.6"
+description = "A small for fast clustering"
 readme = "README.md"
 requires-python = ">=3.13"
 authors = [{ name = "Matthew Wells", email = "matthew.wells@phac-aspc.gc.ca" }]
