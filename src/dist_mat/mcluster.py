@@ -289,7 +289,7 @@ def compute_dists(
     return distances
 
 
-def comp_linkage_matrix(
+def compute_linkage_matrix(
     profiles_computed: npt.NDArray, linkage_method: str
 ) -> npt.NDArray:
     linkage = sp.cluster.hierarchy.linkage(profiles_computed, method=linkage_method)  # type: ignore[arg-type]
@@ -368,7 +368,7 @@ def mcluster(
         profiles, count_missing, scaled, n_threads, filter_threshold
     )
     logger.info("Computed distances")
-    linkages = comp_linkage_matrix(distances, method)
+    linkages = compute_linkage_matrix(distances, method)
     logger.info("Computed linkage matrix")
     thresholds.sort(reverse=True)
     logger.info(f"Thresholds being used for generating linkages: {thresholds}")

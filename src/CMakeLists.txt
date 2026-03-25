@@ -23,9 +23,9 @@ elseif(TARGET_GROUP STREQUAL test)
     TARGET tests-catch2
     PRE_LINK
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_SOURCE_DIR}/data"
+    "${CMAKE_SOURCE_DIR}/tests"
     "$<TARGET_FILE_DIR:tests-catch2>/data"
-    COMMENT "Copying ${CMAKE_SOURCE_DIR}/data \
+    COMMENT "Copying ${CMAKE_SOURCE_DIR}/tests \
     to $<TARGET_FILE_DIR:tests-catch2>"
   )
 
@@ -91,9 +91,9 @@ elseif(TARGET_GROUP STREQUAL test)
     TARGET tests-exe
     PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_SOURCE_DIR}/data"
+    "${CMAKE_SOURCE_DIR}/tests"
     "$<TARGET_FILE_DIR:tests-exe>/data"
-    COMMENT "Copying ${CMAKE_SOURCE_DIR}/data \
+    COMMENT "Copying ${CMAKE_SOURCE_DIR}/tests \
     to $<TARGET_FILE_DIR:tests-exe>"
   )
 
@@ -128,6 +128,10 @@ elseif(TARGET_GROUP STREQUAL python)
     # E.G. function is defined in __init__.py so annotation file in __init__.py
     dist_mat/__init__.pyi
     DESTINATION dist_mat)
+
+
+
+
 
 else()
   add_executable(dist-mat-debug ${SOURCES})

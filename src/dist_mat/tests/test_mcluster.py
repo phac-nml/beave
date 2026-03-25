@@ -1,14 +1,17 @@
 import pytest
-from dist_mat import mcluster
+
+import pathlib as p
+
 import dist_mat
+from dist_mat import mcluster
+
 import polars as pl
 from polars.testing.parametric import dataframes, column
-from hypothesis import given, settings, HealthCheck, strategies as st
-from hypothesis.extra import numpy as nps
 import numpy as np
 from numpy import typing as npt
-import pathlib as p
-import scipy as sp
+import scipy
+from hypothesis import given, settings, HealthCheck, strategies as st
+from hypothesis.extra import numpy as nps
 
 
 @pytest.mark.parametrize(
@@ -101,10 +104,32 @@ def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) 
                 }
             ),
         ),
+        (
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "A": [111, 111, 111, 111],
+                    "b": [111, 111, 111, 111],
+                    "c": [111, 111, 111, 111],
+                    "d": [111, 111, 111, 111],
+                },
+            ),
+            1.00,
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "A": [111, 111, 111, 111],
+                    "b": [111, 111, 111, 111],
+                    "c": [111, 111, 111, 111],
+                    "d": [111, 111, 111, 111],
+                }
+            ),
+        ),
     ],
 )
 def test_filter_rows(dataframe, threshold, expected) -> None:
-    assert mcluster.filter_rows(dataframe, threshold).equals(expected)
+    filtered_data = mcluster.filter_rows(dataframe, threshold)
+    assert filtered_data.equals(expected)
 
 
 @given(
@@ -129,9 +154,9 @@ def test_filter_rows(dataframe, threshold, expected) -> None:
     max_examples=10,
 )
 def test_subset_columns(df: pl.DataFrame, tmp_path) -> None:
-    d = tmp_path / "cols_keep.txt"
-    d.write_text("SampleID\nSubset1\nSubset2\n")
-    subset = mcluster.subset_columns(df, d)
+    output_path = tmp_path / "cols_keep.txt"
+    output_path.write_text("SampleID\nSubset1\nSubset2\n")
+    subset = mcluster.subset_columns(df, output_path)
     assert subset.columns[0] == "col0"  # Leftmost column should always be first
     assert set(subset.columns) == set(
         ["col0", "Subset1", "Subset2"]
@@ -194,12 +219,74 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
                     "g": ["2", "2", "0", "2"],
                 },
             ),
+            1.00,
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "A": [
+                        10486959400714174283,  # value corrends to a hashed "2"
+                        10486959400714174283,
+                        10486959400714174283,
+                        10486959400714174283,
+                    ],
+                    "b": [
+                        10486959400714174283,
+                        10486959400714174283,
+                        0,
+                        10486959400714174283,
+                    ],
+                    "c": [
+                        10486959400714174283,
+                        10486959400714174283,
+                        0,
+                        10486959400714174283,
+                    ],
+                    "d": [
+                        10486959400714174283,
+                        10486959400714174283,
+                        0,
+                        10486959400714174283,
+                    ],
+                    "e": [
+                        10486959400714174283,
+                        10486959400714174283,
+                        0,
+                        10486959400714174283,
+                    ],
+                    "f": [
+                        10486959400714174283,
+                        10486959400714174283,
+                        0,
+                        10486959400714174283,
+                    ],
+                    "g": [
+                        10486959400714174283,
+                        10486959400714174283,
+                        0,
+                        10486959400714174283,
+                    ],
+                },
+            ),
+        ),
+        (
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "A": ["2", "2", "2", "2"],
+                    "b": ["2", "2", "?", "2"],
+                    "c": ["2", "2", "", "2"],
+                    "d": ["2", "2", " ", "2"],
+                    "e": ["2", "2", "_", "2"],
+                    "f": ["2", "2", "-", "2"],
+                    "g": ["2", "2", "0", "2"],
+                },
+            ),
             0.00,
             pl.DataFrame(
                 {
                     "SampleID": ["a", "b", "c", "d"],
                     "A": [
-                        10486959400714174283,  # value corresponds to a hashed "2"
+                        10486959400714174283,  # value corrends to a hashed "2"
                         10486959400714174283,
                         10486959400714174283,
                         10486959400714174283,
@@ -261,7 +348,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
                 {
                     "SampleID": ["a", "b", "d"],
                     "A": [
-                        10486959400714174283,  # value corresponds to a hashed "2"
+                        10486959400714174283,  # value corrends to a hashed "2"
                         10486959400714174283,
                         10486959400714174283,
                     ],
@@ -322,9 +409,9 @@ def test_transform_data(data, threshold, expected):
         ),
     ],
 )
-def test_comp_linkage_matrix(method, expected):
+def test_compute_linkage_matrix(method, expected):
     input_array = np.array([1.41421356, 2.82842712, 1.41421356])
-    output = mcluster.comp_linkage_matrix(input_array, method)
+    output = mcluster.compute_linkage_matrix(input_array, method)
     assert np.allclose(output, expected)
 
 
@@ -356,8 +443,8 @@ def test_comp_linkage_matrix(method, expected):
     ],
 )
 def test_assign_clusters_columns(linkage, thresholds, labels, expected_columns):
-    output = mcluster.assign_clusters(linkage, thresholds, labels).columns
-    assert output == expected_columns
+    actual_columns = mcluster.assign_clusters(linkage, thresholds, labels).columns
+    assert actual_columns == expected_columns
 
 
 @pytest.mark.parametrize(
@@ -396,7 +483,7 @@ def test_assign_clusters_(linkage, thresholds, labels, expected):
 
 
 @pytest.mark.parametrize(
-    "linkage,bl_type,expected",
+    "linkage,branchlength_type,expected",
     [
         (
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
@@ -410,27 +497,50 @@ def test_assign_clusters_(linkage, thresholds, labels, expected):
         ),
     ],
 )
-def test_convert_branch_lengths(linkage, bl_type, expected):
-    assert np.allclose(mcluster.convert_branch_lengths(linkage, bl_type), expected)
+def test_convert_branch_lengths(linkage, branchlength_type, expected):
+    assert np.allclose(
+        mcluster.convert_branch_lengths(linkage, branchlength_type), expected
+    )
 
 
 @pytest.mark.parametrize(
     "profiles,count_missing,scaled,expected",
     [
         (
-            np.array([[np.uint32(1), np.uint32(0)], [np.uint32(0), np.uint32(1)]]),
+            np.array(
+                [
+                    [np.uint32(1), np.uint32(mcluster.MISSING_VALUE)],
+                    [np.uint32(mcluster.MISSING_VALUE), np.uint32(1)],
+                ]
+            ),
             False,
             True,
             np.array([np.float32(100.0)]),
         ),
         (
-            np.array([[np.uint32(1), np.uint32(0)], [np.uint32(0), np.uint32(1)]]),
+            np.array(
+                [
+                    [np.uint32(1), np.uint32(mcluster.MISSING_VALUE)],
+                    [np.uint32(mcluster.MISSING_VALUE), np.uint32(1)],
+                ]
+            ),
             True,
             True,
             np.array([np.float32(100.0)]),
         ),
         (
-            np.array([[np.uint32(0), np.uint32(0)], [np.uint32(0), np.uint32(0)]]),
+            np.array(
+                [
+                    [
+                        np.uint32(mcluster.MISSING_VALUE),
+                        np.uint32(mcluster.MISSING_VALUE),
+                    ],
+                    [
+                        np.uint32(mcluster.MISSING_VALUE),
+                        np.uint32(mcluster.MISSING_VALUE),
+                    ],
+                ]
+            ),
             False,
             True,
             np.array([np.float32(100.0)]),
@@ -464,7 +574,7 @@ def test_calc_dists_fuzzing_hypothesis(arr):
 def test_calc_dists_file_inputs(input, scaled, count_missing):
     profiles: pl.DataFrame = mcluster.read_input_profiles(input, None, "\t", 1)
     dists: npt.NDArray = mcluster.compute_dists(profiles, count_missing, scaled, 1)
-    matrix: npt.NDArray = sp.spatial.distance.squareform(
+    matrix: npt.NDArray = scipy.spatial.distance.squareform(
         dists
     )  # conversion to squareform so iteration of the matrix is simpler as we do not need to calculate the
     # column and row index from the output condensed array.

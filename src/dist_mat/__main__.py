@@ -28,24 +28,37 @@ def path_exists(file: str) -> p.Path:
     raise FileNotFoundError(f"Input file {file} does not exist.")
 
 
-def percentage_range(f_input: str) -> float:
+def check_if_float(float_input: str) -> float:
     try:
-        coerced_input: float = float(f_input)
+        coerced_float: float = float(float_input)
     except ValueError:
-        logger.critical(f"Filter threshold  {f_input} cannot be coerced to a float.")
+        logger.critical(f"Value  {float_input} cannot be coerced to a float.")
         # I do not know if this is the best way to bubble up a handled exception
         # but it allows me to raise the error without exiting directly and produce
         # a log message
-        raise ValueError(f"Filter threshold {f_input} cannot be coerced to a float.")
-    else:
-        if coerced_input < 0.00 or coerced_input > 100.0:
-            logger.critical(
-                f"Filter threshold must be between 0.00 and 100.0. You passed: {f_input}"
-            )
-            raise ValueError(
-                f"Filter threshold must be between 0.00 and 100.0. You passed: {f_input}"
-            )
-        return coerced_input
+        raise ValueError(f"Value {float_input} cannot be coerced to a float.")
+    return coerced_float
+
+
+def percentage_range(float_input: str) -> float:
+    coerced_float = check_if_float(float_input)
+    if coerced_float < 0.00 or coerced_float > 100.0:
+        logger.critical(
+            f"Filter threshold must be between 0.00 and 100.0. You passed: {float_input}"
+        )
+        raise ValueError(
+            f"Filter threshold must be between 0.00 and 100.0. You passed: {float_input}"
+        )
+    return coerced_float
+
+
+def cluster_threshold(float_input: str) -> float:
+    coerced_input: float = float(float_input)
+    if coerced_input < 0.00:
+        raise ValueError(
+            f"Threshold values must be positive. You passed: {float_input}"
+        )
+    return coerced_input
 
 
 def main() -> None:
@@ -123,7 +136,7 @@ def main() -> None:
         nargs="+",
         required=True,
         action="extend",
-        type=float,
+        type=cluster_threshold,
     )
 
     parser_mcluster.add_argument(
