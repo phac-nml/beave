@@ -1,6 +1,6 @@
 import pytest
-import dist_mat.mcluster as mc
-import dist_mat as dm
+from dist_mat import mcluster
+import dist_mat
 import polars as pl
 from polars.testing.parametric import dataframes, column
 from hypothesis import given, settings, HealthCheck, strategies as st
@@ -50,7 +50,9 @@ def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) 
     Tests for loading of the input profiles
     """
 
-    input_profiles = mc.read_input_profiles(input, columns_keep, delimiter, threads)
+    input_profiles = mcluster.read_input_profiles(
+        input, columns_keep, delimiter, threads
+    )
     assert input_profiles.equals(expected)
 
 
@@ -102,7 +104,7 @@ def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) 
     ],
 )
 def test_filter_rows(dataframe, threshold, expected) -> None:
-    assert mc.filter_rows(dataframe, threshold).equals(expected)
+    assert mcluster.filter_rows(dataframe, threshold).equals(expected)
 
 
 @given(
@@ -129,7 +131,7 @@ def test_filter_rows(dataframe, threshold, expected) -> None:
 def test_subset_columns(df: pl.DataFrame, tmp_path) -> None:
     d = tmp_path / "cols_keep.txt"
     d.write_text("SampleID\nSubset1\nSubset2\n")
-    subset = mc.subset_columns(df, d)
+    subset = mcluster.subset_columns(df, d)
     assert subset.columns[0] == "col0"  # Leftmost column should always be first
     assert set(subset.columns) == set(
         ["col0", "Subset1", "Subset2"]
@@ -143,17 +145,17 @@ def test_subset_columns(df: pl.DataFrame, tmp_path) -> None:
             column(
                 "SampleID",
                 dtype=pl.String,
-                strategy=st.sampled_from(list(mc.REPLACE_CHARS.keys())),
+                strategy=st.sampled_from(list(mcluster.REPLACE_CHARS.keys())),
             ),
             column(
                 "QMarks2",
                 dtype=pl.String,
-                strategy=st.sampled_from(list(mc.REPLACE_CHARS.keys())),
+                strategy=st.sampled_from(list(mcluster.REPLACE_CHARS.keys())),
             ),
             column(
                 "QMarks3",
                 dtype=pl.String,
-                strategy=st.sampled_from(list(mc.REPLACE_CHARS.keys())),
+                strategy=st.sampled_from(list(mcluster.REPLACE_CHARS.keys())),
             ),
             column(
                 "Hashed",
@@ -172,7 +174,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
     array = np.zeros((profiles.height, 3), dtype=np.uint32)  # array should all be zeros
     for i in array:
         i[2] = np.uint32(2683474508)  # last value should be the hashed version of "A"
-    output = mc.prep_data(profiles, 0.00)
+    output = mcluster.prep_data(profiles, 0.00)
     assert np.array_equal(output, array)
 
 
@@ -299,7 +301,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
     ],
 )
 def test_transform_data(data, threshold, expected):
-    out = mc.transform_data(data, threshold)
+    out = mcluster.transform_data(data, threshold)
     assert out.equals(expected)
 
 
@@ -307,22 +309,22 @@ def test_transform_data(data, threshold, expected):
     "method,expected",
     [
         (
-            mc.LinkageMetrics.SINGLE,
+            mcluster.LinkageMetrics.SINGLE,
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
         ),
         (
-            mc.LinkageMetrics.COMPLETE,
+            mcluster.LinkageMetrics.COMPLETE,
             np.array([[0, 1, 1.41421356, 2], [2, 3, 2.82842712, 3]], dtype=float),
         ),
         (
-            mc.LinkageMetrics.AVERAGE,
+            mcluster.LinkageMetrics.AVERAGE,
             np.array([[0, 1, 1.41421356, 2], [2, 3, 2.12132034, 3]], dtype=float),
         ),
     ],
 )
 def test_comp_linkage_matrix(method, expected):
     input_array = np.array([1.41421356, 2.82842712, 1.41421356])
-    output = mc.comp_linkage_matrix(input_array, method)
+    output = mcluster.comp_linkage_matrix(input_array, method)
     assert np.allclose(output, expected)
 
 
@@ -354,7 +356,7 @@ def test_comp_linkage_matrix(method, expected):
     ],
 )
 def test_assign_clusters_columns(linkage, thresholds, labels, expected_columns):
-    output = mc.assign_clusters(linkage, thresholds, labels).columns
+    output = mcluster.assign_clusters(linkage, thresholds, labels).columns
     assert output == expected_columns
 
 
@@ -389,7 +391,7 @@ def test_assign_clusters_columns(linkage, thresholds, labels, expected_columns):
     ],
 )
 def test_assign_clusters_(linkage, thresholds, labels, expected):
-    out = mc.assign_clusters(linkage, thresholds, labels)
+    out = mcluster.assign_clusters(linkage, thresholds, labels)
     assert out.equals(expected)
 
 
@@ -398,18 +400,18 @@ def test_assign_clusters_(linkage, thresholds, labels, expected):
     [
         (
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
-            mc.BranchLengths.PATRISTIC,
+            mcluster.BranchLengths.PATRISTIC,
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
         ),
         (
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
-            mc.BranchLengths.COPHENETIC,
+            mcluster.BranchLengths.COPHENETIC,
             np.array([[0, 1, 2.82842712, 2], [2, 3, 2.82842712, 3]], dtype=float),
         ),
     ],
 )
 def test_convert_branch_lengths(linkage, bl_type, expected):
-    assert np.allclose(mc.convert_branch_lengths(linkage, bl_type), expected)
+    assert np.allclose(mcluster.convert_branch_lengths(linkage, bl_type), expected)
 
 
 @pytest.mark.parametrize(
@@ -436,7 +438,7 @@ def test_convert_branch_lengths(linkage, bl_type, expected):
     ],
 )
 def test_calc_dists(profiles, count_missing, scaled, expected):
-    output = dm.calc_dists(profiles, 1, scaled, count_missing)
+    output = dist_mat.calc_dists(profiles, 1, scaled, count_missing)
     assert np.array_equal(output, expected)
 
 
@@ -447,7 +449,7 @@ def test_calc_dists(profiles, count_missing, scaled, expected):
     )
 )
 def test_calc_dists_fuzzing_hypothesis(arr):
-    output = np.isfinite(dm.calc_dists(arr, 1, True, False))
+    output = np.isfinite(dist_mat.calc_dists(arr, 1, True, False))
     assert np.all(output)
 
 
@@ -460,8 +462,8 @@ def test_calc_dists_fuzzing_hypothesis(arr):
     ],
 )
 def test_calc_dists_file_inputs(input, scaled, count_missing):
-    profiles: pl.DataFrame = mc.read_input_profiles(input, None, "\t", 1)
-    dists: npt.NDArray = mc.compute_dists(profiles, count_missing, scaled, 1)
+    profiles: pl.DataFrame = mcluster.read_input_profiles(input, None, "\t", 1)
+    dists: npt.NDArray = mcluster.compute_dists(profiles, count_missing, scaled, 1)
     matrix: npt.NDArray = sp.spatial.distance.squareform(
         dists
     )  # conversion to squareform so iteration of the matrix is simpler as we do not need to calculate the
