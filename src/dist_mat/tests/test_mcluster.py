@@ -509,8 +509,8 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
         (
             np.array(
                 [
-                    [np.uint32(1), np.uint32(mcluster.MISSING_VALUE)],
-                    [np.uint32(mcluster.MISSING_VALUE), np.uint32(1)],
+                    [np.uint32(1), mcluster.MISSING_VALUE],
+                    [mcluster.MISSING_VALUE, np.uint32(1)],
                 ]
             ),
             False,
@@ -520,8 +520,8 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
         (
             np.array(
                 [
-                    [np.uint32(1), np.uint32(mcluster.MISSING_VALUE)],
-                    [np.uint32(mcluster.MISSING_VALUE), np.uint32(1)],
+                    [np.uint32(1), mcluster.MISSING_VALUE],
+                    [mcluster.MISSING_VALUE, np.uint32(1)],
                 ]
             ),
             True,
@@ -531,14 +531,8 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
         (
             np.array(
                 [
-                    [
-                        np.uint32(mcluster.MISSING_VALUE),
-                        np.uint32(mcluster.MISSING_VALUE),
-                    ],
-                    [
-                        np.uint32(mcluster.MISSING_VALUE),
-                        np.uint32(mcluster.MISSING_VALUE),
-                    ],
+                    [mcluster.MISSING_VALUE, mcluster.MISSING_VALUE],
+                    [mcluster.MISSING_VALUE, mcluster.MISSING_VALUE],
                 ]
             ),
             False,
@@ -566,9 +560,9 @@ def test_calc_dists_fuzzing_hypothesis(arr):
 @pytest.mark.parametrize(
     "input,scaled,count_missing",
     [
-        (p.Path("data/R1KC1K.tsv"), True, True),
-        (p.Path("data/R1KC1K.tsv"), False, True),
-        (p.Path("data/R1KC1K.tsv"), False, True),
+        (p.Path("tests/R1KC1K.tsv"), True, True),
+        (p.Path("tests/R1KC1K.tsv"), False, True),
+        (p.Path("tests/R1KC1K.tsv"), False, True),
     ],
 )
 def test_calc_dists_file_inputs(input, scaled, count_missing):
