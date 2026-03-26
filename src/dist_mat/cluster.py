@@ -120,7 +120,7 @@ def linkage_matrix_to_nwk(linkage_matrix: npt.NDArray, sample_ids: list[str]) ->
         raise ValueError(f"Expected {n_objects} leaf names, got {n_leaves}")
 
     newick_intermediates: list[str | None] = sample_ids + [None] * linkage_matrix.shape[0]
-    cluster_dists: list[np.float64] = [0] * (n_objects + linkage_matrix.shape[0])
+    cluster_dists: list[np.float64] = [np.float64(0)] * (n_objects + linkage_matrix.shape[0])
     for i, row in enumerate(linkage_matrix):
         dist: np.float64 = row[LinkageMatrixFields.DISTANCE.value]
         fi: int = int(row[LinkageMatrixFields.OBS1.value])
