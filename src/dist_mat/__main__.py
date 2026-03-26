@@ -34,41 +34,44 @@ class Commands(StrEnum):
     MCLUSTER = "mcluster"
 
 
-def path_exists(file: str) -> p.Path:
-    fp = p.Path(file)
+def path_exists(file_path: str) -> p.Path:
+    fp = p.Path(file_path)
     if fp.is_file():
         return fp
-    logger.critical(f"Input file does not exist. {file}")
-    raise FileNotFoundError(f"Input file {file} does not exist.")
+    error_message = f"Input file does not exist. {file_path}"
+    logger.critical(error_message)
+    raise FileNotFoundError(error_message)
 
 
 def check_if_float(float_input: str) -> float:
     try:
         coerced_float: float = float(float_input)
     except ValueError:
-        logger.critical(f"Value  {float_input} cannot be coerced to a float.")
-        raise ValueError(f"Value {float_input} cannot be coerced to a float.")
+        error_message = f"Value  {float_input} cannot be coerced to a float."
+        logger.critical(error_message)
+        raise ValueError(error_message)
     return coerced_float
 
 
 def percentage_range(float_input: str) -> float:
     coerced_float = check_if_float(float_input)
     if coerced_float < 0.00 or coerced_float > 100.0:
-        logger.critical(
+        error_message = (
             f"Filter threshold must be between 0.00 and 100.0. You passed: {float_input}"
         )
-        raise ValueError(
-            f"Filter threshold must be between 0.00 and 100.0. You passed: {float_input}"
-        )
+        logger.critical(error_message)
+        raise ValueError(error_message)
     return coerced_float
 
 
 def cluster_threshold(float_input: str) -> float:
     coerced_input: float = float(float_input)
     if coerced_input < 0.00 or coerced_input == float("inf"):
-        raise ValueError(
+        error_message = (
             f"Threshold values must be positive and not infinity. You passed: {float_input}"
         )
+        logger.critical(error_message)
+        raise ValueError(error_message)
     return coerced_input
 
 
@@ -104,9 +107,7 @@ def main() -> None:
         parents=[parent_parser],
     )
 
-    parser.add_argument(
-        "--version", "-v", action="version", version=f"%(prog)s {__version__}"
-    )
+    parser.add_argument("--version", "-v", action="version", version=f"%(prog)s {__version__}")
 
     subparsers = parser.add_subparsers(
         help="Select a program to run.",
