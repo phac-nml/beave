@@ -12,14 +12,13 @@ namespace nb = nanobind;
 float _hamming_distance(const uint32_t *__restrict__ p1_data,
                         const uint32_t *__restrict__ p2_data, size_t size,
                         const bool scaled, const bool count_missing) {
-  float dist_out;
-  uint32_t dist = 0;
+  uint32_t hamming_distance = 0;
   uint32_t compared_sites = size;
 
   if (count_missing) {
     for (size_t i = 0; i < size; i++) {
       if (p1_data[i] != p2_data[i]) {
-        dist++;
+        hamming_distance++;
       }
     }
   } else {
@@ -30,22 +29,22 @@ float _hamming_distance(const uint32_t *__restrict__ p1_data,
       const bool valid =
           (p1_data[i] != MISSING_VALUE) & (p2_data[i] != MISSING_VALUE);
       compared_sites += valid;
-      dist += valid & (p1_data[i] != p2_data[i]);
+      hamming_distance += valid & (p1_data[i] != p2_data[i]);
     }
   }
 
-  dist_out = static_cast<float>(dist);
+  float distance = static_cast<float>(hamming_distance);
   if (scaled) {
     if (compared_sites) {
-      dist_out =
-          (static_cast<float>(dist) / static_cast<float>(compared_sites)) *
-          100.0f;
+      distance = (static_cast<float>(hamming_distance) /
+                  static_cast<float>(compared_sites)) *
+                 100.0f;
     } else {
-      dist_out = 100.0f;
+      distance = 100.0f;
     }
   }
 
-  return dist_out;
+  return distance;
 }
 
 /*
@@ -70,7 +69,7 @@ void populate_outputs(size_t start, size_t end, size_t pdata_size,
     for (size_t f = i + 1; f < profile_data.shape(0); f++) {
       //  Multipling the index by the array length as nd-arrays are stored
       //  linearly
-      float dist_out =
+      float distance =
           _hamming_distance(&profile_data.data()[i * number_of_loci],
                             &profile_data.data()[f * number_of_loci],
                             number_of_loci, scaled, count_missing);
@@ -80,7 +79,7 @@ void populate_outputs(size_t start, size_t end, size_t pdata_size,
           ((pdata_size * (pdata_size - 1)) / 2) -
           ((pdata_size - i) * (pdata_size - i - 1) / 2) + f - i - 1;
 
-      output_matrix[upper_triangle_pos] = dist_out;
+      output_matrix[upper_triangle_pos] = distance;
     }
   }
 }
