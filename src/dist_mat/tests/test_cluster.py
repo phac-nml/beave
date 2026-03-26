@@ -8,7 +8,7 @@ from dist_mat import cluster
 import polars as pl
 from polars.testing.parametric import dataframes, column
 import numpy as np
-from numpy import typing as npt
+from numpy import float64, typing as npt
 import scipy
 from hypothesis import given, settings, HealthCheck, strategies as st
 from hypothesis.extra import numpy as nps
@@ -578,3 +578,34 @@ def test_calc_dists_file_inputs(input, scaled, count_missing):
                 assert dist == pytest.approx(matrix[i][f], rel=1e-6)
             else:
                 assert float(abs(sample1 - sample2)) == pytest.approx(matrix[i][f], rel=1e-6)
+
+
+@pytest.mark.parametrize(
+    "linkage,sample_ids,expected",
+    [
+        (
+            np.asarray([[0, 1, 3.0, 2], [3, 2, 4.0, 3]], dtype=np.float64),
+            ["l0", "l1", "l2"],
+            "((l0:3.0,l1:3.0):1.0,l2:4.0);",
+        ),
+        (
+            np.asarray([[0, 1, 3.0, 2], [2, 3, 2.0, 2], [4, 5, 4.0, 4]], dtype=np.float64),
+            ["l0", "l1", "l2", "l3"],
+            "((l0:3.0,l1:3.0):1.0,(l2:2.0,l3:2.0):2.0);",
+        ),
+        (
+            np.asarray(
+                [[0, 1, 2.0, 2], [5, 3, 3.5, 2], [6, 4, 4.0, 2], [7, 2, 6.0, 4]], dtype=np.float64
+            ),
+            ["l0", "l1", "l2", "l3", "l4"],
+            "((((l0:2.0,l1:2.0):1.5,l3:3.5):0.5,l4:4.0):2.0,l2:6.0);",
+        ),
+    ],
+)
+def test_linkage_matrix_to_nwk(linkage, sample_ids, expected):
+    """
+    These tests are adpated from the original pull request implementing
+    the to newick fucntion in a scipy PR.
+    https://github.com/scipy/scipy/pull/17329/changes
+    """
+    assert cluster.linkage_matrix_to_nwk(linkage, sample_ids) == expected

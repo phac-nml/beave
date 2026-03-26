@@ -13,6 +13,7 @@ import scipy
 import polars as pl
 import numpy as np
 from numpy import typing as npt
+from scipy.cluster.hierarchy import ClusterNode
 
 import dist_mat as dm
 
@@ -102,68 +103,37 @@ REPLACE_CHARS = {
 }  # mappings to replace fields with zeroes
 
 
-def _scipy_tree_to_newick_list(
-    node: scipy.cluster.hierarchy.ClusterNode | None,
-    newick: list[str],
-    parentdist: float,
-    leaf_names: list[str],
-) -> list[str]:
-    """Construct Newick tree from SciPy hierarchical clustering ClusterNode
-
-    This is a recursive function to help build a Newick output string from a
-    scipy.cluster.hierarchy.to_tree input with
-    user specified leaf node names.
-
-    Notes:
-        This function is meant to be used with `to_newick`
-
-    Args:
-        node (scipy.cluster.hierarchy.ClusterNode): Root node is output of
-        scipy.cluster.hierarchy.to_tree from hierarchical clustering linkage matrix
-        parentdist (float): Distance of parent node of `node`
-        newick (list of string): Newick string output accumulator list which needs
-        to be reversed and concatenated (i.e. `''.join(newick)`) for final output
-        leaf_names (list of string): Leaf node names
-
-    Returns:
-        (list of string): Returns `newick` list of Newick output strings
+def linkage_matrix_to_nwk(linkage_matrix: npt.NDArray, sample_ids: list[str]) -> str:
     """
+    Important Note:
 
-    if node is None:
-        return newick
+    I did not come up with this code below is has been adapated from a scipy PR here:
+    https://github.com/scipy/scipy/pull/17329/changes
 
-    if node.is_leaf():
-        return newick + [f"{leaf_names[node.id]}:{parentdist - node.dist}"]
+    The inputs are the linkage matrix from scipy, and the sample_ids correspond to
+    the alleleic profiles.
 
-    if len(newick) > 0:
-        newick.append(f"):{parentdist - node.dist}")
-    else:
-        newick.append(");")
-    newick = _scipy_tree_to_newick_list(node.get_left(), newick, node.dist, leaf_names)
-    newick.append(",")
-    newick = _scipy_tree_to_newick_list(node.get_right(), newick, node.dist, leaf_names)
-    newick.append("(")
-    return newick
-
-
-def to_newick(tree: scipy.cluster.hierarchy.ClusterNode, leaf_names: list[str]) -> str:
-    """Newick tree output string from SciPy hierarchical clustering tree
-
-    Convert a SciPy ClusterNode tree to a Newick format string.
-    Use scipy.cluster.hierarchy.to_tree on a hierarchical clustering linkage
-    matrix to create the root ClusterNode for the `tree` input of this
-    function.
-
-    Args:
-        tree (scipy.cluster.hierarchy.ClusterNode): Output of
-        scipy.cluster.hierarchy.to_tree from hierarchical
-        clustering linkage matrix leaf_names (list of string): Leaf node names
-
-    Returns:
-        (string): Newick output string
     """
-    newick_list = _scipy_tree_to_newick_list(tree, [], tree.dist, leaf_names)
-    return "".join(newick_list[::-1])
+    n_objects: int = linkage_matrix.shape[0] + 1
+    n_leaves: int = len(sample_ids)
+    if n_objects != n_leaves:
+        raise ValueError(f"Expected {n_objects} leaf names, got {n_leaves}")
+
+    newick_intermediates: list[str | None] = sample_ids + [None] * linkage_matrix.shape[0]
+    cluster_dists: list[np.float64] = [0] * (n_objects + linkage_matrix.shape[0])
+    for i, row in enumerate(linkage_matrix):
+        dist: np.float64 = row[LinkageMatrixFields.DISTANCE.value]
+        fi: int = int(row[LinkageMatrixFields.OBS1.value])
+        fj: int = int(row[LinkageMatrixFields.OBS2.value])
+        cdi: np.float64 = dist - cluster_dists[fi]
+        cdj: np.float64 = dist - cluster_dists[fj]
+        newick_subtree: str = f"({newick_intermediates[fi]}:{cdi},{newick_intermediates[fj]}:{cdj})"
+        newick_intermediates[i + n_objects] = newick_subtree
+        cluster_dists[i + n_objects] = dist
+        newick_intermediates[fi] = None
+        newick_intermediates[fj] = None
+
+    return newick_intermediates[linkage_matrix.shape[0] - 1 + n_objects] + ";"
 
 
 def subset_columns(profiles: pl.DataFrame, columns_path: p.Path) -> pl.DataFrame:
@@ -401,12 +371,10 @@ def cluster(cluster_args: ClusterArguments) -> None:
     cluster_memberships = assign_clusters(linkages, cluster_args.thresholds, sample_names)
     logger.info("assigned clusters")
 
-    sys.setrecursionlimit(4000)  # raise recursion limit for generating the tree
     linkages = convert_branch_lengths(
         linkages, cluster_args.branch_length_type
     )  # convert branch lengths for tree display if needed
-    tree = scipy.cluster.hierarchy.to_tree(linkages)
-    newick = to_newick(tree, sample_names)
+    newick = linkage_matrix_to_nwk(linkages, sample_names)
 
     with cluster_args.tree_output.open("w") as to:
         to.write(newick)
