@@ -3,7 +3,7 @@ import pytest
 import pathlib as p
 
 import dist_mat
-from dist_mat import mcluster
+from dist_mat import cluster
 
 import polars as pl
 from polars.testing.parametric import dataframes, column
@@ -53,9 +53,7 @@ def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) 
     Tests for loading of the input profiles
     """
 
-    input_profiles = mcluster.read_input_profiles(
-        input, columns_keep, delimiter, threads
-    )
+    input_profiles = mcluster.read_input_profiles(input, columns_keep, delimiter, threads)
     assert input_profiles.equals(expected)
 
 
@@ -498,9 +496,7 @@ def test_assign_clusters_(linkage, thresholds, labels, expected):
     ],
 )
 def test_convert_branch_lengths(linkage, branchlength_type, expected):
-    assert np.allclose(
-        mcluster.convert_branch_lengths(linkage, branchlength_type), expected
-    )
+    assert np.allclose(mcluster.convert_branch_lengths(linkage, branchlength_type), expected)
 
 
 @pytest.mark.parametrize(
@@ -581,6 +577,4 @@ def test_calc_dists_file_inputs(input, scaled, count_missing):
                 dist: float = (abs(sample1 - sample2) / float(profiles.height)) * 100.0
                 assert dist == pytest.approx(matrix[i][f], rel=1e-6)
             else:
-                assert float(abs(sample1 - sample2)) == pytest.approx(
-                    matrix[i][f], rel=1e-6
-                )
+                assert float(abs(sample1 - sample2)) == pytest.approx(matrix[i][f], rel=1e-6)

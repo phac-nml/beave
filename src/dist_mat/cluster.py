@@ -84,9 +84,7 @@ class LinkageMatrixFields(Enum):
     """
 
     OBS1 = 0  # Observation 1, can be a sample or formed cluster
-    OBS2 = (
-        1  # Observation 2, this is a sample or cluster that is being combined wit OBS 1
-    )
+    OBS2 = 1  # Observation 2, this is a sample or cluster that is being combined wit OBS 1
     DISTANCE = 2  # This is the distance between OBS1 and OBS2
     NUM_OBSERVATIONS = (
         3  # This value represents the number of orignal observations in the new cluster
@@ -204,7 +202,9 @@ def read_input_profiles(
         infer_schema=False,
     )
     if profiles.shape[1] <= 1:
-        err_string = f"Only {profiles.shape[1]} in allele profiles, you need atleast two loci columns."
+        err_string = (
+            f"Only {profiles.shape[1]} in allele profiles, you need atleast two loci columns."
+        )
 
         logger.critical(err_string)
         raise pl.exceptions.ShapeError(err_string)
@@ -255,9 +255,7 @@ def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
         < threshold_columns
     )
 
-    logger.info(
-        "Removed %s rows after filtering.", rows_before_filtering - profiles.height
-    )
+    logger.info("Removed %s rows after filtering.", rows_before_filtering - profiles.height)
 
     return profiles
 
@@ -319,9 +317,7 @@ def compute_dists(
     return distances
 
 
-def compute_linkage_matrix(
-    profiles_computed: npt.NDArray, linkage_method: str
-) -> npt.NDArray:
+def compute_linkage_matrix(profiles_computed: npt.NDArray, linkage_method: str) -> npt.NDArray:
     """
     Use scipy to compute a linkage matrix from the calculated distances.
 
@@ -348,9 +344,7 @@ def assign_clusters(
         data_to_populate.append(
             pl.Series(
                 name=col_name,
-                values=scipy.cluster.hierarchy.fcluster(
-                    linkage, threshold, criterion="distance"
-                ),
+                values=scipy.cluster.hierarchy.fcluster(linkage, threshold, criterion="distance"),
                 dtype=pl.UInt32,
             )
         )
@@ -377,7 +371,7 @@ def convert_branch_lengths(
     return linkage_matrix
 
 
-def mcluster(cluster_args: ClusterArguments) -> None:
+def cluster(cluster_args: ClusterArguments) -> None:
     """
     Main runner function for mcluster.
     """
@@ -400,15 +394,11 @@ def mcluster(cluster_args: ClusterArguments) -> None:
     linkages = compute_linkage_matrix(distances, cluster_args.method)
     logger.info("Computed linkage matrix")
     cluster_args.thresholds.sort(reverse=True)
-    logger.info(
-        "Thresholds being used for generating linkages: %s", cluster_args.thresholds
-    )
+    logger.info("Thresholds being used for generating linkages: %s", cluster_args.thresholds)
 
     sample_names = profiles.select(pl.nth(0)).to_series().to_list()
     # write out the tree
-    cluster_memberships = assign_clusters(
-        linkages, cluster_args.thresholds, sample_names
-    )
+    cluster_memberships = assign_clusters(linkages, cluster_args.thresholds, sample_names)
     logger.info("assigned clusters")
 
     sys.setrecursionlimit(4000)  # raise recursion limit for generating the tree

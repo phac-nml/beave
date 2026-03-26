@@ -14,8 +14,8 @@ import logging
 import pathlib as p
 from enum import StrEnum
 
-from dist_mat.mcluster import (
-    mcluster,
+from dist_mat.cluster import (
+    cluster,
     LinkageMetric,
     BranchLengthType,
     ClusterArguments,
@@ -31,7 +31,7 @@ logging.basicConfig(
 
 
 class Commands(StrEnum):
-    MCLUSTER = "mcluster"
+    CLUSTER = "cluster"
 
 
 def path_exists(file_path: str) -> p.Path:
@@ -200,7 +200,7 @@ def main() -> None:
     args = parser.parse_args(sys.argv[1:])
 
     match args.command:
-        case Commands.MCLUSTER:
+        case Commands.CLUSTER:
             cluster_args = ClusterArguments(
                 args.input,
                 args.delimiter,
@@ -215,7 +215,7 @@ def main() -> None:
                 args.tree_distances,
                 args.filter_threshold,
             )
-            mcluster(cluster_args)
+            cluster(cluster_args)
         case _:
             parser.print_help()
             sys.exit()
