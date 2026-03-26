@@ -33,9 +33,6 @@ def check_if_float(float_input: str) -> float:
         coerced_float: float = float(float_input)
     except ValueError:
         logger.critical(f"Value  {float_input} cannot be coerced to a float.")
-        # I do not know if this is the best way to bubble up a handled exception
-        # but it allows me to raise the error without exiting directly and produce
-        # a log message
         raise ValueError(f"Value {float_input} cannot be coerced to a float.")
     return coerced_float
 
@@ -54,9 +51,9 @@ def percentage_range(float_input: str) -> float:
 
 def cluster_threshold(float_input: str) -> float:
     coerced_input: float = float(float_input)
-    if coerced_input < 0.00:
+    if coerced_input < 0.00 or coerced_input == float("inf"):
         raise ValueError(
-            f"Threshold values must be positive. You passed: {float_input}"
+            f"Threshold values must be positive and not infinity. You passed: {float_input}"
         )
     return coerced_input
 
