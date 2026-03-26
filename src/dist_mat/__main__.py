@@ -114,16 +114,16 @@ def main() -> None:
         dest="command",
     )
 
-    # Mcluster args
-    parser_mcluster = subparsers.add_parser(
-        Commands.MCLUSTER, help="Run denovo clustering.", parents=[parent_parser]
+    # cluster args
+    parser_cluster = subparsers.add_parser(
+        Commands.CLUSTER, help="Run denovo clustering.", parents=[parent_parser]
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--input", "-i", help="Input alleles.", type=path_exists, required=True
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--tree-output",
         "-t",
         help="File path to write generated tree. [default %(default)s]",
@@ -132,7 +132,7 @@ def main() -> None:
         default="clusters.nwk",
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--cluster-output",
         "-l",
         help="File path to write generated clusters. [default %(default)s]",
@@ -141,7 +141,7 @@ def main() -> None:
         default="clusters.tsv",
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--thresholds",
         "-p",
         help="List of threshold values to use.",
@@ -151,7 +151,7 @@ def main() -> None:
         type=cluster_threshold,
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--method",
         "-m",
         default=LinkageMetric.AVERAGE.value,
@@ -159,7 +159,7 @@ def main() -> None:
         choices=[i.value for i in LinkageMetric],
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--columns",
         "-k",
         help="A file containing a single column of the column names to subset from the passed allele profiles.",
@@ -167,21 +167,21 @@ def main() -> None:
         required=False,
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--count-missing",
         "-c",
         help="Count missing values in allele profiles differences.",
         action="store_true",
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--scaled",
         "-s",
         help="Compute the scaled distance. Distance is presented as a percentage, or a value between 0.0-100.0",
         action="store_true",
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--tree-distances",
         "-b",
         default=BranchLengthType.COPHENETIC.value,
@@ -189,7 +189,7 @@ def main() -> None:
         help="Determine how to display tree lenghts in the newick file. [default %(default)s]",
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--filter-threshold",
         "-f",
         help="Excluded samples from analysis if it is missing more than the specified percentage of data. Must be between 0.0 and 100.0. [default %(default)s]",

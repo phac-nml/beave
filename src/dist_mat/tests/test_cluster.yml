@@ -162,7 +162,7 @@
       should_exist: false
   stderr:
     contains:
-      - "FileNotFoundError: Input file tests/R1KC1K.2-zeroes.does-not-exist.csv does not exist."
+      - "FileNotFoundError: Input file does not exist. tests/R1KC1K.2-zeroes.does-not-exist.csv"
 
 - name: Run cluster id contains null value
   tags:
