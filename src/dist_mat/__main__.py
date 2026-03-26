@@ -1,3 +1,12 @@
+"""Main entry point for dist-mat
+
+This module contains the main cli for dist-mat.
+"""
+
+import importlib.metadata
+
+__version__ = importlib.metadata.version(__package__ or __name__)
+
 import argparse
 import sys
 import os
@@ -5,7 +14,12 @@ import logging
 import pathlib as p
 from enum import StrEnum
 
-from dist_mat.mcluster import mcluster, LinkageMetrics, BranchLengths
+from dist_mat.mcluster import (
+    mcluster,
+    LinkageMetric,
+    BranchLengthType,
+    ClusterArguments,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -91,7 +105,7 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "--version", "-v", help="Print version and exit.", action="store_true"
+        "--version", "-v", action="version", version=f"%(prog)s {__version__}"
     )
 
     subparsers = parser.add_subparsers(
@@ -139,9 +153,9 @@ def main() -> None:
     parser_mcluster.add_argument(
         "--method",
         "-m",
-        default=LinkageMetrics.AVERAGE.value,
+        default=LinkageMetric.AVERAGE.value,
         help="Hierarchical clustering linkage to use. [default: %(default)s]",
-        choices=[i.value for i in LinkageMetrics],
+        choices=[i.value for i in LinkageMetric],
     )
 
     parser_mcluster.add_argument(
@@ -169,8 +183,8 @@ def main() -> None:
     parser_mcluster.add_argument(
         "--tree-distances",
         "-b",
-        default=BranchLengths.COPHENETIC.value,
-        choices=[i.value for i in BranchLengths],
+        default=BranchLengthType.COPHENETIC.value,
+        choices=[i.value for i in BranchLengthType],
         help="Determine how to display tree lenghts in the newick file. [default %(default)s]",
     )
 
@@ -184,13 +198,9 @@ def main() -> None:
 
     args = parser.parse_args(sys.argv[1:])
 
-    if args.version:
-        print("0.0.1")
-        sys.exit()
-
     match args.command:
         case Commands.MCLUSTER:
-            mcluster(
+            cluster_args = ClusterArguments(
                 args.input,
                 args.delimiter,
                 args.thresholds,
@@ -204,10 +214,7 @@ def main() -> None:
                 args.tree_distances,
                 args.filter_threshold,
             )
+            mcluster(cluster_args)
         case _:
             parser.print_help()
             sys.exit()
-
-
-if __name__ == "__main__":
-    main()

@@ -396,15 +396,15 @@ def test_transform_data(data, threshold, expected):
     "method,expected",
     [
         (
-            mcluster.LinkageMetrics.SINGLE,
+            mcluster.LinkageMetric.SINGLE,
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
         ),
         (
-            mcluster.LinkageMetrics.COMPLETE,
+            mcluster.LinkageMetric.COMPLETE,
             np.array([[0, 1, 1.41421356, 2], [2, 3, 2.82842712, 3]], dtype=float),
         ),
         (
-            mcluster.LinkageMetrics.AVERAGE,
+            mcluster.LinkageMetric.AVERAGE,
             np.array([[0, 1, 1.41421356, 2], [2, 3, 2.12132034, 3]], dtype=float),
         ),
     ],
@@ -487,12 +487,12 @@ def test_assign_clusters_(linkage, thresholds, labels, expected):
     [
         (
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
-            mcluster.BranchLengths.PATRISTIC,
+            mcluster.BranchLengthType.PATRISTIC,
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
         ),
         (
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
-            mcluster.BranchLengths.COPHENETIC,
+            mcluster.BranchLengthType.COPHENETIC,
             np.array([[0, 1, 2.82842712, 2], [2, 3, 2.82842712, 3]], dtype=float),
         ),
     ],

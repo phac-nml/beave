@@ -6,15 +6,15 @@ import sys
 import logging
 import math
 import pathlib as p
-import typing as t
 from enum import StrEnum, Enum
+from dataclasses import dataclass
 
-
-import dist_mat as dm
-import scipy as sp
+import scipy
 import polars as pl
 import numpy as np
 from numpy import typing as npt
+
+import dist_mat as dm
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -25,15 +25,49 @@ logging.basicConfig(
 )
 
 
-class LinkageMetrics(StrEnum):
+class LinkageMetric(StrEnum):
+    """
+    Linkage options that can be passed to scipy
+    """
+
     SINGLE = "single"
     AVERAGE = "average"
     COMPLETE = "complete"
 
 
-class BranchLengths(StrEnum):
+class BranchLengthType(StrEnum):
+    """
+    Branch length types used for converting tree branch metrics
+    """
+
     PATRISTIC = "patristic"
     COPHENETIC = "cophenetic"
+
+
+@dataclass(slots=True)
+class ClusterArguments:
+    """
+    CLI arguments for clustering program
+
+    Disabling the pylint warning for too-many-instance-attributes
+    as the number of attributes seems appropriate here for the purpose
+    the class serves.
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    input_file: p.Path
+    delimiter: str
+    thresholds: list[float]
+    method: str
+    cores: int
+    columns_path: p.Path | None
+    count_missing: bool
+    scaled: bool
+    tree_output: p.Path
+    cluster_outputs: p.Path
+    branch_length_type: BranchLengthType
+    filter_threshold: float
 
 
 class LinkageMatrixFields(Enum):
@@ -71,23 +105,26 @@ REPLACE_CHARS = {
 
 
 def _scipy_tree_to_newick_list(
-    node: sp.cluster.hierarchy.ClusterNode | None,
+    node: scipy.cluster.hierarchy.ClusterNode | None,
     newick: list[str],
     parentdist: float,
     leaf_names: list[str],
 ) -> list[str]:
     """Construct Newick tree from SciPy hierarchical clustering ClusterNode
 
-    This is a recursive function to help build a Newick output string from a scipy.cluster.hierarchy.to_tree input with
+    This is a recursive function to help build a Newick output string from a
+    scipy.cluster.hierarchy.to_tree input with
     user specified leaf node names.
 
     Notes:
         This function is meant to be used with `to_newick`
 
     Args:
-        node (scipy.cluster.hierarchy.ClusterNode): Root node is output of scipy.cluster.hierarchy.to_tree from hierarchical clustering linkage matrix
+        node (scipy.cluster.hierarchy.ClusterNode): Root node is output of
+        scipy.cluster.hierarchy.to_tree from hierarchical clustering linkage matrix
         parentdist (float): Distance of parent node of `node`
-        newick (list of string): Newick string output accumulator list which needs to be reversed and concatenated (i.e. `''.join(newick)`) for final output
+        newick (list of string): Newick string output accumulator list which needs
+        to be reversed and concatenated (i.e. `''.join(newick)`) for final output
         leaf_names (list of string): Leaf node names
 
     Returns:
@@ -111,15 +148,18 @@ def _scipy_tree_to_newick_list(
     return newick
 
 
-def to_newick(tree: sp.cluster.hierarchy.ClusterNode, leaf_names: list[str]) -> str:
+def to_newick(tree: scipy.cluster.hierarchy.ClusterNode, leaf_names: list[str]) -> str:
     """Newick tree output string from SciPy hierarchical clustering tree
 
     Convert a SciPy ClusterNode tree to a Newick format string.
-    Use scipy.cluster.hierarchy.to_tree on a hierarchical clustering linkage matrix to create the root ClusterNode for the `tree` input of this function.
+    Use scipy.cluster.hierarchy.to_tree on a hierarchical clustering linkage
+    matrix to create the root ClusterNode for the `tree` input of this
+    function.
 
     Args:
-        tree (scipy.cluster.hierarchy.ClusterNode): Output of scipy.cluster.hierarchy.to_tree from hierarchical clustering linkage matrix
-        leaf_names (list of string): Leaf node names
+        tree (scipy.cluster.hierarchy.ClusterNode): Output of
+        scipy.cluster.hierarchy.to_tree from hierarchical
+        clustering linkage matrix leaf_names (list of string): Leaf node names
 
     Returns:
         (string): Newick output string
@@ -128,22 +168,22 @@ def to_newick(tree: sp.cluster.hierarchy.ClusterNode, leaf_names: list[str]) -> 
     return "".join(newick_list[::-1])
 
 
-def subset_columns(profiles: pl.DataFrame, columns_keep: p.Path) -> pl.DataFrame:
+def subset_columns(profiles: pl.DataFrame, columns_path: p.Path) -> pl.DataFrame:
     """
     Subset only the required columns to use for distance matrix calculation
     """
-    columns_to_keep: set[str] | None = None
-    with columns_keep.open("r") as ck:
-        columns_to_keep = set([line.strip() for line in ck.readlines()])
+    columns: set[str] | None = None
+    with columns_path.open("r") as columns_file:
+        columns = {line.strip() for line in columns_file.readlines()}
 
     sample_col = profiles.columns[0]
     profile_cols = set(profiles.columns[1:])  # keep all columns but first
-    columns_keep_set = list(profile_cols & columns_to_keep)
-    return profiles.select(sample_col, *columns_keep_set)
+    columns_keep = list(profile_cols & columns)
+    return profiles.select(sample_col, *columns_keep)
 
 
 def read_input_profiles(
-    input: p.Path, columns_keep: p.Path | None, delimiter: str, threads: int
+    input_file: p.Path, columns_keep_path: p.Path | None, delimiter: str, threads: int
 ) -> pl.DataFrame:
     """
     Read the allelic profiles and perform any filtering and conversions required.
@@ -151,11 +191,11 @@ def read_input_profiles(
     Check for nulls in sample id column and enforces uniqueness
 
 
-    Polars mangles columns with ptotential duplicate names on loading, potential bug*
+    Polars mangles columns with potential duplicate names on loading, potential bug*
     """
 
     profiles = pl.read_csv(
-        input,
+        input_file,
         separator=delimiter,
         n_threads=threads,
         has_header=True,
@@ -164,40 +204,29 @@ def read_input_profiles(
         infer_schema=False,
     )
     if profiles.shape[1] <= 1:
-        logger.critical(
-            f"Only {profiles.shape[1]} in allele profiles, you need atleast two loci columns."
-        )
-        raise pl.exceptions.ShapeError(
-            f"Only {profiles.shape[1]} in allele profiles, you need atleast two loci columns."
-        )
+        err_string = f"Only {profiles.shape[1]} in allele profiles, you need atleast two loci columns."
+
+        logger.critical(err_string)
+        raise pl.exceptions.ShapeError(err_string)
 
     if profiles.shape[0] <= 1:
-        logger.critical(
-            f"Only {profiles.shape[0]} in allele profiles, you need atleast two sample rows."
-        )
-        raise pl.exceptions.RowsError(
-            f"Only {profiles.shape[0]} in allele profiles, you need atleast two sample rows."
-        )
+        err_string = f"Only {profiles.shape[0]} in allele profiles were loaded, but atleast two profiles must be provided."
+        logger.critical(err_string)
+        raise pl.exceptions.RowsError(err_string)
 
     # Cannot use null_count in polars for this, as we convert all null values into empty strings
     if profiles.select((pl.nth(0) == "").sum())[0, 0] >= 1:
-        logger.critical(
-            "Missing values identified in left most column (ID column), left most column can have no missing values."
-        )
-        raise pl.exceptions.RowsError(
-            "Missing values identified in left most column (ID column), left most column can have no missing values."
-        )
+        err_string = "Missing values identified in left most column (ID column), left most column can have no missing values."
+        logger.critical(err_string)
+        raise pl.exceptions.RowsError(err_string)
 
     if not profiles.select(pl.nth(0)).is_unique().all():
-        logger.critical(
-            "Duplicate values identified in left most column (ID column), leftmost column can have no missing values."
-        )
-        raise pl.exceptions.DuplicateError(
-            "Duplicate values identified in left most column (ID column), leftmost column can have no missing values."
-        )
+        err_string = "Duplicate values identified in left most column (ID column), leftmost column can have no missing values."
+        logger.critical(err_string)
+        raise pl.exceptions.DuplicateError(err_string)
 
-    if columns_keep is not None:
-        profiles = subset_columns(profiles, columns_keep)
+    if columns_keep_path:
+        profiles = subset_columns(profiles, columns_keep_path)
 
     return profiles
 
@@ -215,7 +244,8 @@ def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     number_of_columns = profiles.width - 1  # -1 to ignore the labels column
     threshold_columns = math.ceil(number_of_columns * threshold)
     logger.info(
-        f"Setting filter threshold to excluded columns missing {threshold_columns} or more loci."
+        "Setting filter threshold to excluded columns missing % or more loci.",
+        threshold_columns,
     )
     rows_before_filtering = profiles.height
     profiles = profiles.filter(
@@ -226,7 +256,7 @@ def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     )
 
     logger.info(
-        f"Removed {rows_before_filtering - profiles.height} rows after filtering."
+        "Removed %s rows after filtering.", rows_before_filtering - profiles.height
     )
 
     return profiles
@@ -292,7 +322,12 @@ def compute_dists(
 def compute_linkage_matrix(
     profiles_computed: npt.NDArray, linkage_method: str
 ) -> npt.NDArray:
-    linkage = sp.cluster.hierarchy.linkage(profiles_computed, method=linkage_method)  # type: ignore[arg-type]
+    """
+    Use scipy to compute a linkage matrix from the calculated distances.
+
+    profiles_computed refers to a 1D condensed array generated by calc_dists
+    """
+    linkage = scipy.cluster.hierarchy.linkage(profiles_computed, method=linkage_method)  # type: ignore[arg-type]
     return linkage
 
 
@@ -313,7 +348,7 @@ def assign_clusters(
         data_to_populate.append(
             pl.Series(
                 name=col_name,
-                values=sp.cluster.hierarchy.fcluster(
+                values=scipy.cluster.hierarchy.fcluster(
                     linkage, threshold, criterion="distance"
                 ),
                 dtype=pl.UInt32,
@@ -331,65 +366,65 @@ def assign_clusters(
 
 
 def convert_branch_lengths(
-    linkage_matrix: npt.NDArray, bl_type: BranchLengths
+    linkage_matrix: npt.NDArray, branch_length_type: BranchLengthType
 ) -> npt.NDArray:
     """
     Convert linkage matrix to to cophenetic distance if needed.
     """
-    if bl_type == BranchLengths.COPHENETIC:
+    if branch_length_type == BranchLengthType.COPHENETIC:
         for row in linkage_matrix:
             row[LinkageMatrixFields.DISTANCE.value] *= 2
     return linkage_matrix
 
 
-def mcluster(
-    input: p.Path,
-    delimiter: str,
-    thresholds: list[float],
-    method: str,
-    n_threads: int,
-    columns: p.Path | None,
-    count_missing: bool,
-    scaled: bool,
-    tree_output: p.Path,
-    cluster_outputs: p.Path,
-    tree_distances: BranchLengths,
-    filter_threshold: float,
-    *args: list[t.Any],
-    **kwargs: dict[t.Any, t.Any],
-) -> None:
+def mcluster(cluster_args: ClusterArguments) -> None:
     """
     Main runner function for mcluster.
     """
 
-    profiles = read_input_profiles(input, columns, delimiter, n_threads)
+    profiles = read_input_profiles(
+        cluster_args.input_file,
+        cluster_args.columns_path,
+        cluster_args.delimiter,
+        cluster_args.cores,
+    )
     logger.info("Loaded profiles")
     distances = compute_dists(
-        profiles, count_missing, scaled, n_threads, filter_threshold
+        profiles,
+        cluster_args.count_missing,
+        cluster_args.scaled,
+        cluster_args.cores,
+        cluster_args.filter_threshold,
     )
     logger.info("Computed distances")
-    linkages = compute_linkage_matrix(distances, method)
+    linkages = compute_linkage_matrix(distances, cluster_args.method)
     logger.info("Computed linkage matrix")
-    thresholds.sort(reverse=True)
-    logger.info(f"Thresholds being used for generating linkages: {thresholds}")
+    cluster_args.thresholds.sort(reverse=True)
+    logger.info(
+        "Thresholds being used for generating linkages: %s", cluster_args.thresholds
+    )
 
     sample_names = profiles.select(pl.nth(0)).to_series().to_list()
     # write out the tree
-    cluster_memberships = assign_clusters(linkages, thresholds, sample_names)
+    cluster_memberships = assign_clusters(
+        linkages, cluster_args.thresholds, sample_names
+    )
     logger.info("assigned clusters")
 
     sys.setrecursionlimit(4000)  # raise recursion limit for generating the tree
     linkages = convert_branch_lengths(
-        linkages, tree_distances
+        linkages, cluster_args.branch_length_type
     )  # convert branch lengths for tree display if needed
-    tree = sp.cluster.hierarchy.to_tree(linkages)
+    tree = scipy.cluster.hierarchy.to_tree(linkages)
     newick = to_newick(tree, sample_names)
 
-    with tree_output.open("w") as to:
+    with cluster_args.tree_output.open("w") as to:
         to.write(newick)
-    logger.info(f"Wrote newick tree to: {str(tree_output)}")
+    logger.info("Wrote newick tree to: %s", str(cluster_args.tree_output))
 
     cluster_memberships.write_csv(
-        cluster_outputs, separator=delimiter, include_header=True
+        cluster_args.cluster_outputs,
+        separator=cluster_args.delimiter,
+        include_header=True,
     )
-    logger.info(f"Wrote cluster memberships to: {str(cluster_outputs)}")
+    logger.info("Wrote cluster memberships to: %s", str(cluster_args.cluster_outputs))
