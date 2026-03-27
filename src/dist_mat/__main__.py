@@ -1,4 +1,4 @@
-"""Main entry point for dist-mat
+"""Main entry point for dist-mat.
 
 This module contains the main cli for dist-mat.
 """
@@ -8,17 +8,17 @@ import importlib.metadata
 __version__ = importlib.metadata.version(__package__ or __name__)
 
 import argparse
-import sys
-import os
 import logging
+import os
 import pathlib as p
+import sys
 from enum import StrEnum
 
 from dist_mat.cluster import (
-    cluster,
-    LinkageMetric,
     BranchLengthType,
     ClusterArguments,
+    LinkageMetric,
+    cluster,
 )
 
 logger = logging.getLogger(__name__)
@@ -31,10 +31,13 @@ logging.basicConfig(
 
 
 class Commands(StrEnum):
+    """Sub-commands for the program."""
+
     CLUSTER = "cluster"
 
 
 def path_exists(file_path: str) -> p.Path:
+    """Check if path exists."""
     fp = p.Path(file_path)
     if fp.is_file():
         return fp
@@ -44,6 +47,7 @@ def path_exists(file_path: str) -> p.Path:
 
 
 def check_if_float(float_input: str) -> float:
+    """Check if input value is float."""
     try:
         coerced_float: float = float(float_input)
     except ValueError:
@@ -54,8 +58,10 @@ def check_if_float(float_input: str) -> float:
 
 
 def percentage_range(float_input: str) -> float:
-    coerced_float = check_if_float(float_input)
-    if coerced_float < 0.00 or coerced_float > 100.0:
+    """Check if input value is in range for comparisons."""
+    coerced_float: float = check_if_float(float_input)
+    max_percent: float = 100.0
+    if coerced_float < 0.00 or coerced_float > max_percent:
         error_message = (
             f"Filter threshold must be between 0.00 and 100.0. You passed: {float_input}"
         )
@@ -65,6 +71,7 @@ def percentage_range(float_input: str) -> float:
 
 
 def cluster_threshold(float_input: str) -> float:
+    """Verify input types are valid."""
     coerced_input: float = float(float_input)
     if coerced_input < 0.00 or coerced_input == float("inf"):
         error_message = (
@@ -76,6 +83,7 @@ def cluster_threshold(float_input: str) -> float:
 
 
 def main() -> None:
+    """Program entry-point."""
     # Global command-line arguments:
     parent_parser = argparse.ArgumentParser(
         add_help=False,
@@ -162,8 +170,10 @@ def main() -> None:
     parser_cluster.add_argument(
         "--columns",
         "-k",
-        help="""A file containing a single column of the column names to subset from the passed 
-allele profiles.""",
+        help=(
+            "A file containing a single column of the column names to subset from the passed "
+            "allele profiles."
+        ),
         type=p.Path,
         required=False,
     )
@@ -178,8 +188,10 @@ allele profiles.""",
     parser_cluster.add_argument(
         "--scaled",
         "-s",
-        help="""Compute the scaled distance. Distance is presented as a percentage, or a value 
-between 0.0-100.0""",
+        help=(
+            "Compute the scaled distance. Distance is presented as a percentage, or a value "
+            "between 0.0-100.0"
+        ),
         action="store_true",
     )
 
@@ -194,8 +206,10 @@ between 0.0-100.0""",
     parser_cluster.add_argument(
         "--filter-threshold",
         "-f",
-        help="""Excluded samples from analysis if it is missing more than the specified percentage 
-of data. Must be between 0.0 and 100.0. [default %(default)s]""",
+        help=(
+            "Excluded samples from analysis if it is missing more than the specified percentage "
+            "of data. Must be between 0.0 and 100.0. [default %(default)s]"
+        ),
         default=0.00,
         type=percentage_range,
     )

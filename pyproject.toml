@@ -53,4 +53,22 @@ max-complexity-allowed = 10
 
 [tool.ruff]
 line-length = 100
-lint.select = ["E", "F", "TRY"]
+lint.select = [
+  "E",
+  "F",
+  "TRY",
+  "FLY",
+  "I",
+  "NPY",
+  "N",
+  "PERF",
+  "W",
+  "D",
+  "PL",
+  "PLE",
+  "PLR",
+  "PLW",
+  "UP",
+  "FURB",
+  "RUF",
+]

@@ -1,17 +1,15 @@
-"""
-Re-implementation of mcluster
-"""
+"""Re-implementation of mcluster."""
 
-import sys
 import logging
 import math
 import pathlib as p
-from enum import StrEnum, Enum
+import sys
 from dataclasses import dataclass
+from enum import Enum, StrEnum
 
-import scipy
-import polars as pl
 import numpy as np
+import polars as pl
+import scipy
 from numpy import typing as npt
 
 import dist_mat as dm
@@ -25,20 +23,16 @@ logging.basicConfig(
 )
 
 
-class ValueErrorLeaves(Exception):
-    """
-    Exception for raising a value error for un-equal numbers of objects
-    in generation of final newick.
-    """
+class ValueLeavesError(Exception):
+    """Exception for raising a value error for un-equal numbers of objects."""
 
     def __init__(self, n_leaves, n_objects) -> None:
+        """ValueError for unequal numbers of leaves and sample names."""
         super().__init__(f"Expected {n_objects} leaf names, got {n_leaves}")
 
 
 class LinkageMetric(StrEnum):
-    """
-    Linkage options that can be passed to scipy
-    """
+    """Linkage options that can be passed to scipy."""
 
     SINGLE = "single"
     AVERAGE = "average"
@@ -46,9 +40,7 @@ class LinkageMetric(StrEnum):
 
 
 class BranchLengthType(StrEnum):
-    """
-    Branch length types used for converting tree branch metrics
-    """
+    """Branch length types used for converting tree branch metrics."""
 
     PATRISTIC = "patristic"
     COPHENETIC = "cophenetic"
@@ -56,8 +48,7 @@ class BranchLengthType(StrEnum):
 
 @dataclass(slots=True)
 class ClusterArguments:
-    """
-    CLI arguments for clustering program
+    """CLI arguments for clustering program.
 
     Disabling the pylint warning for too-many-instance-attributes
     as the number of attributes seems appropriate here for the purpose
@@ -81,8 +72,7 @@ class ClusterArguments:
 
 
 class LinkageMatrixFields(Enum):
-    """
-    From the scipy docs:
+    """From the scipy docs.
 
     A by 4 matrix Z is returned. At the i-th iteration, clusters with indices
     Z[i, 0] and Z[i, 1] are combined to form cluster n+1. A cluster with an
@@ -113,20 +103,18 @@ REPLACE_CHARS = {
 
 
 def linkage_matrix_to_nwk(linkage_matrix: npt.NDArray, sample_ids: list[str]) -> str:
-    """
-    Important Note:
+    """Code is taken from an old Scipy PR.
 
     I did not come up with this code below is has been adapated from a scipy PR here:
     https://github.com/scipy/scipy/pull/17329/changes
 
     The inputs are the linkage matrix from scipy, and the sample_ids correspond to
     the alleleic profiles.
-
     """
     n_objects: int = linkage_matrix.shape[0] + 1
     n_leaves: int = len(sample_ids)
     if n_objects != n_leaves:
-        raise ValueErrorLeaves(n_leaves, n_objects)
+        raise ValueLeavesError(n_leaves, n_objects)
 
     newick_intermediates: list[str | None] = sample_ids + [None] * linkage_matrix.shape[0]
     cluster_dists: list[np.float64] = [np.float64(0)] * (n_objects + linkage_matrix.shape[0])
@@ -146,9 +134,7 @@ def linkage_matrix_to_nwk(linkage_matrix: npt.NDArray, sample_ids: list[str]) ->
 
 
 def subset_columns(profiles: pl.DataFrame, columns_path: p.Path) -> pl.DataFrame:
-    """
-    Subset only the required columns to use for distance matrix calculation
-    """
+    """Subset only the required columns to use for distance matrix calculation."""
     columns: set[str] | None = None
     with columns_path.open("r") as columns_file:
         columns = {line.strip() for line in columns_file.readlines()}
@@ -162,15 +148,13 @@ def subset_columns(profiles: pl.DataFrame, columns_path: p.Path) -> pl.DataFrame
 def read_input_profiles(
     input_file: p.Path, columns_keep_path: p.Path | None, delimiter: str, threads: int
 ) -> pl.DataFrame:
-    """
-    Read the allelic profiles and perform any filtering and conversions required.
+    """Read the allelic profiles and perform any filtering and conversions required.
 
     Check for nulls in sample id column and enforces uniqueness
 
 
     Polars mangles columns with potential duplicate names on loading, potential bug*
     """
-
     profiles = pl.read_csv(
         input_file,
         separator=delimiter,
@@ -220,11 +204,10 @@ def read_input_profiles(
 
 
 def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
-    """
-    Remove rows from the dataframe that have are missing more than
-    the thresholds set limit for missing data.
+    """Remove rows missing a certain percentage of data.
 
-
+    Remove rows from the dataframe that have are missing more than the thresholds set limit for
+    missing data.
     """
     if threshold == 0.00:
         return profiles
@@ -249,11 +232,11 @@ def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
 
 
 def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
-    """
+    """Return data prepared for calc_dists.
+
     Transform the dataframe of profiles by hashing the entries, converting missing allele
     charactars to zeroes and filtering rows.
     """
-
     # Can add additonal qc filtering here
     data_columns = profiles.columns[1:]  # only apply functions to loci columns
     profiles = profiles.with_columns(
@@ -276,10 +259,7 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
 
 
 def prep_data(profiles: pl.DataFrame, threshold: float) -> npt.NDArray:
-    """
-    Prepare profiles for computation by the the calc_dists function of dist_mat.
-    """
-
+    """Prepare profiles for computation by the the calc_dists function of dist_mat."""
     data_columns = profiles.columns[1:]  # only apply functions to loci columns
     profiles = transform_data(profiles, threshold)
 
@@ -297,17 +277,14 @@ def compute_dists(
     threads: int,
     filter_threshold: float = 0.0,
 ) -> npt.NDArray:
-    """
-    Compute the 1D array required by scipy for generation of the linkage matrix.
-    """
+    """Compute the 1D array required by scipy for generation of the linkage matrix."""
     prepared_profiles = prep_data(profiles, filter_threshold)
     distances = dm.calc_dists(prepared_profiles, threads, scaled, count_missing)
     return distances
 
 
 def compute_linkage_matrix(profiles_computed: npt.NDArray, linkage_method: str) -> npt.NDArray:
-    """
-    Use scipy to compute a linkage matrix from the calculated distances.
+    """Use scipy to compute a linkage matrix from the calculated distances.
 
     profiles_computed refers to a 1D condensed array generated by calc_dists
     """
@@ -318,17 +295,15 @@ def compute_linkage_matrix(profiles_computed: npt.NDArray, linkage_method: str) 
 def assign_clusters(
     linkage: npt.NDArray, thresholds: list[int | float], labels: list[str]
 ) -> pl.DataFrame:
-    """
-    Generate the new cluster membership code for all samples at each threshold.
+    """Generate the new cluster membership code for all samples at each threshold.
 
     Thresholds are assumed to be sorted in descending order e.g [10.0, 5.0, 1.0]
     """
-
     data_to_populate = [pl.Series(name="SampleID", values=labels)]
     cols_concat = []
 
     for threshold in thresholds:
-        col_name = f"level_{str(threshold)}"
+        col_name = f"level_{threshold!s}"
         data_to_populate.append(
             pl.Series(
                 name=col_name,
@@ -350,9 +325,7 @@ def assign_clusters(
 def convert_branch_lengths(
     linkage_matrix: npt.NDArray, branch_length_type: BranchLengthType
 ) -> npt.NDArray:
-    """
-    Convert linkage matrix to to cophenetic distance if needed.
-    """
+    """Convert linkage matrix to to cophenetic distance if needed."""
     if branch_length_type == BranchLengthType.COPHENETIC:
         for row in linkage_matrix:
             row[LinkageMatrixFields.DISTANCE.value] *= 2
@@ -360,10 +333,7 @@ def convert_branch_lengths(
 
 
 def cluster(cluster_args: ClusterArguments) -> None:
-    """
-    Main runner function for mcluster.
-    """
-
+    """Runner function of cluster."""
     profiles = read_input_profiles(
         cluster_args.input_file,
         cluster_args.columns_path,
