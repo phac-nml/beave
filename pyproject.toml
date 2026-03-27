@@ -23,7 +23,7 @@ dev = [
   "hypothesis>=6.0.0",
   "pytest-workflow>=2.0.1",
   "mypy>=1.19.1",
-  "ruff>=0.15.7"
+  "ruff>=0.15.7",
 ]
 
 [tool.scikit-build]
@@ -53,3 +53,4 @@ max-complexity-allowed = 10
 
 [tool.ruff]
 line-length = 100
+lint.select = ["E", "F", "TRY"]

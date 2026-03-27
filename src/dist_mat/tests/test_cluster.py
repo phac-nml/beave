@@ -8,7 +8,7 @@ from dist_mat import cluster
 import polars as pl
 from polars.testing.parametric import dataframes, column
 import numpy as np
-from numpy import float64, typing as npt
+from numpy import typing as npt
 import scipy
 from hypothesis import given, settings, HealthCheck, strategies as st
 from hypothesis.extra import numpy as nps
@@ -566,9 +566,8 @@ def test_calc_dists_file_inputs(input, scaled, count_missing):
     dists: npt.NDArray = cluster.compute_dists(profiles, count_missing, scaled, 1)
     matrix: npt.NDArray = scipy.spatial.distance.squareform(
         dists
-    )  # conversion to squareform so iteration of the matrix is simpler as we do not need to calculate the
-    # column and row index from the output condensed array.
-    #
+    )  # conversion to squareform so iteration of the matrix is simpler as we do not need to
+    # calculate the column and row index from the output condensed array.
     for i in range(0, profiles.height):
         sample1: int = int(profiles.item(i, "sample"))
         for f in range(0, profiles.height):

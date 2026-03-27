@@ -162,7 +162,8 @@ def main() -> None:
     parser_cluster.add_argument(
         "--columns",
         "-k",
-        help="A file containing a single column of the column names to subset from the passed allele profiles.",
+        help="""A file containing a single column of the column names to subset from the passed 
+allele profiles.""",
         type=p.Path,
         required=False,
     )
@@ -177,7 +178,8 @@ def main() -> None:
     parser_cluster.add_argument(
         "--scaled",
         "-s",
-        help="Compute the scaled distance. Distance is presented as a percentage, or a value between 0.0-100.0",
+        help="""Compute the scaled distance. Distance is presented as a percentage, or a value 
+between 0.0-100.0""",
         action="store_true",
     )
 
@@ -192,7 +194,8 @@ def main() -> None:
     parser_cluster.add_argument(
         "--filter-threshold",
         "-f",
-        help="Excluded samples from analysis if it is missing more than the specified percentage of data. Must be between 0.0 and 100.0. [default %(default)s]",
+        help="""Excluded samples from analysis if it is missing more than the specified percentage 
+of data. Must be between 0.0 and 100.0. [default %(default)s]""",
         default=0.00,
         type=percentage_range,
     )

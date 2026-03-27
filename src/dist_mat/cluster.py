@@ -13,7 +13,6 @@ import scipy
 import polars as pl
 import numpy as np
 from numpy import typing as npt
-from scipy.cluster.hierarchy import ClusterNode
 
 import dist_mat as dm
 
@@ -24,6 +23,16 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+
+
+class ValueErrorLeaves(Exception):
+    """
+    Exception for raising a value error for un-equal numbers of objects
+    in generation of final newick.
+    """
+
+    def __init__(self, n_leaves, n_objects) -> None:
+        super().__init__(f"Expected {n_objects} leaf names, got {n_leaves}")
 
 
 class LinkageMetric(StrEnum):
@@ -117,7 +126,7 @@ def linkage_matrix_to_nwk(linkage_matrix: npt.NDArray, sample_ids: list[str]) ->
     n_objects: int = linkage_matrix.shape[0] + 1
     n_leaves: int = len(sample_ids)
     if n_objects != n_leaves:
-        raise ValueError(f"Expected {n_objects} leaf names, got {n_leaves}")
+        raise ValueErrorLeaves(n_leaves, n_objects)
 
     newick_intermediates: list[str | None] = sample_ids + [None] * linkage_matrix.shape[0]
     cluster_dists: list[np.float64] = [np.float64(0)] * (n_objects + linkage_matrix.shape[0])
@@ -180,18 +189,27 @@ def read_input_profiles(
         raise pl.exceptions.ShapeError(err_string)
 
     if profiles.shape[0] <= 1:
-        err_string = f"Only {profiles.shape[0]} in allele profiles were loaded, but atleast two profiles must be provided."
+        err_string = (
+            f"Only {profiles.shape[0]} in allele profiles were loaded, but atleast two "
+            f"profiles must be provided."
+        )
         logger.critical(err_string)
         raise pl.exceptions.RowsError(err_string)
 
     # Cannot use null_count in polars for this, as we convert all null values into empty strings
     if profiles.select((pl.nth(0) == "").sum())[0, 0] >= 1:
-        err_string = "Missing values identified in left most column (ID column), left most column can have no missing values."
+        err_string = (
+            "Missing values identified in left most column (ID column), left most column"
+            "can have no missing values."
+        )
         logger.critical(err_string)
         raise pl.exceptions.RowsError(err_string)
 
     if not profiles.select(pl.nth(0)).is_unique().all():
-        err_string = "Duplicate values identified in left most column (ID column), leftmost column can have no missing values."
+        err_string = (
+            "Duplicate values identified in left most column (ID column), leftmost column"
+            " can have no missing values."
+        )
         logger.critical(err_string)
         raise pl.exceptions.DuplicateError(err_string)
 
