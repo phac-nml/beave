@@ -326,9 +326,9 @@ def convert_branch_lengths(
     linkage_matrix: npt.NDArray, branch_length_type: BranchLengthType
 ) -> npt.NDArray:
     """Convert linkage matrix to to cophenetic distance if needed."""
-    if branch_length_type == BranchLengthType.COPHENETIC:
+    if branch_length_type == BranchLengthType.PATRISTIC:
         for row in linkage_matrix:
-            row[LinkageMatrixFields.DISTANCE.value] *= 2
+            row[LinkageMatrixFields.DISTANCE.value] /= 2
     return linkage_matrix
 
 

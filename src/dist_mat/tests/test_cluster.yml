@@ -178,11 +178,36 @@
     contains:
       - "polars.exceptions.RowsError: Missing values identified in left most column (ID column), left most column can have no missing values."
 
-- name: Run cluster known inputs
-  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m average -l clusters.tsv -sc -b patristic -n 2 --thresholds 10.0 9.0 8.0
+- name: Run cluster known inputs complete linkage
+  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m complete -l clusters.tsv -b patristic -n 1 --thresholds 5 3 0
   files:
     - path: "tree.out"
       should_exist: true
+      md5sum: fd228bc6b7a19e6c2413acd7e9f5ee4d  # Verified manually
     - path: clusters.tsv
       should_exist: true
+      md5sum: 3dd5c5b91249511c89efdcb8ccb9e9b4 # Verified manually
+
+
+- name: Run cluster known inputs single linkage
+  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m single -l clusters.tsv -b patristic -n 1 --thresholds 5 3 0
+  files:
+    - path: "tree.out"
+      should_exist: true
+      md5sum: fc81376e9ba335a29b29ed6ed327812a # Verified manually
+    - path: clusters.tsv
+      should_exist: true
+      md5sum: 78abe9994e6e5bcc84c77e8cfc5345de # Verified manually
+
+
+- name: Run cluster known inputs average linkage
+  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m average -l clusters.tsv -b patristic -n 1 --thresholds 5 3 0
+  files:
+    - path: "tree.out"
+      should_exist: true
+      md5sum: 879283e060f6cbd739bc68c11dd0f59d 
+    - path: clusters.tsv
+      should_exist: true
+      md5sum: 3dd5c5b91249511c89efdcb8ccb9e9b4 
+
 

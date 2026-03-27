@@ -485,13 +485,13 @@ def test_assign_clusters_(linkage, thresholds, labels, expected):
     [
         (
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
-            cluster.BranchLengthType.PATRISTIC,
+            cluster.BranchLengthType.COPHENETIC,
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
         ),
         (
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
-            cluster.BranchLengthType.COPHENETIC,
-            np.array([[0, 1, 2.82842712, 2], [2, 3, 2.82842712, 3]], dtype=float),
+            cluster.BranchLengthType.PATRISTIC,
+            np.array([[0, 1, 0.70710678, 2], [2, 3, 0.70710678, 3]], dtype=float),
         ),
     ],
 )
