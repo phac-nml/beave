@@ -177,3 +177,12 @@
   stderr:
     contains:
       - "polars.exceptions.RowsError: Missing values identified in left most column (ID column), left most column can have no missing values."
+
+- name: Run cluster known inputs
+  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m average -l clusters.tsv -sc -b patristic -n 2 --thresholds 10.0 9.0 8.0
+  files:
+    - path: "tree.out"
+      should_exist: true
+    - path: clusters.tsv
+      should_exist: true
+
