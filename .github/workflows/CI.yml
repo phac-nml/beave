@@ -40,7 +40,7 @@ jobs:
           pip install scikit-build-core nanobind
           pip install --no-build-isolation -ve .[dev]
 
-      - name: Lint with mypy
+      - name: Type checking with mypy
         run: |
           mypy
 

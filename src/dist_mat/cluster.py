@@ -183,7 +183,7 @@ def read_input_profiles(
     # Cannot use null_count in polars for this, as we convert all null values into empty strings
     if profiles.select((pl.nth(0) == "").sum())[0, 0] >= 1:
         err_string = (
-            "Missing values identified in left most column (ID column), left most column"
+            "Missing values identified in left most column (ID column), left most column "
             "can have no missing values."
         )
         logger.critical(err_string)
