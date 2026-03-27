@@ -26,7 +26,7 @@ logging.basicConfig(
 class ValueLeavesError(Exception):
     """Exception for raising a value error for un-equal numbers of objects."""
 
-    def __init__(self, n_leaves, n_objects) -> None:
+    def __init__(self, n_leaves: int, n_objects: int) -> None:
         """ValueError for unequal numbers of leaves and sample names."""
         super().__init__(f"Expected {n_objects} leaf names, got {n_leaves}")
 

@@ -44,6 +44,10 @@ jobs:
         run: |
           mypy
 
+      - name: Lint with Ruff
+        run: |
+          ruff check ./src/dist_mat/*.py
+
       - name: Run pytest
         run: |
           pytest
