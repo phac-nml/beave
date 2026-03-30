@@ -67,7 +67,7 @@ def percentage_range(float_input: str) -> float:
         )
         logger.critical(error_message)
         raise ValueError(error_message)
-    return converted_float / 100.0  # convert percentage to decimal
+    return converted_float / 100.0  # convert percentage to decimal fraction
 
 
 def cluster_threshold(float_input: str) -> float:
