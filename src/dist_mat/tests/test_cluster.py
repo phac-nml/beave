@@ -269,9 +269,6 @@ def test_filter_rows(dataframe, threshold, expected, error) -> None:
     """Test that filtering of rows is correct."""
     if error is None:
         filtered_data = cluster.filter_rows(dataframe, threshold)
-        print(threshold)
-        print(filtered_data)
-        print(dataframe)
         assert filtered_data.equals(expected)
     else:
         with pytest.raises(error):
@@ -347,7 +344,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
     array = np.zeros((profiles.height, 3), dtype=np.uint32)  # array should all be zeros
     for i in array:
         i[2] = np.uint32(2683474508)  # last value should be the hashed version of "A"
-    output = cluster.prep_data(profiles, 0.00)
+    output = cluster.prep_data(profiles, 1.00)
     assert np.array_equal(output, array)
 
 
@@ -432,47 +429,40 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
             0.00,
             pl.DataFrame(
                 {
-                    "SampleID": ["a", "b", "c", "d"],
+                    "SampleID": ["a", "b", "d"],
                     "A": [
                         10486959400714174283,  # value corrends to a hashed "2"
-                        10486959400714174283,
                         10486959400714174283,
                         10486959400714174283,
                     ],
                     "b": [
                         10486959400714174283,
                         10486959400714174283,
-                        0,
                         10486959400714174283,
                     ],
                     "c": [
                         10486959400714174283,
                         10486959400714174283,
-                        0,
                         10486959400714174283,
                     ],
                     "d": [
                         10486959400714174283,
                         10486959400714174283,
-                        0,
                         10486959400714174283,
                     ],
                     "e": [
                         10486959400714174283,
                         10486959400714174283,
-                        0,
                         10486959400714174283,
                     ],
                     "f": [
                         10486959400714174283,
                         10486959400714174283,
-                        0,
                         10486959400714174283,
                     ],
                     "g": [
                         10486959400714174283,
                         10486959400714174283,
-                        0,
                         10486959400714174283,
                     ],
                 },

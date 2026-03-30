@@ -12,7 +12,6 @@ import logging
 import os
 import sys
 from enum import StrEnum
-
 from pathlib import Path
 
 from dist_mat.cluster import (
@@ -50,37 +49,37 @@ def path_exists(file_path: str) -> Path:
 def check_if_float(float_input: str) -> float:
     """Check if input value is float."""
     try:
-        coerced_float: float = float(float_input)
+        converted_float: float = float(float_input)
     except ValueError:
-        error_message = f"Value  {float_input} cannot be coerced to a float."
+        error_message = f"Value  {float_input} cannot be converted to a float."
         logger.critical(error_message)
         raise ValueError(error_message)
-    return coerced_float
+    return converted_float
 
 
 def percentage_range(float_input: str) -> float:
     """Check if input value is in range for comparisons."""
-    coerced_float: float = check_if_float(float_input)
+    converted_float: float = check_if_float(float_input)
     max_percent: float = 100.0
-    if coerced_float < 0.00 or coerced_float > max_percent:
+    if converted_float < 0.00 or converted_float > max_percent:
         error_message = (
             f"Filter threshold must be between 0.00 and 100.0. You passed: {float_input}"
         )
         logger.critical(error_message)
         raise ValueError(error_message)
-    return coerced_float / 100.0  # convert percentage to decimal
+    return converted_float / 100.0  # convert percentage to decimal
 
 
 def cluster_threshold(float_input: str) -> float:
     """Verify input types are valid."""
-    coerced_input: float = float(float_input)
-    if coerced_input < 0.00 or coerced_input == float("inf"):
+    converted_input: float = float(float_input)
+    if converted_input < 0.00 or converted_input == float("inf"):
         error_message = (
             f"Threshold values must be positive and not infinity. You passed: {float_input}"
         )
         logger.critical(error_message)
         raise ValueError(error_message)
-    return coerced_input
+    return converted_input
 
 
 def main() -> None:
