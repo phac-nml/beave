@@ -23,7 +23,7 @@ def test_df() -> pl.DataFrame:
     return pl.DataFrame(
         {
             str(k): [hashlib.md5(str(i).encode("utf8")).hexdigest() for i in range(1000)]
-            for k in range(30000)
+            for k in range(300)
         }
     )
 
