@@ -50,7 +50,7 @@ jobs:
 
       - name: Run pytest
         run: |
-          pytest
+          pytest -k "not test_benchmark"
 
   complexity:
     runs-on: ubuntu-latest

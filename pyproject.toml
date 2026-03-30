@@ -24,6 +24,7 @@ dev = [
   "pytest-workflow>=2.0.1",
   "mypy>=1.19.1",
   "ruff>=0.15.7",
+  "pytest-benchmark>=5.2.3",
 ]
 
 [tool.scikit-build]

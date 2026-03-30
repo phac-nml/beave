@@ -5,6 +5,7 @@ import pytest  # noqa: I001
 import dist_mat
 from dist_mat import cluster
 
+import hashlib
 from pathlib import Path
 
 import polars as pl
@@ -14,6 +15,30 @@ from numpy import typing as npt
 import scipy
 from hypothesis import given, settings, HealthCheck, strategies as st
 from hypothesis.extra import numpy as nps
+
+
+@pytest.fixture(scope="session")
+def test_df() -> pl.DataFrame:
+    """Example dataframe for the benchmark function."""
+    return pl.DataFrame(
+        {
+            str(k): [hashlib.md5(str(i).encode("utf8")).hexdigest() for i in range(1000)]
+            for k in range(30000)
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    "func_bench",
+    [
+        cluster.transform_data,
+        cluster.transform_data_hashes,
+    ],
+)
+def test_benchmark_data_transformation(benchmark, test_df, func_bench):
+    """Benchmarks for different data transformation methods."""
+    benchmark(func_bench, test_df, 1.00)
+    assert True
 
 
 @pytest.mark.parametrize(

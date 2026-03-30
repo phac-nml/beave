@@ -242,13 +242,12 @@ def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     return profiles
 
 
-def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
+def transform_data_hashes(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     """Return data prepared for calc_dists.
 
     Transform the dataframe of profiles by hashing the entries, converting missing allele
     charactars to zeroes and filtering rows.
     """
-    # Can add additonal qc filtering here
     data_columns = profiles.columns[1:]  # only apply functions to loci columns
     profiles = profiles.with_columns(
         pl.all()
@@ -269,15 +268,46 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     return profiles
 
 
+def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
+    """Return data prepared for calc_dists.
+
+    Transform the dataframe of profiles by creating a look up table to cast values to integers,
+    converting missing allele charactars to zeroes and filtering rows.
+    """
+    # Create mapping instead of using hashes
+    values_columns = 1
+    unique_values = (
+        profiles.with_columns(pl.all().exclude(profiles.columns[0]))
+        .unpivot()
+        .to_series(values_columns)
+        .unique()
+        .to_list()
+    )
+
+    char_mapping = (
+        {  # start mapping at 1, as 0 is used for missing values and add one to not miss values
+            value: np.uint32(idx)
+            for value, idx in zip(unique_values, range(1, len(unique_values) + 1))
+        }
+        | REPLACE_CHARS
+    )  # Create new dictionary, REPLACE_CHARS keys overwrite those in new dictionary
+
+    profiles = profiles.with_columns(
+        pl.all()
+        .exclude(profiles.columns[0])  # skip id column
+        .replace(char_mapping)
+        .cast(pl.UInt32)
+    )
+
+    profiles = filter_rows(profiles, threshold)
+    return profiles
+
+
 def prep_data(profiles: pl.DataFrame, threshold: float) -> npt.NDArray:
     """Prepare profiles for computation by the the calc_dists function of dist_mat."""
     data_columns = profiles.columns[1:]  # only apply functions to loci columns
     profiles = transform_data(profiles, threshold)
-
-    profiles_numpy = profiles.select([pl.col(i) for i in data_columns]).to_numpy()
-    profiles_numpy = profiles_numpy.astype(
-        np.uint32
-    )  # convert hashes to 32 bit representation for dist_mat
+    profiles_numpy = profiles.select([pl.col(i) for i in data_columns]).to_numpy().astype(np.uint32)
     return profiles_numpy
 
 
