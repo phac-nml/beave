@@ -10,9 +10,10 @@ __version__ = importlib.metadata.version(__package__ or __name__)
 import argparse
 import logging
 import os
-import pathlib as p
 import sys
 from enum import StrEnum
+
+from pathlib import Path
 
 from dist_mat.cluster import (
     BranchLengthType,
@@ -36,9 +37,9 @@ class Commands(StrEnum):
     CLUSTER = "cluster"
 
 
-def path_exists(file_path: str) -> p.Path:
+def path_exists(file_path: str) -> Path:
     """Check if path exists."""
-    fp = p.Path(file_path)
+    fp = Path(file_path)
     if fp.is_file():
         return fp
     error_message = f"Input file does not exist. {file_path}"
@@ -90,9 +91,10 @@ def main() -> None:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
-    number_of_cores_default = 1
     if cpu_count := os.cpu_count():
         number_of_cores_default = cpu_count // 2
+    else:
+        number_of_cores_default = 1
 
     parent_parser.add_argument(
         "--n-threads",
@@ -135,7 +137,7 @@ def main() -> None:
         "--tree-output",
         "-t",
         help="File path to write generated tree. [default %(default)s]",
-        type=p.Path,
+        type=Path,
         required=False,
         default="clusters.nwk",
     )
@@ -144,7 +146,7 @@ def main() -> None:
         "--cluster-output",
         "-l",
         help="File path to write generated clusters. [default %(default)s]",
-        type=p.Path,
+        type=Path,
         required=False,
         default="clusters.tsv",
     )
@@ -174,7 +176,7 @@ def main() -> None:
             "A file containing a single column of the column names to subset from the passed "
             "allele profiles."
         ),
-        type=p.Path,
+        type=Path,
         required=False,
     )
 
@@ -210,7 +212,7 @@ def main() -> None:
             "Excluded samples from analysis if it is missing more than the specified percentage "
             "of data. Must be between 0.0 and 100.0. [default %(default)s]"
         ),
-        default=0.00,
+        default=100.00,
         type=percentage_range,
     )
 

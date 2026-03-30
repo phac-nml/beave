@@ -2,10 +2,10 @@
 
 import logging
 import math
-import pathlib as p
 import sys
 from dataclasses import dataclass
 from enum import Enum, StrEnum
+from pathlib import Path
 
 import numpy as np
 import polars as pl
@@ -28,7 +28,15 @@ class ValueLeavesError(Exception):
 
     def __init__(self, n_leaves: int, n_objects: int) -> None:
         """ValueError for unequal numbers of leaves and sample names."""
-        super().__init__(f"Expected {n_objects} leaf names, got {n_leaves}")
+        super().__init__(f"Expected {n_objects} leaf names, got {n_leaves}.")
+
+
+class AllColumnsFilteredError(Exception):
+    """Exception raised if all rows are filtered."""
+
+    def __init__(self, threshold: float) -> None:
+        """Error raised if all column values removed."""
+        super().__init__(f"All data removed after filtering at: {threshold}.")
 
 
 class LinkageMetric(StrEnum):
@@ -57,16 +65,16 @@ class ClusterArguments:
 
     # pylint: disable=too-many-instance-attributes
 
-    input_file: p.Path
+    input_file: Path
     delimiter: str
     thresholds: list[float]
     method: str
     cores: int
-    columns_path: p.Path | None
+    columns_path: Path | None
     count_missing: bool
     scaled: bool
-    tree_output: p.Path
-    cluster_outputs: p.Path
+    tree_output: Path
+    cluster_outputs: Path
     branch_length_type: BranchLengthType
     filter_threshold: float
 
@@ -133,7 +141,7 @@ def linkage_matrix_to_nwk(linkage_matrix: npt.NDArray, sample_ids: list[str]) ->
     return newick_intermediates[linkage_matrix.shape[0] - 1 + n_objects] + ";"
 
 
-def subset_columns(profiles: pl.DataFrame, columns_path: p.Path) -> pl.DataFrame:
+def subset_columns(profiles: pl.DataFrame, columns_path: Path) -> pl.DataFrame:
     """Subset only the required columns to use for distance matrix calculation."""
     columns: set[str] | None = None
     with columns_path.open("r") as columns_file:
@@ -146,7 +154,7 @@ def subset_columns(profiles: pl.DataFrame, columns_path: p.Path) -> pl.DataFrame
 
 
 def read_input_profiles(
-    input_file: p.Path, columns_keep_path: p.Path | None, delimiter: str, threads: int
+    input_file: Path, columns_keep_path: Path | None, delimiter: str, threads: int
 ) -> pl.DataFrame:
     """Read the allelic profiles and perform any filtering and conversions required.
 
@@ -209,11 +217,12 @@ def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     Remove rows from the dataframe that have are missing more than the thresholds set limit for
     missing data.
     """
-    if threshold == 0.00:
+    hundred_percent: float = 1.0
+    if threshold == hundred_percent:
         return profiles
 
     number_of_columns = profiles.width - 1  # -1 to ignore the labels column
-    threshold_columns = math.ceil(number_of_columns * threshold)
+    threshold_columns = math.floor(number_of_columns * threshold)
     logger.info(
         "Setting filter threshold to excluded columns missing % or more loci.",
         threshold_columns,
@@ -223,8 +232,10 @@ def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
         pl.sum_horizontal(
             pl.all().exclude(profiles.columns[0]) == MISSING_VALUE
         )  # select all columns but first id col
-        < threshold_columns
+        <= threshold_columns
     )
+    if profiles.is_empty():
+        raise AllColumnsFilteredError(threshold)
 
     logger.info("Removed %s rows after filtering.", rows_before_filtering - profiles.height)
 
@@ -275,7 +286,7 @@ def compute_dists(
     count_missing: bool,
     scaled: bool,
     threads: int,
-    filter_threshold: float = 0.0,
+    filter_threshold: float = 1.0,
 ) -> npt.NDArray:
     """Compute the 1D array required by scipy for generation of the linkage matrix."""
     prepared_profiles = prep_data(profiles, filter_threshold)
@@ -328,7 +339,7 @@ def convert_branch_lengths(
     """Convert linkage matrix to to cophenetic distance if needed."""
     if branch_length_type == BranchLengthType.PATRISTIC:
         for row in linkage_matrix:
-            row[LinkageMatrixFields.DISTANCE.value] /= 2
+            row[LinkageMatrixFields.DISTANCE.value] *= 0.5
     return linkage_matrix
 
 

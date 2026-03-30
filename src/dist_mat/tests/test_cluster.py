@@ -1,9 +1,11 @@
-import pytest
+"""Tests for cluter.py."""
 
-import pathlib as p
+import pytest  # noqa: I001
 
 import dist_mat
 from dist_mat import cluster
+
+from pathlib import Path
 
 import polars as pl
 from polars.testing.parametric import dataframes, column
@@ -18,7 +20,7 @@ from hypothesis.extra import numpy as nps
     "input,columns_keep,delimiter,threads,expected",
     [
         (
-            p.Path("src/dist_mat/tests/data/simple_test_profiles.csv"),
+            Path("src/dist_mat/tests/data/simple_test_profiles.csv"),
             None,
             ",",
             1,
@@ -32,7 +34,7 @@ from hypothesis.extra import numpy as nps
             ),
         ),
         (
-            p.Path("src/dist_mat/tests/data/simple_test_profiles.tsv"),
+            Path("src/dist_mat/tests/data/simple_test_profiles.tsv"),
             None,
             "\t",
             1,
@@ -49,85 +51,231 @@ from hypothesis.extra import numpy as nps
     ],
 )
 def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) -> None:
-    """
-    Tests for loading of the input profiles
-    """
-
+    """Tests for loading of the input profiles."""
     input_profiles = cluster.read_input_profiles(input, columns_keep, delimiter, threads)
     assert input_profiles.equals(expected)
 
 
 @pytest.mark.parametrize(
-    "dataframe,threshold,expected",
+    "dataframe,threshold,expected,error",
     [
         (
             pl.DataFrame(
                 {
                     "SampleID": ["a", "b", "c", "d"],
-                    "A": [111, 111, 111, 111],
+                    "a": [111, 111, 111, 111],
                     "b": [111, 111, 0, 111],
                     "c": [111, 111, 0, 111],
                     "d": [111, 111, 0, 111],
+                    "e": [111, 111, 0, 111],
+                    "f": [111, 111, 0, 111],
+                    "g": [111, 111, 0, 111],
+                    "h": [111, 111, 0, 111],
+                    "i": [111, 111, 0, 111],
+                    "j": [111, 111, 0, 111],
+                },
+            ),
+            0.89,
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "d"],
+                    "a": [111, 111, 111],
+                    "b": [111, 111, 111],
+                    "c": [111, 111, 111],
+                    "d": [111, 111, 111],
+                    "e": [111, 111, 111],
+                    "f": [111, 111, 111],
+                    "g": [111, 111, 111],
+                    "h": [111, 111, 111],
+                    "i": [111, 111, 111],
+                    "j": [111, 111, 111],
+                }
+            ),
+            None,
+        ),
+        (
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "a": [111, 111, 111, 111],
+                    "b": [111, 111, 111, 111],
+                    "c": [111, 111, 111, 111],
+                    "d": [111, 111, 111, 111],
+                    "e": [111, 111, 111, 111],
+                    "f": [111, 111, 111, 111],
+                    "g": [111, 111, 111, 111],
+                    "h": [111, 111, 111, 111],
+                    "i": [111, 111, 111, 111],
+                    "j": [111, 111, 0, 111],
+                },
+            ),
+            0.09,
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "d"],
+                    "a": [111, 111, 111],
+                    "b": [111, 111, 111],
+                    "c": [111, 111, 111],
+                    "d": [111, 111, 111],
+                    "e": [111, 111, 111],
+                    "f": [111, 111, 111],
+                    "g": [111, 111, 111],
+                    "h": [111, 111, 111],
+                    "i": [111, 111, 111],
+                    "j": [111, 111, 111],
+                }
+            ),
+            None,
+        ),
+        (
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "a": [111, 111, 111, 111],
+                    "b": [111, 111, 0, 111],
+                    "c": [111, 111, 0, 111],
+                    "d": [111, 111, 0, 111],
+                    "e": [111, 111, 0, 111],
+                    "f": [111, 111, 0, 111],
                 },
             ),
             0.75,
             pl.DataFrame(
                 {
                     "SampleID": ["a", "b", "d"],
-                    "A": [111, 111, 111],
+                    "a": [111, 111, 111],
                     "b": [111, 111, 111],
                     "c": [111, 111, 111],
                     "d": [111, 111, 111],
+                    "e": [111, 111, 111],
+                    "f": [111, 111, 111],
                 }
             ),
+            None,
         ),
         (
             pl.DataFrame(
                 {
                     "SampleID": ["a", "b", "c", "d"],
-                    "A": [111, 111, 111, 111],
+                    "a": [111, 111, 111, 111],
                     "b": [111, 111, 0, 111],
                     "c": [111, 111, 0, 111],
                     "d": [111, 111, 0, 111],
-                },
-            ),
-            0.00,
-            pl.DataFrame(
-                {
-                    "SampleID": ["a", "b", "c", "d"],
-                    "A": [111, 111, 111, 111],
-                    "b": [111, 111, 0, 111],
-                    "c": [111, 111, 0, 111],
-                    "d": [111, 111, 0, 111],
-                }
-            ),
-        ),
-        (
-            pl.DataFrame(
-                {
-                    "SampleID": ["a", "b", "c", "d"],
-                    "A": [111, 111, 111, 111],
-                    "b": [111, 111, 111, 111],
-                    "c": [111, 111, 111, 111],
-                    "d": [111, 111, 111, 111],
                 },
             ),
             1.00,
             pl.DataFrame(
                 {
                     "SampleID": ["a", "b", "c", "d"],
-                    "A": [111, 111, 111, 111],
+                    "a": [111, 111, 111, 111],
+                    "b": [111, 111, 0, 111],
+                    "c": [111, 111, 0, 111],
+                    "d": [111, 111, 0, 111],
+                }
+            ),
+            None,
+        ),
+        (
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "a": [111, 111, 111, 111],
+                    "b": [111, 111, 0, 111],
+                    "c": [111, 111, 0, 111],
+                    "d": [111, 111, 0, 111],
+                },
+            ),
+            1.00,
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "a": [111, 111, 111, 111],
+                    "b": [111, 111, 0, 111],
+                    "c": [111, 111, 0, 111],
+                    "d": [111, 111, 0, 111],
+                }
+            ),
+            None,
+        ),
+        (
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "a": [111, 111, 111, 111],
+                    "b": [111, 111, 111, 111],
+                    "c": [111, 111, 111, 111],
+                    "d": [111, 111, 111, 111],
+                },
+            ),
+            0.00,
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "a": [111, 111, 111, 111],
                     "b": [111, 111, 111, 111],
                     "c": [111, 111, 111, 111],
                     "d": [111, 111, 111, 111],
                 }
             ),
+            None,
+        ),
+        (
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "a": [111, 111, 111, 111],
+                    "b": [111, 111, 0, 111],
+                    "c": [111, 111, 111, 111],
+                    "d": [111, 111, 111, 111],
+                },
+            ),
+            0.00,
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "d"],
+                    "a": [111, 111, 111],
+                    "b": [111, 111, 111],
+                    "c": [111, 111, 111],
+                    "d": [111, 111, 111],
+                }
+            ),
+            None,
+        ),
+        (
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "a": [111, 0, 111, 111],
+                    "b": [111, 111, 0, 111],
+                    "c": [0, 111, 111, 111],
+                    "d": [111, 111, 111, 0],
+                },
+            ),
+            0.00,
+            pl.DataFrame(
+                {
+                    "SampleID": [],
+                    "a": [],
+                    "b": [],
+                    "c": [],
+                    "d": [],
+                }
+            ),
+            cluster.AllColumnsFilteredError,
         ),
     ],
 )
-def test_filter_rows(dataframe, threshold, expected) -> None:
-    filtered_data = cluster.filter_rows(dataframe, threshold)
-    assert filtered_data.equals(expected)
+def test_filter_rows(dataframe, threshold, expected, error) -> None:
+    """Test that filtering of rows is correct."""
+    if error is None:
+        filtered_data = cluster.filter_rows(dataframe, threshold)
+        print(threshold)
+        print(filtered_data)
+        print(dataframe)
+        assert filtered_data.equals(expected)
+    else:
+        with pytest.raises(error):
+            filtered_data = cluster.filter_rows(dataframe, threshold)
 
 
 @given(
@@ -152,6 +300,7 @@ def test_filter_rows(dataframe, threshold, expected) -> None:
     max_examples=10,
 )
 def test_subset_columns(df: pl.DataFrame, tmp_path) -> None:
+    """Tests for subsetting of columns."""
     output_path = tmp_path / "cols_keep.txt"
     output_path.write_text("SampleID\nSubset1\nSubset2\n")
     subset = cluster.subset_columns(df, output_path)
@@ -194,6 +343,7 @@ def test_subset_columns(df: pl.DataFrame, tmp_path) -> None:
     )
 )
 def test_prep_data(profiles: pl.DataFrame) -> None:
+    """Tests for tranfomation of data."""
     array = np.zeros((profiles.height, 3), dtype=np.uint32)  # array should all be zeros
     for i in array:
         i[2] = np.uint32(2683474508)  # last value should be the hashed version of "A"
@@ -386,6 +536,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
     ],
 )
 def test_transform_data(data, threshold, expected):
+    """Tests for hashing of data."""
     out = cluster.transform_data(data, threshold)
     assert out.equals(expected)
 
@@ -408,6 +559,7 @@ def test_transform_data(data, threshold, expected):
     ],
 )
 def test_compute_linkage_matrix(method, expected):
+    """Tests from scipy for computing linkage matrix."""
     input_array = np.array([1.41421356, 2.82842712, 1.41421356])
     output = cluster.compute_linkage_matrix(input_array, method)
     assert np.allclose(output, expected)
@@ -441,6 +593,7 @@ def test_compute_linkage_matrix(method, expected):
     ],
 )
 def test_assign_clusters_columns(linkage, thresholds, labels, expected_columns):
+    """Tests that outputs of assign clusters are correct."""
     actual_columns = cluster.assign_clusters(linkage, thresholds, labels).columns
     assert actual_columns == expected_columns
 
@@ -476,6 +629,7 @@ def test_assign_clusters_columns(linkage, thresholds, labels, expected_columns):
     ],
 )
 def test_assign_clusters_(linkage, thresholds, labels, expected):
+    """Test of fcluster assignments."""
     out = cluster.assign_clusters(linkage, thresholds, labels)
     assert out.equals(expected)
 
@@ -496,6 +650,7 @@ def test_assign_clusters_(linkage, thresholds, labels, expected):
     ],
 )
 def test_convert_branch_lengths(linkage, branchlength_type, expected):
+    """Test for conversiong of branchlengths to cophenetic and patristic distances."""
     assert np.allclose(cluster.convert_branch_lengths(linkage, branchlength_type), expected)
 
 
@@ -538,6 +693,7 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
     ],
 )
 def test_calc_dists(profiles, count_missing, scaled, expected):
+    """Test distance calculation output is correct."""
     output = dist_mat.calc_dists(profiles, 1, scaled, count_missing)
     assert np.array_equal(output, expected)
 
@@ -548,7 +704,8 @@ def test_calc_dists(profiles, count_missing, scaled, expected):
         shape=(1000, 100),
     )
 )
-def test_calc_dists_fuzzing_hypothesis(arr):
+def test_calc_dists_fuzzing_hypothesis_no_infinites(arr):
+    """Tests to make sure calc_dists always returns a finite answer."""
     output = np.isfinite(dist_mat.calc_dists(arr, 1, True, False))
     assert np.all(output)
 
@@ -556,12 +713,13 @@ def test_calc_dists_fuzzing_hypothesis(arr):
 @pytest.mark.parametrize(
     "input,scaled,count_missing",
     [
-        (p.Path("tests/R1KC1K.tsv"), True, True),
-        (p.Path("tests/R1KC1K.tsv"), False, True),
-        (p.Path("tests/R1KC1K.tsv"), False, True),
+        (Path("tests/R1KC1K.tsv"), True, True),
+        (Path("tests/R1KC1K.tsv"), False, True),
+        (Path("tests/R1KC1K.tsv"), False, True),
     ],
 )
 def test_calc_dists_file_inputs(input, scaled, count_missing):
+    """Test inputs of calc dists is correct with known input."""
     profiles: pl.DataFrame = cluster.read_input_profiles(input, None, "\t", 1)
     dists: npt.NDArray = cluster.compute_dists(profiles, count_missing, scaled, 1)
     matrix: npt.NDArray = scipy.spatial.distance.squareform(
@@ -602,9 +760,11 @@ def test_calc_dists_file_inputs(input, scaled, count_missing):
     ],
 )
 def test_linkage_matrix_to_nwk(linkage, sample_ids, expected):
-    """
+    """Test for converting linkage matrix to a newick tree.
+
     These tests are adpated from the original pull request implementing
     the to newick fucntion in a scipy PR.
+
     https://github.com/scipy/scipy/pull/17329/changes
     """
     assert cluster.linkage_matrix_to_nwk(linkage, sample_ids) == expected
