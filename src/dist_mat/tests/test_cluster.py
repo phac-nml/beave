@@ -394,6 +394,189 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
                 {
                     "SampleID": ["a", "b", "c", "d"],
                     "A": [
+                        1,  # value corrends to a hashed "2"
+                        1,
+                        1,
+                        1,
+                    ],
+                    "b": [
+                        1,
+                        1,
+                        0,
+                        1,
+                    ],
+                    "c": [
+                        1,
+                        1,
+                        0,
+                        1,
+                    ],
+                    "d": [
+                        1,
+                        1,
+                        0,
+                        1,
+                    ],
+                    "e": [
+                        1,
+                        1,
+                        0,
+                        1,
+                    ],
+                    "f": [
+                        1,
+                        1,
+                        0,
+                        1,
+                    ],
+                    "g": [
+                        1,
+                        1,
+                        0,
+                        1,
+                    ],
+                },
+            ),
+        ),
+        (
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "A": ["2", "2", "2", "2"],
+                    "b": ["2", "2", "?", "2"],
+                    "c": ["2", "2", "", "2"],
+                    "d": ["2", "2", " ", "2"],
+                    "e": ["2", "2", "_", "2"],
+                    "f": ["2", "2", "-", "2"],
+                    "g": ["2", "2", "0", "2"],
+                },
+            ),
+            0.00,
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "d"],
+                    "A": [
+                        1,  # value corrends to a hashed "2"
+                        1,
+                        1,
+                    ],
+                    "b": [
+                        1,
+                        1,
+                        1,
+                    ],
+                    "c": [
+                        1,
+                        1,
+                        1,
+                    ],
+                    "d": [
+                        1,
+                        1,
+                        1,
+                    ],
+                    "e": [
+                        1,
+                        1,
+                        1,
+                    ],
+                    "f": [
+                        1,
+                        1,
+                        1,
+                    ],
+                    "g": [
+                        1,
+                        1,
+                        1,
+                    ],
+                },
+            ),
+        ),
+        (
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "A": ["2", "2", "2", "2"],
+                    "b": ["2", "2", "?", "2"],
+                    "c": ["2", "2", "", "2"],
+                    "d": ["2", "2", " ", "2"],
+                    "e": ["2", "2", "_", "2"],
+                    "f": ["2", "2", "-", "2"],
+                    "g": ["2", "2", "0", "2"],
+                },
+            ),
+            0.25,
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "d"],
+                    "A": [
+                        1,  # value corrends to a hashed "2"
+                        1,
+                        1,
+                    ],
+                    "b": [
+                        1,
+                        1,
+                        1,
+                    ],
+                    "c": [
+                        1,
+                        1,
+                        1,
+                    ],
+                    "d": [
+                        1,
+                        1,
+                        1,
+                    ],
+                    "e": [
+                        1,
+                        1,
+                        1,
+                    ],
+                    "f": [
+                        1,
+                        1,
+                        1,
+                    ],
+                    "g": [
+                        1,
+                        1,
+                        1,
+                    ],
+                },
+            ),
+        ),
+    ],
+)
+def test_transform_data(data, threshold, expected):
+    """Tests for mapping tranformation and filtering of data."""
+    out = cluster.transform_data(data, threshold)
+    assert out.shape == expected.shape  # verify shape as map values will change on each run
+
+
+@pytest.mark.parametrize(
+    "data,threshold,expected",
+    [
+        (
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "A": ["2", "2", "2", "2"],
+                    "b": ["2", "2", "?", "2"],
+                    "c": ["2", "2", "", "2"],
+                    "d": ["2", "2", " ", "2"],
+                    "e": ["2", "2", "_", "2"],
+                    "f": ["2", "2", "-", "2"],
+                    "g": ["2", "2", "0", "2"],
+                },
+            ),
+            1.00,
+            pl.DataFrame(
+                {
+                    "SampleID": ["a", "b", "c", "d"],
+                    "A": [
                         10486959400714174283,  # value corrends to a hashed "2"
                         10486959400714174283,
                         10486959400714174283,
@@ -550,9 +733,9 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
         ),
     ],
 )
-def test_transform_data(data, threshold, expected):
+def test_transform_data_hashes(data, threshold, expected):
     """Tests for hashing of data."""
-    out = cluster.transform_data(data, threshold)
+    out = cluster.transform_data_hashes(data, threshold)
     assert out.equals(expected)
 
 
