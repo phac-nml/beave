@@ -286,8 +286,7 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
 
     char_mapping = (
         {  # start mapping at 1, as 0 is used for missing values and add one to not miss values
-            value: np.uint32(idx)
-            for value, idx in zip(unique_values, range(1, len(unique_values) + 1))
+            value: idx for value, idx in zip(unique_values, range(1, len(unique_values) + 1))
         }
         | REPLACE_CHARS
     )  # Create new dictionary, REPLACE_CHARS keys overwrite those in new dictionary
@@ -296,7 +295,7 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
         pl.all()
         .exclude(profiles.columns[0])  # skip id column
         .replace(char_mapping)
-        .cast(pl.UInt32)
+        .cast(pl.UInt32)  # stric tcast will throw an error if any overflow occurs
     )
 
     profiles = filter_rows(profiles, threshold)
