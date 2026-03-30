@@ -17,7 +17,8 @@ from hypothesis import given, settings, HealthCheck, strategies as st
 from hypothesis.extra import numpy as nps
 
 
-@pytest.fixture(scope="session")
+# @pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def test_df() -> pl.DataFrame:
     """Example dataframe for the benchmark function."""
     return pl.DataFrame(
@@ -28,16 +29,15 @@ def test_df() -> pl.DataFrame:
     )
 
 
-@pytest.mark.parametrize(
-    "func_bench",
-    [
-        cluster.transform_data,
-        cluster.transform_data_hashes,
-    ],
-)
-def test_benchmark_data_transformation(benchmark, test_df, func_bench):
+def test_benchmark_data_transformation_hashes(benchmark, test_df):
     """Benchmarks for different data transformation methods."""
-    benchmark(func_bench, test_df, 1.00)
+    benchmark(cluster.transform_data_hashes, test_df, 1.00)
+    assert True
+
+
+def test_benchmark_data_transformation_map(benchmark, test_df):
+    """Benchmarks for different data transformation methods."""
+    benchmark(cluster.transform_data, test_df, 1.00)
     assert True
 
 
@@ -369,7 +369,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
     array = np.zeros((profiles.height, 3), dtype=np.uint32)  # array should all be zeros
     for i in array:
         i[2] = np.uint32(2683474508)  # last value should be the hashed version of "A"
-    output = cluster.prep_data(profiles, 1.00)
+    output = cluster.prep_data(profiles, 1.00, cluster.transform_data_hashes)
     assert np.array_equal(output, array)
 
 

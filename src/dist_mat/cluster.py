@@ -3,6 +3,7 @@
 import logging
 import math
 import sys
+import typing as t
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from pathlib import Path
@@ -286,7 +287,10 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
 
     char_mapping = (
         {  # start mapping at 1, as 0 is used for missing values and add one to not miss values
-            value: idx for value, idx in zip(unique_values, range(1, len(unique_values) + 1))
+            value: idx
+            for value, idx in zip(
+                unique_values, np.arange(1, len(unique_values) + 1, dtype=np.uint32)
+            )
         }
         | REPLACE_CHARS
     )  # Create new dictionary, REPLACE_CHARS keys overwrite those in new dictionary
@@ -295,17 +299,21 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
         pl.all()
         .exclude(profiles.columns[0])  # skip id column
         .replace(char_mapping)
-        .cast(pl.UInt32)  # stric tcast will throw an error if any overflow occurs
+        .cast(pl.UInt32)  # strict cast will throw an error if any overflow occurs
     )
 
     profiles = filter_rows(profiles, threshold)
     return profiles
 
 
-def prep_data(profiles: pl.DataFrame, threshold: float) -> npt.NDArray:
+def prep_data(
+    profiles: pl.DataFrame,
+    threshold: float,
+    transformation_func: t.Callable[[pl.DataFrame, float], pl.DataFrame],
+) -> npt.NDArray:
     """Prepare profiles for computation by the the calc_dists function of dist_mat."""
     data_columns = profiles.columns[1:]  # only apply functions to loci columns
-    profiles = transform_data(profiles, threshold)
+    profiles = transformation_func(profiles, threshold)
     profiles_numpy = profiles.select([pl.col(i) for i in data_columns]).to_numpy().astype(np.uint32)
     return profiles_numpy
 
@@ -318,7 +326,7 @@ def compute_dists(
     filter_threshold: float = 1.0,
 ) -> npt.NDArray:
     """Compute the 1D array required by scipy for generation of the linkage matrix."""
-    prepared_profiles = prep_data(profiles, filter_threshold)
+    prepared_profiles = prep_data(profiles, filter_threshold, transform_data)
     distances = dm.calc_dists(prepared_profiles, threads, scaled, count_missing)
     return distances
 
