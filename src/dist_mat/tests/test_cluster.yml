@@ -44,7 +44,7 @@
       should_exist: true
       md5sum: 4000cbea01848c4a651fa22647bec5c7
 
-- name: Run cluster pass cophenetic no scaled or missing counted metric, passing 0 cores program should default to 1
+- name: Run cluster pass cophenetic sc flag passing 0 cores passed
   tags:
     - should_pass
   command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10.0 9.0 8.0
