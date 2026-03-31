@@ -764,6 +764,30 @@ def test_compute_linkage_matrix(method, expected):
 
 
 @pytest.mark.parametrize(
+    "method,expected",
+    [
+        (
+            cluster.LinkageMetric.COMPLETE,
+            [[0.0, 1.0, 1.0, 2.0], [2.0, 4.0, 4.0, 3.0], [3.0, 5.0, 8.0, 4.0]],
+        ),
+        (
+            cluster.LinkageMetric.SINGLE,
+            [[0.0, 1.0, 1.0, 2.0], [2.0, 4.0, 3.0, 3.0], [3.0, 5.0, 5.0, 4.0]],
+        ),
+    ],
+)
+def test_compute_linkage_matrix_integers(method, expected):
+    """Tests for computation of linkage matrix by scipy using a known input.
+
+    Average linkage is not tested with integers as decimals are created due to
+    proportional averaging being required.
+    """
+    input_array = np.array([1, 3, 8, 4, 7, 5])
+    output = cluster.compute_linkage_matrix(input_array, method)
+    assert np.array_equal(expected, output)
+
+
+@pytest.mark.parametrize(
     "linkage,thresholds,labels,expected_columns",
     [
         (
