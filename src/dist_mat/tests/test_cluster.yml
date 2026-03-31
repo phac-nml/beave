@@ -3,8 +3,10 @@
   files:
     - path: "tree.out"
       should_exist: true
+      md5sum: 245de895468635ba78925d0e05b11c6d
     - path: clusters.tsv
       should_exist: true
+      md5sum: 34d06f485579d92e97da2dd26ce50ae2 
 
 - name: Run cluster pass cophenetic
   tags:
@@ -13,8 +15,10 @@
   files:
     - path: "tree.out"
       should_exist: true
+      md5sum: 0a90b6371ef7c044447281bee283684c
     - path: clusters.tsv
       should_exist: true
+      md5sum: 34d06f485579d92e97da2dd26ce50ae2
 
 - name: Run cluster pass cophenetic no scaled metric
   tags:
@@ -23,8 +27,10 @@
   files:
     - path: "tree.out"
       should_exist: true
+      md5sum: 89b7c399d4e36412104858fb9da4cf3b 
     - path: clusters.tsv
       should_exist: true
+      md5sum: c281c95b0733d27ee1bcf1b1079be84b 
 
 - name: Run cluster pass cophenetic no scaled or missing counted metric
   tags:
@@ -33,8 +39,10 @@
   files:
     - path: "tree.out"
       should_exist: true
+      md5sum: 24d90a65d2a9a658c222ee0d4b005972
     - path: clusters.tsv
       should_exist: true
+      md5sum: 4000cbea01848c4a651fa22647bec5c7
 
 - name: Run cluster pass cophenetic no scaled or missing counted metric, passing 0 cores program should default to 1
   tags:
@@ -43,8 +51,10 @@
   files:
     - path: "tree.out"
       should_exist: true
+      md5sum: 24d90a65d2a9a658c222ee0d4b005972
     - path: clusters.tsv
       should_exist: true
+      md5sum: 4000cbea01848c4a651fa22647bec5c7
 
 - name: Run cluster cophenetic fail thresholds
   tags:
@@ -81,8 +91,10 @@
   files:
     - path: "tree.out"
       should_exist: true
+      md5sum: 0a90b6371ef7c044447281bee283684c
     - path: clusters.tsv
       should_exist: true
+      md5sum: 0da547890daef8144b1b36191c0166a4
 
 - name: Run cluster threshold should fail due to negative number being passed
   tags:
@@ -147,8 +159,10 @@
   files:
     - path: "tree.out"
       should_exist: true
+      md5sum: 0a90b6371ef7c044447281bee283684c
     - path: clusters.tsv
       should_exist: true
+      md5sum: 0da547890daef8144b1b36191c0166a4
 
 - name: Run cluster file does not exist
   tags:
@@ -183,10 +197,10 @@
   files:
     - path: "tree.out"
       should_exist: true
-      md5sum: fd228bc6b7a19e6c2413acd7e9f5ee4d  # Verified manually
+      md5sum: d516d6375779284e27ebca6e0edde7e8  # Verified manually
     - path: clusters.tsv
       should_exist: true
-      md5sum: d516d6375779284e27ebca6e0edde7e8 # Verified manually
+      md5sum: 3dd5c5b91249511c89efdcb8ccb9e9b4 # Verified manually
 
 
 - name: Run cluster known inputs single linkage
@@ -205,7 +219,40 @@
   files:
     - path: "tree.out"
       should_exist: true
-      md5sum: fcd5ccc9cfd750d0a5841ae34b13dfba
+      md5sum: fcd5ccc9cfd750d0a5841ae34b13dfba # Verified manually
+    - path: clusters.tsv
+      should_exist: true
+      md5sum: 3dd5c5b91249511c89efdcb8ccb9e9b4 # Verified manually
+
+
+- name: Run cluster known inputs complete linkage cophenetic
+  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m complete -l clusters.tsv -n 1 --thresholds 5 3 0
+  files:
+    - path: "tree.out"
+      should_exist: true
+      md5sum: fd228bc6b7a19e6c2413acd7e9f5ee4d
+    - path: clusters.tsv
+      should_exist: true
+      md5sum: 3dd5c5b91249511c89efdcb8ccb9e9b4
+
+
+- name: Run cluster known inputs single linkage cophenetic 
+  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m single -l clusters.tsv -n 1 --thresholds 5 3 0
+  files:
+    - path: "tree.out"
+      should_exist: true
+      md5sum: fc81376e9ba335a29b29ed6ed327812a
+    - path: clusters.tsv
+      should_exist: true
+      md5sum: 78abe9994e6e5bcc84c77e8cfc5345de
+
+
+- name: Run cluster known inputs average linkage cophenetic 
+  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m average -l clusters.tsv -n 1 --thresholds 5 3 0
+  files:
+    - path: "tree.out"
+      should_exist: true
+      md5sum: 879283e060f6cbd739bc68c11dd0f59d
     - path: clusters.tsv
       should_exist: true
       md5sum: 3dd5c5b91249511c89efdcb8ccb9e9b4
