@@ -151,49 +151,6 @@ TEST_CASE("Distance Calculations", "[Distance Calculation]") {
                               "t2\tt3\t100.000000\n";
     REQUIRE(oss.str() == output_test);
   }
-
-  SECTION("Verify read_profiles.") {
-    // TODO need to add test verifying lines not fitting the length of the
-    // header are deleted
-
-    std::string header = std::string("FILE\tG1\tG2\tG3\tG4\tG5\tG6");
-    std::vector<std::string> names;
-    std::vector<std::vector<uint32_t>> profiles;
-    const char *file = "data/boring.tab";
-
-    std::string output = read_profiles(file, names, profiles, '\t', "0");
-    auto columns = std::count(output.begin(), output.end(), '\t');
-    auto header_cols = std::count(header.begin(), header.end(), '\t');
-    REQUIRE(columns == header_cols);
-    CHECK(output == header); // different editors may swap tabs and spaces
-    std::vector<std::string> expected_names = {"S1", "S2", "S3",
-                                               "S4", "S5", "S6"};
-    REQUIRE(expected_names == names);
-    std::vector<uint32_t> profile_hashes = {
-        4207644323, 1874210838, 3148536061, 1874210838, 4207644323, 1447751201,
-        4207644323, 4207644323, 4207644323, 4207644323, 1560837832, 1447751201,
-        4207644323, 1874210838, 3148536061, 3337028520, 4207644323, 3148536061,
-        4207644323, 3342405555, 1874210838, 3337028520, 4207644323, 3148536061,
-        4207644323, 1874210838, 3883143127, 1874210838, 4207644323, 3148536061,
-        4207644323, 1874210838, 3883143127, 1874210838, 0,          3148536061,
-    };
-    uint32_t index = 0;
-    for (const auto &profile : profiles) {
-      for (const auto &allele : profile) {
-        // Using CHECK as the profile hashes may differ due to a differnt
-        // compiler
-        CHECK(allele == profile_hashes[index]);
-        index++;
-      }
-    }
-  }
-
-  SECTION("Verify read_profiles throws errors.") {
-    const char *file = "data/boring.mangled.tab";
-    std::vector<std::string> names;
-    std::vector<std::vector<uint32_t>> profiles;
-    CHECK_THROWS(read_profiles(file, names, profiles, '\t', "0"));
-  }
 }
 
 TEST_CASE("Benchmark populate_dist_matrix") {

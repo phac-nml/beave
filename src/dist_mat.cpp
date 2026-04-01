@@ -12,14 +12,13 @@ namespace nb = nanobind;
 float _hamming_distance(const uint32_t *__restrict__ p1_data,
                         const uint32_t *__restrict__ p2_data, size_t size,
                         const bool scaled, const bool count_missing) {
-  float dist_out;
-  uint32_t dist = 0;
+  uint32_t hamming_distance = 0;
   uint32_t compared_sites = size;
 
   if (count_missing) {
     for (size_t i = 0; i < size; i++) {
       if (p1_data[i] != p2_data[i]) {
-        dist++;
+        hamming_distance++;
       }
     }
   } else {
@@ -30,29 +29,28 @@ float _hamming_distance(const uint32_t *__restrict__ p1_data,
       const bool valid =
           (p1_data[i] != MISSING_VALUE) & (p2_data[i] != MISSING_VALUE);
       compared_sites += valid;
-      dist += valid & (p1_data[i] != p2_data[i]);
+      hamming_distance += valid & (p1_data[i] != p2_data[i]);
     }
   }
 
-  dist_out = static_cast<float>(dist);
+  float distance = static_cast<float>(hamming_distance);
   if (scaled) {
     if (compared_sites) {
-      dist_out =
-          (static_cast<float>(dist) / static_cast<float>(compared_sites)) *
-          100.0f;
+      distance = (static_cast<float>(hamming_distance) /
+                  static_cast<float>(compared_sites)) *
+                 100.0f;
     } else {
-      dist_out = 100.0f;
+      distance = 100.0f;
     }
   }
 
-  return dist_out;
+  return distance;
 }
 
 /*
  * Interface will take in a numpy array of profiles -1x-1, and return the upper
  * triangle distance matrix only.
  *
- * Need to add method for readiing in an processing the data.
  */
 
 using array = nb::ndarray<uint32_t, nb::numpy, nb::shape<-1, -1>, nb::c_contig,
@@ -67,22 +65,21 @@ void populate_outputs(size_t start, size_t end, size_t pdata_size,
   auto profile_data = profiles.view();
   size_t number_of_loci = profile_data.shape(1);
 
-  // get the length of the profiles used
   for (size_t i = start; i < end; i++) {
     for (size_t f = i + 1; f < profile_data.shape(0); f++) {
       //  Multipling the index by the array length as nd-arrays are stored
       //  linearly
-      float dist_out =
+      float distance =
           _hamming_distance(&profile_data.data()[i * number_of_loci],
                             &profile_data.data()[f * number_of_loci],
                             number_of_loci, scaled, count_missing);
 
-      // Compute upper triangle position
+      // Compute upper triangle position for the 1D array
       size_t upper_triangle_pos =
           ((pdata_size * (pdata_size - 1)) / 2) -
           ((pdata_size - i) * (pdata_size - i - 1) / 2) + f - i - 1;
 
-      output_matrix[upper_triangle_pos] = dist_out;
+      output_matrix[upper_triangle_pos] = distance;
     }
   }
 }
@@ -92,7 +89,6 @@ array_out calculate_distances(array np_in, size_t threads, bool scaled,
 
   // Store the number of profiles required
   size_t number_profiles = np_in.shape(0);
-  // std::vector<std::vector<uint32_t>> profiles(number_profiles);
 
   // Determine the thread ranges to be used
   std::vector<size_t> ranges = get_thread_ranges(threads, number_profiles);
@@ -102,7 +98,6 @@ array_out calculate_distances(array np_in, size_t threads, bool scaled,
   // the upper triangle.
   size_t total_upper_elements = (number_profiles * (number_profiles - 1)) / 2;
 
-  // std::vector<float> output(total_upper_elements);
   float *output = new float[total_upper_elements];
 
   for (size_t i = 0; i < ranges.size() - 1; i++) {

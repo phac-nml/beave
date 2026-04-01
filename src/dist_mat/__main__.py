@@ -1,11 +1,25 @@
-import argparse
-import sys
-import os
-import logging
-import pathlib as p
-from enum import StrEnum
+"""Main entry point for dist-mat.
 
-from dist_mat.mcluster import mcluster, LinkageMetrics, BranchLengths
+This module contains the main cli for dist-mat.
+"""
+
+import importlib.metadata
+
+__version__ = importlib.metadata.version(__package__ or __name__)
+
+import argparse
+import logging
+import os
+import sys
+from enum import StrEnum
+from pathlib import Path
+
+from dist_mat.cluster import (
+    BranchLengthType,
+    ClusterArguments,
+    LinkageMetric,
+    cluster,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -17,47 +31,69 @@ logging.basicConfig(
 
 
 class Commands(StrEnum):
-    MCLUSTER = "mcluster"
+    """Sub-commands for the program."""
+
+    CLUSTER = "cluster"
 
 
-def path_exists(file: str) -> p.Path:
-    fp = p.Path(file)
+def path_exists(file_path: str) -> Path:
+    """Check if path exists."""
+    fp = Path(file_path)
     if fp.is_file():
         return fp
-    logger.critical(f"Input file does not exist. {file}")
-    raise FileNotFoundError(f"Input file {file} does not exist.")
+    error_message = f"Input file does not exist. {file_path}"
+    logger.critical(error_message)
+    raise FileNotFoundError(error_message)
 
 
-def percentage_range(f_input: str) -> float:
+def check_if_float(float_input: str) -> float:
+    """Check if input value is float."""
     try:
-        coerced_input: float = float(f_input)
+        converted_float: float = float(float_input)
     except ValueError:
-        logger.critical(f"Filter threshold  {f_input} cannot be coerced to a float.")
-        # I do not know if this is the best way to bubble up a handled exception
-        # but it allows me to raise the error without exiting directly and produce
-        # a log message
-        raise ValueError(f"Filter threshold {f_input} cannot be coerced to a float.")
-    else:
-        if coerced_input < 0.00 or coerced_input > 100.0:
-            logger.critical(
-                f"Filter threshold must be between 0.00 and 100.0. You passed: {f_input}"
-            )
-            raise ValueError(
-                f"Filter threshold must be between 0.00 and 100.0. You passed: {f_input}"
-            )
-        return coerced_input
+        error_message = f"Value  {float_input} cannot be converted to a float."
+        logger.critical(error_message)
+        raise ValueError(error_message)
+    return converted_float
+
+
+def percentage_range(float_input: str) -> float:
+    """Check if input value is in range for comparisons."""
+    converted_float: float = check_if_float(float_input)
+    max_percent: float = 100.0
+    if converted_float < 0.00 or converted_float > max_percent:
+        error_message = (
+            f"Filter threshold must be between 0.00 and 100.0. You passed: {float_input}"
+        )
+        logger.critical(error_message)
+        raise ValueError(error_message)
+    return converted_float / 100.0  # convert percentage to decimal fraction
+
+
+def cluster_threshold(float_input: str) -> float:
+    """Verify input types are valid."""
+    converted_input: float = float(float_input)
+    if converted_input < 0.00 or converted_input == float("inf"):
+        error_message = (
+            f"Threshold values must be positive and not infinity. You passed: {float_input}"
+        )
+        logger.critical(error_message)
+        raise ValueError(error_message)
+    return converted_input
 
 
 def main() -> None:
-    # specify global arguments shared here
+    """Program entry-point."""
+    # Global command-line arguments:
     parent_parser = argparse.ArgumentParser(
         add_help=False,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
-    number_of_cores_default = 1
     if cpu_count := os.cpu_count():
         number_of_cores_default = cpu_count // 2
+    else:
+        number_of_cores_default = 1
 
     parent_parser.add_argument(
         "--n-threads",
@@ -80,107 +116,110 @@ def main() -> None:
         parents=[parent_parser],
     )
 
-    parser.add_argument(
-        "--version", "-v", help="Print version and exit.", action="store_true"
-    )
+    parser.add_argument("--version", "-v", action="version", version=f"%(prog)s {__version__}")
 
     subparsers = parser.add_subparsers(
         help="Select a program to run.",
         dest="command",
     )
 
-    # Mcluster args
-    parser_mcluster = subparsers.add_parser(
-        Commands.MCLUSTER, help="Run denovo clustering.", parents=[parent_parser]
+    # cluster args
+    parser_cluster = subparsers.add_parser(
+        Commands.CLUSTER, help="Run denovo clustering.", parents=[parent_parser]
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--input", "-i", help="Input alleles.", type=path_exists, required=True
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--tree-output",
         "-t",
-        help="Output tree name. [default %(default)s]",
-        type=p.Path,
+        help="File path to write generated tree. [default %(default)s]",
+        type=Path,
         required=False,
         default="clusters.nwk",
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--cluster-output",
         "-l",
-        help="Output clusters file. [default %(default)s]",
-        type=p.Path,
+        help="File path to write generated clusters. [default %(default)s]",
+        type=Path,
         required=False,
         default="clusters.tsv",
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--thresholds",
         "-p",
         help="List of threshold values to use.",
         nargs="+",
         required=True,
         action="extend",
-        type=float,
+        type=cluster_threshold,
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--method",
         "-m",
-        default=LinkageMetrics.AVERAGE.value,
-        help="Linkage method to use. [default: %(default)s]",
-        choices=[i.value for i in LinkageMetrics],
+        default=LinkageMetric.AVERAGE.value,
+        help="Hierarchical clustering linkage to use. [default: %(default)s]",
+        choices=[i.value for i in LinkageMetric],
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--columns",
         "-k",
-        help="A file containing a list of columns to subset from the allele profiles.",
-        type=p.Path,
+        help=(
+            "A file containing a single column of the column names to subset from the passed "
+            "allele profiles."
+        ),
+        type=Path,
         required=False,
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--count-missing",
         "-c",
-        help="Count missing values as differences.",
+        help="Count missing values in allele profiles differences.",
         action="store_true",
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--scaled",
         "-s",
-        help="Compute the scaled distance. Distance is presented as a percentage, or a value between 0.0-100.0",
+        help=(
+            "Compute the scaled distance. Distance is presented as a percentage, or a value "
+            "between 0.0-100.0"
+        ),
         action="store_true",
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--tree-distances",
         "-b",
-        default=BranchLengths.COPHENETIC.value,
-        choices=[i.value for i in BranchLengths],
+        default=BranchLengthType.COPHENETIC.value,
+        choices=[i.value for i in BranchLengthType],
         help="Determine how to display tree lenghts in the newick file. [default %(default)s]",
     )
 
-    parser_mcluster.add_argument(
+    parser_cluster.add_argument(
         "--filter-threshold",
         "-f",
-        help="Excluded samples from clustering missing more than a certain percentage of alleles must be between 0.0 and 100.0. [default %(default)s]",
-        default=0.00,
+        help=(
+            "Excluded samples from analysis if it is missing more than the specified percentage "
+            "of data. Must be between 0.0 and 100.0. [default %(default)s]"
+        ),
+        default=100.00,
         type=percentage_range,
     )
 
     args = parser.parse_args(sys.argv[1:])
 
-    if args.version:
-        print("0.0.1")
-        sys.exit()
-
     match args.command:
-        case Commands.MCLUSTER:
-            mcluster(
+        case Commands.CLUSTER:
+            cluster_args = ClusterArguments(
                 args.input,
                 args.delimiter,
                 args.thresholds,
@@ -194,10 +233,7 @@ def main() -> None:
                 args.tree_distances,
                 args.filter_threshold,
             )
+            cluster(cluster_args)
         case _:
             parser.print_help()
             sys.exit()
-
-
-if __name__ == "__main__":
-    main()

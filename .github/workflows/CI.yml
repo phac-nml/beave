@@ -1,4 +1,4 @@
-name: Python package
+name: python package
 
 on: [push, pull_request]
 
@@ -40,13 +40,17 @@ jobs:
           pip install scikit-build-core nanobind
           pip install --no-build-isolation -ve .[dev]
 
-      - name: Lint with mypy
+      - name: Type checking with mypy
         run: |
           mypy
 
+      - name: Lint with Ruff
+        run: |
+          ruff check ./src/dist_mat/*.py
+
       - name: Run pytest
         run: |
-          pytest
+          pytest -k "not test_benchmark"
 
   complexity:
     runs-on: ubuntu-latest

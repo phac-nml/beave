@@ -12,3 +12,5 @@ compile_commands.json
 .hypothesis
 .complexipy_cache
 example_data
+.ruff_cache
+

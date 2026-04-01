@@ -17,11 +17,6 @@ if(TARGET_GROUP STREQUAL release)
   "-Wall -Wextra -g -O3 -mfpmath=sse -flto \
   -ffast-math -ftree-vectorize -funroll-loops \
   -fopt-info-vec-optimized -std=c++23 -mavx2")
-  #"-Wall -Wextra -g -O3 -march=native -mtune=native -mfpmath=sse
-  #-flto -ffast-math
-  #-ftree-vectorize -funroll-loops -fopt-info-vec-optimized -std=c++23")
-  #"-Wall -Wextra -g -fanalyzer -O3
-  #-march=native -mfpmath=sse -flto -fopt-info-vec-all")
   add_subdirectory(src)
 
 elseif(TARGET_GROUP STREQUAL test)
