@@ -18,7 +18,8 @@ enum Program { FASTMATCH, MATRIX };
  * @param profiles The number of profiles to be processed
  * @param threads the number of threads used by the program
  *
- * @return A vector of indexes containing the ranges of samples to be patitioned
+ * @return A vector of indexes containing the ranges of samples to be
+ * partitioned
  *
  * @details
  * The number of threads is handled externally by the program, therefore
@@ -446,7 +447,7 @@ std::string read_profiles(const char *file,
 }
 
 /**
- *@brief Retrieve the index ranges required for partion of each range of
+ *@brief Retrieve the index ranges required for partition of each range of
  * samples to a given thread.
  *
  * @param threads The number of threads passed to the program.
