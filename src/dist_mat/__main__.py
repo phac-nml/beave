@@ -8,32 +8,28 @@ import importlib.metadata
 __version__ = importlib.metadata.version(__package__ or __name__)
 
 import argparse
-import logging
 import os
 import sys
 from enum import StrEnum
 from pathlib import Path
 
+from dist_mat._internal.log import init_logger
 from dist_mat.cluster import (
     BranchLengthType,
     ClusterArguments,
     LinkageMetric,
     cluster,
 )
+from dist_mat.match import MatchArguments, match
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    stream=sys.stderr,
-    level=logging.DEBUG,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+logger = init_logger(__name__)
 
 
 class Commands(StrEnum):
     """Sub-commands for the program."""
 
     CLUSTER = "cluster"
+    MATCH = "match"
 
 
 def path_exists(file_path: str) -> Path:
@@ -67,7 +63,7 @@ def percentage_range(float_input: str) -> float:
         )
         logger.critical(error_message)
         raise ValueError(error_message)
-    return converted_float / 100.0  # convert percentage to decimal fraction
+    return converted_float / max_percent  # convert percentage to decimal fraction
 
 
 def cluster_threshold(float_input: str) -> float:
@@ -84,6 +80,8 @@ def cluster_threshold(float_input: str) -> float:
 
 def main() -> None:
     """Program entry-point."""
+    # TODO: Add check for scaled distances are percentage and hamming is unbound
+
     # Global command-line arguments:
     parent_parser = argparse.ArgumentParser(
         add_help=False,
@@ -108,6 +106,45 @@ def main() -> None:
         help="Input alleles delimiter. [default \\t]",
         type=str,
         default="\t",
+    )
+
+    parent_parser.add_argument(
+        "--columns",
+        "-k",
+        help=(
+            "A file containing a single column of the column names to subset from the passed "
+            "allele profiles."
+        ),
+        type=Path,
+        required=False,
+    )
+
+    parent_parser.add_argument(
+        "--count-missing",
+        "-c",
+        help="Count missing values in allele profiles differences.",
+        action="store_true",
+    )
+
+    parent_parser.add_argument(
+        "--scaled",
+        "-s",
+        help=(
+            "Compute the scaled distance. Distance is presented as a percentage, or a value "
+            "between 0.0-100.0"
+        ),
+        action="store_true",
+    )
+
+    parent_parser.add_argument(
+        "--filter-threshold",
+        "-f",
+        help=(
+            "Excluded samples from analysis if it is missing more than the specified percentage "
+            "of data. Must be between 0.0 and 100.0. [default %(default)s]"
+        ),
+        default=100.00,
+        type=percentage_range,
     )
 
     parser = argparse.ArgumentParser(
@@ -169,34 +206,6 @@ def main() -> None:
     )
 
     parser_cluster.add_argument(
-        "--columns",
-        "-k",
-        help=(
-            "A file containing a single column of the column names to subset from the passed "
-            "allele profiles."
-        ),
-        type=Path,
-        required=False,
-    )
-
-    parser_cluster.add_argument(
-        "--count-missing",
-        "-c",
-        help="Count missing values in allele profiles differences.",
-        action="store_true",
-    )
-
-    parser_cluster.add_argument(
-        "--scaled",
-        "-s",
-        help=(
-            "Compute the scaled distance. Distance is presented as a percentage, or a value "
-            "between 0.0-100.0"
-        ),
-        action="store_true",
-    )
-
-    parser_cluster.add_argument(
         "--tree-distances",
         "-b",
         default=BranchLengthType.COPHENETIC.value,
@@ -204,15 +213,19 @@ def main() -> None:
         help="Determine how to display tree lenghts in the newick file. [default %(default)s]",
     )
 
-    parser_cluster.add_argument(
-        "--filter-threshold",
-        "-f",
-        help=(
-            "Excluded samples from analysis if it is missing more than the specified percentage "
-            "of data. Must be between 0.0 and 100.0. [default %(default)s]"
-        ),
-        default=100.00,
-        type=percentage_range,
+    parser_match = subparsers.add_parser(
+        Commands.MATCH, help="Run fast matching.", parents=[parent_parser]
+    )
+
+    # TODO: Need to spend time typing out informative help messages
+    parser_match.add_argument(
+        "--reference", "-r", type=Path, required=True, help="Reference profiles."
+    )
+
+    parser_match.add_argument("--query", "-q", type=Path, required=True, help="Query profiles.")
+
+    parser_match.add_argument(
+        "--threshold", "-t", type=cluster_threshold, required=True, help="Query profiles."
     )
 
     args = parser.parse_args(sys.argv[1:])
@@ -234,6 +247,19 @@ def main() -> None:
                 args.filter_threshold,
             )
             cluster(cluster_args)
+        case Commands.MATCH:
+            match_args = MatchArguments(
+                args.query,
+                args.reference,
+                args.threshold,
+                args.cores,
+                args.columns_path,
+                args.delimiter,
+                args.count_missing,
+                args.scaled,
+                args.filter_threshold,
+            )
+            match(match_args)
         case _:
             parser.print_help()
             sys.exit()

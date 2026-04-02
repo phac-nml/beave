@@ -4,6 +4,7 @@ import pytest  # noqa: I001
 
 import dist_mat
 from dist_mat import cluster
+import dist_mat._internal.transform_data as transform
 
 import hashlib
 from pathlib import Path
@@ -17,7 +18,6 @@ from hypothesis import given, settings, HealthCheck, strategies as st
 from hypothesis.extra import numpy as nps
 
 
-# @pytest.fixture(scope="session")
 @pytest.fixture(scope="function")
 def test_df() -> pl.DataFrame:
     """Example dataframe for the benchmark function."""
@@ -31,13 +31,13 @@ def test_df() -> pl.DataFrame:
 
 def test_benchmark_data_transformation_hashes(benchmark, test_df):
     """Benchmarks for different data transformation methods."""
-    benchmark(cluster.transform_data_hashes, test_df, 1.00)
+    benchmark(transform.transform_data_hashes, test_df, 1.00)
     assert True
 
 
 def test_benchmark_data_transformation_map(benchmark, test_df):
     """Benchmarks for different data transformation methods."""
-    benchmark(cluster.transform_data, test_df, 1.00)
+    benchmark(transform.transform_data, test_df, 1.00)
     assert True
 
 
@@ -46,7 +46,6 @@ def test_benchmark_data_transformation_map(benchmark, test_df):
     [
         (
             Path("src/dist_mat/tests/data/simple_test_profiles.csv"),
-            None,
             ",",
             1,
             pl.DataFrame(
@@ -60,7 +59,6 @@ def test_benchmark_data_transformation_map(benchmark, test_df):
         ),
         (
             Path("src/dist_mat/tests/data/simple_test_profiles.tsv"),
-            None,
             "\t",
             1,
             pl.DataFrame(
@@ -75,9 +73,9 @@ def test_benchmark_data_transformation_map(benchmark, test_df):
         ),
     ],
 )
-def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) -> None:
+def test_read_input_profiles(input, delimiter, threads, expected) -> None:
     """Tests for loading of the input profiles."""
-    input_profiles = cluster.read_input_profiles(input, columns_keep, delimiter, threads)
+    input_profiles = transform.read_input_profiles(input, delimiter, threads)
     assert input_profiles.equals(expected)
 
 
@@ -286,18 +284,18 @@ def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) 
                     "d": [],
                 }
             ),
-            cluster.AllColumnsFilteredError,
+            transform.AllColumnsFilteredError,
         ),
     ],
 )
 def test_filter_rows(dataframe, threshold, expected, error) -> None:
     """Test that filtering of rows is correct."""
     if error is None:
-        filtered_data = cluster.filter_rows(dataframe, threshold)
+        filtered_data = transform.filter_rows(dataframe, threshold)
         assert filtered_data.equals(expected)
     else:
         with pytest.raises(error):
-            filtered_data = cluster.filter_rows(dataframe, threshold)
+            filtered_data = transform.filter_rows(dataframe, threshold)
 
 
 @given(
@@ -325,7 +323,7 @@ def test_subset_columns(df: pl.DataFrame, tmp_path) -> None:
     """Tests for subsetting of columns."""
     output_path = tmp_path / "cols_keep.txt"
     output_path.write_text("SampleID\nSubset1\nSubset2\n")
-    subset = cluster.subset_columns(df, output_path)
+    subset = transform.subset_columns(df, output_path, None)
     assert subset.columns[0] == "col0"  # Leftmost column should always be first
     assert set(subset.columns) == set(
         ["col0", "Subset1", "Subset2"]
@@ -339,17 +337,17 @@ def test_subset_columns(df: pl.DataFrame, tmp_path) -> None:
             column(
                 "SampleID",
                 dtype=pl.String,
-                strategy=st.sampled_from(list(cluster.REPLACE_CHARS.keys())),
+                strategy=st.sampled_from(list(transform.REPLACE_CHARS.keys())),
             ),
             column(
                 "QMarks2",
                 dtype=pl.String,
-                strategy=st.sampled_from(list(cluster.REPLACE_CHARS.keys())),
+                strategy=st.sampled_from(list(transform.REPLACE_CHARS.keys())),
             ),
             column(
                 "QMarks3",
                 dtype=pl.String,
-                strategy=st.sampled_from(list(cluster.REPLACE_CHARS.keys())),
+                strategy=st.sampled_from(list(transform.REPLACE_CHARS.keys())),
             ),
             column(
                 "Hashed",
@@ -369,7 +367,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
     array = np.zeros((profiles.height, 3), dtype=np.uint32)  # array should all be zeros
     for i in array:
         i[2] = np.uint32(2683474508)  # last value should be the hashed version of "A"
-    output = cluster.prep_data(profiles, 1.00, cluster.transform_data_hashes)
+    output = cluster.prep_data(profiles, 1.00, transform.transform_data_hashes)
     assert np.array_equal(output, array)
 
 
@@ -552,7 +550,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
 )
 def test_transform_data(data, threshold, expected):
     """Tests for mapping tranformation and filtering of data."""
-    out = cluster.transform_data(data, threshold)
+    out = transform.transform_data(data, threshold)
     assert out.shape == expected.shape  # verify shape as map values will change on each run
 
 
@@ -735,7 +733,7 @@ def test_transform_data(data, threshold, expected):
 )
 def test_transform_data_hashes(data, threshold, expected):
     """Tests for hashing of data."""
-    out = cluster.transform_data_hashes(data, threshold)
+    out = transform.transform_data_hashes(data, threshold)
     assert out.equals(expected)
 
 
@@ -897,8 +895,8 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
         (
             np.array(
                 [
-                    [np.uint32(1), cluster.MISSING_VALUE],
-                    [cluster.MISSING_VALUE, np.uint32(1)],
+                    [np.uint32(1), transform.MISSING_VALUE],
+                    [transform.MISSING_VALUE, np.uint32(1)],
                 ]
             ),
             False,
@@ -908,8 +906,8 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
         (
             np.array(
                 [
-                    [np.uint32(1), cluster.MISSING_VALUE],
-                    [cluster.MISSING_VALUE, np.uint32(1)],
+                    [np.uint32(1), transform.MISSING_VALUE],
+                    [transform.MISSING_VALUE, np.uint32(1)],
                 ]
             ),
             True,
@@ -919,8 +917,8 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
         (
             np.array(
                 [
-                    [cluster.MISSING_VALUE, cluster.MISSING_VALUE],
-                    [cluster.MISSING_VALUE, cluster.MISSING_VALUE],
+                    [transform.MISSING_VALUE, transform.MISSING_VALUE],
+                    [transform.MISSING_VALUE, transform.MISSING_VALUE],
                 ]
             ),
             False,
@@ -957,7 +955,7 @@ def test_calc_dists_fuzzing_hypothesis_no_infinites(arr):
 )
 def test_calc_dists_file_inputs(input, scaled, count_missing):
     """Test inputs of calc dists is correct with known input."""
-    profiles: pl.DataFrame = cluster.read_input_profiles(input, None, "\t", 1)
+    profiles: pl.DataFrame = cluster.read_input_profiles(input, "\t", 1)
     dists: npt.NDArray = cluster.compute_dists(profiles, count_missing, scaled, 1)
     matrix: npt.NDArray = scipy.spatial.distance.squareform(
         dists
