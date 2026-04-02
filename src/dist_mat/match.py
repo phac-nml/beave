@@ -51,8 +51,16 @@ def merge_query_and_reference(query: pl.DataFrame, reference: pl.DataFrame) -> p
     return pl.concat([query, reference], how="vertical")
 
 
-def run_fast_matching(profiles: pl.DataFrame, threshold: float) -> npt.NDArray:
+def run_fast_matching(profiles: pl.DataFrame, threshold: float, query_length: int) -> npt.NDArray:
     """Generate fast-match results of query vs reference samples."""
+    """
+    Plan:
+    Pass:
+        - The profiles in array to C++ same as with clustering.
+        - The threshold as a numpy float.
+        - The index the terminal index of the last query sample.
+
+    """
     ...
     raise NotImplementedError()
 

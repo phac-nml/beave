@@ -1,10 +1,12 @@
 #include "main.hpp"
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/string.h>
 #include <thread>
+#include <variant>
 #include <vector>
 
 namespace nb = nanobind;
@@ -55,8 +57,59 @@ float _hamming_distance(const uint32_t *__restrict__ p1_data,
 
 using array = nb::ndarray<uint32_t, nb::numpy, nb::shape<-1, -1>, nb::c_contig,
                           nb::device::cpu>;
-using array_out =
-    nb::ndarray<float, nb::numpy, nb::shape<-1>, nb::c_contig, nb::device::cpu>;
+using array_out = nb::ndarray<float, nb::numpy, nb::shape<-1, 3>, nb::c_contig,
+                              nb::device::cpu>;
+
+/*
+ * Fast matching return value, containst a 3x-1 array. As we compare all of the
+ * query sample against themeselves and against all reference samples.
+ *
+ * Only distances less than a passed thershold are retained in the final output.
+ *
+ * array positions:
+ * position 0 = id of query sample.
+ * position 1 = id of reference sample.
+ * position 2 = calculated distance.
+ *
+ */
+using array_fast_match = nb::ndarray<float, nb::numpy, nb::shape<3, -1>,
+                                     nb::c_contig, nb::device::cpu>;
+
+/*
+ * Need to figure out final output storage, will likely need to be an arrray to
+ * place nicely with numpy
+ **/
+void fast_match_function(
+    const array profiles, size_t start, size_t end, const bool scaled,
+    const bool count_missing, float threshold,
+    std::vector<std::variant<float, uint32_t>> &output_data) {
+  auto profile_data = profiles.view();
+  size_t number_of_loci = profile_data.shape(1);
+
+  for (size_t i = start; i < end; i++) {
+    for (size_t f = i + 1; f < profiles.shape(0);
+         f++) { // 0 goes till end of the array
+      // account for stride in array
+      float distance =
+          _hamming_distance(&profile_data.data()[i * number_of_loci],
+                            &profile_data.data()[f * number_of_loci],
+                            number_of_loci, scaled, count_missing);
+
+      if (distance > threshold) {
+        continue;
+      }
+
+      std::variant<float, uint32_t> query, reference, distance_converted;
+      query = static_cast<uint32_t>(i);
+      reference = static_cast<uint32_t>(f);
+      distance_converted = static_cast<uint32_t>(distance);
+
+      output_data.emplace_back(query);
+      output_data.emplace_back(reference);
+      output_data.emplace_back(distance_converted);
+    }
+  }
+}
 
 void populate_outputs(size_t start, size_t end, size_t pdata_size,
                       const bool scaled, const bool count_missing,
@@ -94,8 +147,8 @@ array_out calculate_distances(array np_in, size_t threads, bool scaled,
   std::vector<size_t> ranges = get_thread_ranges(threads, number_profiles);
   std::vector<std::thread> pool;
 
-  // Calculate the total space needed to contain the final number of outputs in
-  // the upper triangle.
+  // Calculate the total space needed to contain the final number of outputs
+  // in the upper triangle.
   size_t total_upper_elements = (number_profiles * (number_profiles - 1)) / 2;
 
   float *output = new float[total_upper_elements];
@@ -113,6 +166,58 @@ array_out calculate_distances(array np_in, size_t threads, bool scaled,
   return array_out(output, {total_upper_elements}, owner);
 }
 
+/*
+ * @brief Driver function for fast_match function
+ *
+ * @param np_in The input numpy array from python containing the profiles used
+ * for calculation.
+ * @param threads The number of cores to use for the calculation.
+ * @param scaled If True return the hamming distance as a proportion of
+ * comparisons made.
+ * @param count_missing If True count missing values as data.
+ * @param query_length The number of query profiles with the array.
+ **/
+array_fast_match fast_match(array np_in, size_t threads, bool scaled,
+                            bool count_missing, size_t query_length,
+                            float threshold) {
+
+  // Each thread needs a dynamically growing vector to store the output value
+  // input Sharing a data structure between threads is likely wasteful as we
+  // expect more values to be distant rather than near by e.g. we will not
+  // store most results.
+  size_t total_number_of_profiles = np_in.shape(0);
+  std::vector<size_t> thread_ranges = get_thread_ranges(threads, query_length);
+
+  std::vector<std::thread> pool(thread_ranges.size() - 1);
+  std::vector<std::vector<std::variant<float, uint32_t>>> results(
+      thread_ranges.size() - 1);
+  for (std::vector<std::variant<float, uint32_t>> &val : results) {
+    val.reserve(
+        10000); // initialize results outputs with at at least 10k values
+  }
+  for (size_t i = 0; i < thread_ranges.size() - 1; i++) {
+    pool.emplace_back(fast_match_function, std::cref(np_in), thread_ranges[i],
+                      thread_ranges[i + 1], scaled, count_missing, threshold,
+                      std::ref(results[i]));
+  }
+
+  for (std::thread &th : pool) {
+    th.join();
+  }
+
+  // Get capacity of each filled vector
+  size_t recorded_results = std::ranges::fold_left(
+      results, 0,
+      [](size_t acc, const std::vector<std::variant<float, uint32_t>> &x) {
+        return acc + x.size();
+      });
+  // Resize first element to hold all other values
+  results[0].resize(recorded_results);
+
+  // copy all other values from other vectors to results.
+  ...
+}
+
 // define Python module, expose py_cube function as "cube" to python
 NB_MODULE(dist_mat_ext, m) {
 
@@ -122,29 +227,3 @@ NB_MODULE(dist_mat_ext, m) {
         "Calculate hamming distance between all sets of profiles.");
   m.attr("missing_value") = MISSING_VALUE;
 }
-
-// Example code below
-// C/C++ implementation of the function to be wrapped
-// void c_cube(const double *v_in, double *v_out, size_t n_elem) {
-//  for (size_t i = 0; i < n_elem; ++i) {
-//    v_out[i] = v_in[i] * v_in[i] * v_in[i];
-//  }
-//}
-//
-//
-//// wrapper function, accepting a NumPy array as input and returning a NumPy
-//// array
-// array py_cube(array np_in) {
-//   // create output buffer
-//   double *out_buffer = new double[np_in.size()];
-//
-//   // call C/C++ function with proper arguments
-//   c_cube(np_in.data(), out_buffer, np_in.size());
-//
-//   // Delete 'data' when the 'owner' capsule expires
-//   nb::capsule owner(out_buffer, [](void *p) noexcept { delete[] (double *)p;
-//   });
-//
-//   return array(out_buffer, np_in.ndim(), (const size_t *)np_in.shape_ptr(),
-//                owner);
-// }
