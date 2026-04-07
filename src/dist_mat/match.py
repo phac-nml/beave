@@ -3,10 +3,12 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
 import numpy.typing as npt
 import polars as pl
 
 import dist_mat._internal.transform_data as transform
+from dist_mat import fast_match
 from dist_mat._internal.log import init_logger
 
 logger = init_logger(__name__)
@@ -25,6 +27,7 @@ class MatchArguments:
     count_missing: bool
     scaled: bool
     filter_threshold: float
+    output: Path
 
 
 class ColumnsDoNotMatchError(ValueError):
@@ -51,18 +54,35 @@ def merge_query_and_reference(query: pl.DataFrame, reference: pl.DataFrame) -> p
     return pl.concat([query, reference], how="vertical")
 
 
-def run_fast_matching(profiles: pl.DataFrame, threshold: float, query_length: int) -> npt.NDArray:
+def run_fast_matching(
+    profiles: npt.NDArray,
+    query_size: int,
+    match_args: MatchArguments,
+) -> npt.NDArray:
     """Generate fast-match results of query vs reference samples."""
-    """
-    Plan:
-    Pass:
-        - The profiles in array to C++ same as with clustering.
-        - The threshold as a numpy float.
-        - The index the terminal index of the last query sample.
+    fast_match_data: npt.NDArray = fast_match(
+        profiles,
+        match_args.cores,
+        match_args.scaled,
+        match_args.count_missing,
+        query_size,
+        match_args.threshold,
+    )
+    return fast_match_data
 
-    """
-    ...
-    raise NotImplementedError()
+
+def prepare_fast_match_outputs(data: npt.NDArray, profiles: pl.DataFrame, output: Path) -> None:
+    """Write out fast-match results for each query and reference."""
+    with output.open("w") as dists_out:
+        dists_out.write("query_id\tref_id\tdist")
+        for row in data:
+            print(
+                profiles.row(int(row[0]))[0],
+                profiles.row(int(row[1]))[0],
+                np.float32(row[2]),
+                sep="\t",
+                file=dists_out,
+            )
 
 
 def match(match_args: MatchArguments) -> None:
@@ -85,3 +105,10 @@ def match(match_args: MatchArguments) -> None:
 
     merged_profiles = merge_query_and_reference(query, reference)
     transform.verify_dataframe_integrity(merged_profiles)
+
+    profiles_prepared: npt.NDArray = transform.prep_data(
+        merged_profiles, match_args.filter_threshold, transform.transform_data
+    )
+
+    fast_match_results: npt.NDArray = run_fast_matching(profiles_prepared, query.height, match_args)
+    prepare_fast_match_outputs(fast_match_results, merged_profiles, match_args.output)

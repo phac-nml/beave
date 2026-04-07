@@ -1,6 +1,5 @@
 """Re-implementation of mcluster."""
 
-import typing as t
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from pathlib import Path
@@ -12,7 +11,12 @@ from numpy import typing as npt
 
 import dist_mat as dm
 from dist_mat._internal.log import init_logger
-from dist_mat._internal.transform_data import read_input_profiles, subset_columns, transform_data
+from dist_mat._internal.transform_data import (
+    prep_data,
+    read_input_profiles,
+    subset_columns,
+    transform_data,
+)
 
 logger = init_logger(__name__)
 
@@ -114,18 +118,6 @@ def linkage_matrix_to_nwk(linkage_matrix: npt.NDArray, sample_ids: list[str]) ->
         newick_intermediates[fj] = None
 
     return newick_intermediates[linkage_matrix.shape[0] - 1 + n_objects] + ";"
-
-
-def prep_data(
-    profiles: pl.DataFrame,
-    threshold: float,
-    transformation_func: t.Callable[[pl.DataFrame, float], pl.DataFrame],
-) -> npt.NDArray:
-    """Prepare profiles for computation by the the calc_dists function of dist_mat."""
-    data_columns = profiles.columns[1:]  # only apply functions to loci columns
-    profiles = transformation_func(profiles, threshold)
-    profiles_numpy = profiles.select([pl.col(i) for i in data_columns]).to_numpy().astype(np.uint32)
-    return profiles_numpy
 
 
 def compute_dists(

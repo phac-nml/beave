@@ -225,7 +225,21 @@ def main() -> None:
     parser_match.add_argument("--query", "-q", type=Path, required=True, help="Query profiles.")
 
     parser_match.add_argument(
-        "--threshold", "-t", type=cluster_threshold, required=True, help="Query profiles."
+        "--threshold",
+        "-t",
+        type=cluster_threshold,
+        required=True,
+        help="Only report distances which exceed specified threshold.",
+        default=0.0,
+    )
+
+    parser_match.add_argument(
+        "--output",
+        "-o",
+        type=Path,
+        required=False,
+        help="Fast match result output tsv file. [default: %(default)s]",
+        default=Path("output.tsv"),
     )
 
     args = parser.parse_args(sys.argv[1:])
@@ -252,12 +266,13 @@ def main() -> None:
                 args.query,
                 args.reference,
                 args.threshold,
-                args.cores,
-                args.columns_path,
+                args.n_threads,
+                args.columns,
                 args.delimiter,
                 args.count_missing,
                 args.scaled,
                 args.filter_threshold,
+                args.output,
             )
             match(match_args)
         case _:

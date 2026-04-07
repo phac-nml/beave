@@ -1,9 +1,11 @@
 """Internal functions used for data loading and transformation."""
 
 import math
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
+import numpy.typing as npt
 import polars as pl
 
 from dist_mat._internal.log import init_logger
@@ -210,3 +212,15 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
 
     profiles = filter_rows(profiles, threshold)
     return profiles
+
+
+def prep_data(
+    profiles: pl.DataFrame,
+    threshold: float,
+    transformation_func: Callable[[pl.DataFrame, float], pl.DataFrame],
+) -> npt.NDArray:
+    """Prepare profiles for computation by the the calc_dists function of dist_mat."""
+    data_columns = profiles.columns[1:]  # only apply functions to loci columns
+    profiles = transformation_func(profiles, threshold)
+    profiles_numpy = profiles.select([pl.col(i) for i in data_columns]).to_numpy().astype(np.uint32)
+    return profiles_numpy
