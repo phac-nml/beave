@@ -1003,3 +1003,9 @@ def test_linkage_matrix_to_nwk(linkage, sample_ids, expected):
     https://github.com/scipy/scipy/pull/17329/changes
     """
     assert cluster.linkage_matrix_to_nwk(linkage, sample_ids) == expected
+
+
+def test_get_subset_columns():
+    """Test for get_subset_columns."""
+    cols = transform.get_subset_columns(Path("src/dist_mat/tests/data/test_columns.txt"))
+    assert cols == ["sample", "col1", "col2", "col3"]

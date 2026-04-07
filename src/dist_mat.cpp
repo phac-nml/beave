@@ -95,7 +95,7 @@ void fast_match_function(const array profiles, size_t start, size_t end,
                             &profile_data.data()[f * number_of_loci],
                             number_of_loci, scaled, count_missing);
 
-      if (distance > threshold) {
+      if (distance < threshold) {
         continue;
       }
 

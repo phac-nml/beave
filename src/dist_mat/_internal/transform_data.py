@@ -53,7 +53,6 @@ def subset_columns(
     return profiles.select(sample_col, *columns_subset)
 
 
-# TODO: Missing test coverage
 def get_subset_columns(columns_path: Path) -> set[str]:
     """Load the columns used for subsetting loci."""
     with columns_path.open("r") as columns_file:

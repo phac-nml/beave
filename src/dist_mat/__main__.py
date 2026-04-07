@@ -24,6 +24,8 @@ from dist_mat.match import MatchArguments, match
 
 logger = init_logger(__name__)
 
+MAX_PERCENT: float = 100.0
+
 
 class Commands(StrEnum):
     """Sub-commands for the program."""
@@ -56,14 +58,13 @@ def check_if_float(float_input: str) -> float:
 def percentage_range(float_input: str) -> float:
     """Check if input value is in range for comparisons."""
     converted_float: float = check_if_float(float_input)
-    max_percent: float = 100.0
-    if converted_float < 0.00 or converted_float > max_percent:
+    if converted_float < 0.00 or converted_float > MAX_PERCENT:
         error_message = (
             f"Filter threshold must be between 0.00 and 100.0. You passed: {float_input}"
         )
         logger.critical(error_message)
         raise ValueError(error_message)
-    return converted_float / max_percent  # convert percentage to decimal fraction
+    return converted_float / MAX_PERCENT  # convert percentage to decimal fraction
 
 
 def cluster_threshold(float_input: str) -> float:
@@ -188,7 +189,7 @@ def main() -> None:
     )
 
     parser_cluster.add_argument(
-        "--thresholds",
+        "--threshold",
         "-p",
         help="List of threshold values to use.",
         nargs="+",
@@ -217,20 +218,25 @@ def main() -> None:
         Commands.MATCH, help="Run fast matching.", parents=[parent_parser]
     )
 
-    # TODO: Need to spend time typing out informative help messages
     parser_match.add_argument(
-        "--reference", "-r", type=Path, required=True, help="Reference profiles."
+        "--reference", "-r", type=Path, required=True, help="Profiles to compare against."
     )
 
-    parser_match.add_argument("--query", "-q", type=Path, required=True, help="Query profiles.")
+    parser_match.add_argument(
+        "--query",
+        "-q",
+        type=Path,
+        required=True,
+        help="Profiles containing new-samples for comparisons.",
+    )
 
     parser_match.add_argument(
-        "--threshold",
+        "--thresholds",
         "-t",
         type=cluster_threshold,
         required=True,
-        help="Only report distances which exceed specified threshold.",
-        default=0.0,
+        help="Only report distances below specified threshold.",
+        default=100.0,
     )
 
     parser_match.add_argument(
@@ -243,6 +249,10 @@ def main() -> None:
     )
 
     args = parser.parse_args(sys.argv[1:])
+
+    if args.scaled and list(filter(lambda x: x > MAX_PERCENT, args.threshold)):
+        logger.critical("Scaled distance specified, but values greater than 100.0 are specified.")
+        raise ValueError()
 
     match args.command:
         case Commands.CLUSTER:
