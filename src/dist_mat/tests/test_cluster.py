@@ -46,7 +46,7 @@ def test_benchmark_unique_values_polars_unpivot(benchmark, test_df):
 
     def helper_func():
         values_columns = 1
-        unique_values = (
+        unique_values = (  # noqa: F841
             test_df.select(pl.all().exclude(test_df.columns[0]))
             .unpivot()
             .to_series(values_columns)
@@ -61,7 +61,7 @@ def test_benchmark_unique_values_polars_list(benchmark, test_df):
     """Benchmark creation of unique values for mapping."""
 
     def helper_func():
-        unique_values = (
+        unique_values = (  # noqa: F841
             pl.concat(s.unique() for s in test_df.select(pl.all().exclude(test_df.columns[0])))
             .unique()
             .to_list()
