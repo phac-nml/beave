@@ -113,7 +113,7 @@ def read_input_profiles(input_file: Path, delimiter: str, threads: int) -> pl.Da
         missing_utf8_is_empty_string=True,
         infer_schema=False,
     )
-
+    # TODO drop rows that are all empty values
     verify_dataframe_integrity(profiles)
 
     return profiles
@@ -185,7 +185,7 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     # Create mapping instead of using hashes
     values_columns = 1
     unique_values = (
-        profiles.with_columns(pl.all().exclude(profiles.columns[0]))
+        profiles.select(pl.all().exclude(profiles.columns[0]))
         .unpivot()
         .to_series(values_columns)
         .unique()
@@ -221,5 +221,9 @@ def prep_data(
     """Prepare profiles for computation by the the calc_dists function of dist_mat."""
     data_columns = profiles.columns[1:]  # only apply functions to loci columns
     profiles = transformation_func(profiles, threshold)
-    profiles_numpy = profiles.select([pl.col(i) for i in data_columns]).to_numpy().astype(np.uint32)
+    profiles_numpy = (
+        profiles.select([pl.col(i) for i in data_columns])
+        .to_numpy(writable=False)
+        .astype(np.uint32)
+    )
     return profiles_numpy

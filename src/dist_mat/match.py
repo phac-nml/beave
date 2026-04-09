@@ -79,10 +79,15 @@ def run_fast_matching(
     return fast_match_data
 
 
-def prepare_fast_match_outputs(data: npt.NDArray, profiles: pl.DataFrame, output: Path) -> None:
+def prepare_fast_match_outputs(
+    data: npt.NDArray, profiles: pl.DataFrame, match_args: MatchArguments
+) -> None:
     """Write out fast-match results for each query and reference."""
-    with output.open("w") as dists_out:
-        dists_out.write("query_id\tref_id\tdist")
+    with match_args.output.open("w") as dists_out:
+        dist_type: str = "hamming"
+        if match_args.scaled:
+            dist_type = "scaled"
+        print("query_id", "ref_id", f"dist_{dist_type}", sep="\t", file=dists_out)
         for row in data:
             print(
                 profiles.row(int(row[0]))[0],
@@ -130,5 +135,5 @@ def match(match_args: MatchArguments) -> None:
 
     fast_match_results: npt.NDArray = run_fast_matching(profiles_prepared, query.height, match_args)
     logger.info(f"Finished calculations and writing to output: {match_args.output}")
-    prepare_fast_match_outputs(fast_match_results, merged_profiles, match_args.output)
+    prepare_fast_match_outputs(fast_match_results, merged_profiles, match_args)
     logger.info("Finished.")

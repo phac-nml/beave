@@ -41,8 +41,125 @@ def test_benchmark_data_transformation_map(benchmark, test_df):
     assert True
 
 
+def test_benchmark_unique_values_polars_unpivot(benchmark, test_df):
+    """Benchmark creation of unique values for mapping."""
+
+    def helper_func():
+        values_columns = 1
+        unique_values = (
+            test_df.select(pl.all().exclude(test_df.columns[0]))
+            .unpivot()
+            .to_series(values_columns)
+            .unique()
+            .to_list()
+        )
+
+    benchmark(helper_func)
+
+
+def test_benchmark_unique_values_polars_list(benchmark, test_df):
+    """Benchmark creation of unique values for mapping."""
+
+    def helper_func():
+        unique_values = (
+            pl.concat(s.unique() for s in test_df.select(pl.all().exclude(test_df.columns[0])))
+            .unique()
+            .to_list()
+        )
+
+    benchmark(helper_func)
+
+
+def test_benchmark_tranform_data_with_nulls(benchmark):
+    """Benchmark for testing if loading profiles with nulls is faster."""
+
+    def helper_func():
+        profiles = pl.read_csv(
+            "tests/R1KC1K.tsv",
+            separator="\t",
+            n_threads=1,
+            has_header=True,
+            raise_if_empty=True,
+            missing_utf8_is_empty_string=True,
+            infer_schema=False,
+            null_values=list(transform.REPLACE_CHARS.keys()),
+        )
+        profiles = profiles.fill_null(0)
+
+        values_columns = 1
+        unique_values = (
+            profiles.select(pl.all().exclude(profiles.columns[0]))
+            .unpivot()
+            .to_series(values_columns)
+            .unique()
+            .to_list()
+        )
+
+        char_mapping = {
+            value: idx
+            for value, idx in zip(
+                unique_values, np.arange(1, len(unique_values) + 1, dtype=np.uint32)
+            )
+        }
+
+        profiles = profiles.with_columns(
+            pl.all()
+            .exclude(profiles.columns[0])  # skip id column
+            .replace(char_mapping)
+            .cast(pl.UInt32)  # strict cast will throw an error if any overflow occurs
+        )
+
+    benchmark(helper_func)
+
+
+def test_benchmark_tranform_data_with_no_nulls(benchmark):
+    """Benchmark for testing if loading profiles with nulls is faster."""
+
+    def helper_func():
+        profiles = pl.read_csv(
+            "tests/R1KC1K.tsv",
+            separator="\t",
+            n_threads=1,
+            has_header=True,
+            raise_if_empty=True,
+            missing_utf8_is_empty_string=True,
+            infer_schema=False,
+        )
+
+        values_columns = 1
+        unique_values = (
+            profiles.select(pl.all().exclude(profiles.columns[0]))
+            .unpivot()
+            .to_series(values_columns)
+            .unique()
+            .to_list()
+        )
+
+        char_mapping = (
+            {  # start mapping at 1, as 0 is used for missing values and add one to not miss values
+                value: idx
+                for value, idx in zip(
+                    unique_values, np.arange(1, len(unique_values) + 1, dtype=np.uint32)
+                )
+            }
+            | transform.REPLACE_CHARS
+        )  # Create new dictionary, REPLACE_CHARS keys overwrite those in new dictionary
+
+        profiles = profiles.with_columns(
+            pl.all()
+            .exclude(profiles.columns[0])  # skip id column
+            .replace(char_mapping)
+            .cast(pl.UInt32)  # strict cast will throw an error if any overflow occurs
+        )
+
+    benchmark(helper_func)
+
+
+# TODO: Need to add benchmark for polars replacing charactars with null vs replace chars later
+
+
 @pytest.mark.parametrize(
-    "input,columns_keep,delimiter,threads,expected",
+    "input,delimiter,threads,expected",
     [
         (
             Path("src/dist_mat/tests/data/simple_test_profiles.csv"),
@@ -368,7 +485,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
     for i in array:
         i[2] = np.uint32(2683474508)  # last value should be the hashed version of "A"
     output = cluster.prep_data(profiles, 1.00, transform.transform_data_hashes)
-    assert np.array_equal(output, array)
+    np.testing.assert_equal(output, array)
 
 
 @pytest.mark.parametrize(
@@ -758,7 +875,7 @@ def test_compute_linkage_matrix(method, expected):
     """Tests from scipy for computing linkage matrix."""
     input_array = np.array([1.41421356, 2.82842712, 1.41421356])
     output = cluster.compute_linkage_matrix(input_array, method)
-    assert np.allclose(output, expected)
+    np.testing.assert_allclose(output, expected)
 
 
 @pytest.mark.parametrize(
@@ -782,7 +899,7 @@ def test_compute_linkage_matrix_integers(method, expected):
     """
     input_array = np.array([1, 3, 8, 4, 7, 5])
     output = cluster.compute_linkage_matrix(input_array, method)
-    assert np.array_equal(expected, output)
+    np.testing.assert_equal(expected, output)
 
 
 @pytest.mark.parametrize(
@@ -930,7 +1047,7 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
 def test_calc_dists(profiles, count_missing, scaled, expected):
     """Test distance calculation output is correct."""
     output = dist_mat.calc_dists(profiles, 1, scaled, count_missing)
-    assert np.array_equal(output, expected)
+    np.testing.assert_equal(output, expected)
 
 
 @given(
@@ -1008,4 +1125,4 @@ def test_linkage_matrix_to_nwk(linkage, sample_ids, expected):
 def test_get_subset_columns():
     """Test for get_subset_columns."""
     cols = transform.get_subset_columns(Path("src/dist_mat/tests/data/test_columns.txt"))
-    assert cols == ["sample", "col1", "col2", "col3"]
+    assert cols == {"sample", "col1", "col2", "col3"}
