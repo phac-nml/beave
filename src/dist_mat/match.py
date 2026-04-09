@@ -36,7 +36,15 @@ class ColumnsDoNotMatchError(ValueError):
     __max_print_value = 10
 
     def __init__(self, values: set[str]) -> None:
-        """Error raised if all column values removed."""
+        """Error raised if columns do not match.
+
+        The number of mismatching columns is printed, however if the number of
+        mismatching columns is small they are printed to stderr. The threshold
+        for printing columns to screen is determined by __max_print_value.
+
+        The printing of columns to screen is restricted to prevent filling stdout
+        with information that may obscure other useful log messages.
+        """
         output_string: str = (
             f"The loci in your reference set do not match those in your query."
             f" Too many differences to list: {len(values)}"
@@ -88,13 +96,20 @@ def prepare_fast_match_outputs(data: npt.NDArray, profiles: pl.DataFrame, output
 def match(match_args: MatchArguments) -> None:
     """Driver function for fast-matching."""
     query = transform.read_input_profiles(match_args.query, match_args.delimiter, match_args.cores)
+    logger.debug("Finished reading query profiles.")
     reference = transform.read_input_profiles(
         match_args.reference, match_args.delimiter, match_args.cores
     )
+    logger.debug("Finished reading reference profiles.")
+    logger.info("Finished reading reference and query profiles.")
     if match_args.columns_path:
         columns_to_keep = transform.get_subset_columns(match_args.columns_path)
+        logger.info("Loaded columns to subset from profiles.")
         query = transform.subset_columns(query, None, columns_to_keep)
+        logger.debug("Subset reference and query columns.")
         reference = transform.subset_columns(reference, None, columns_to_keep)
+        logger.debug("Subset reference columns.")
+        logger.info("Subset reference and query columns.")
 
     # Offset columns list by 1 to ignore the index column
     reference_columns = set(reference.columns)
@@ -104,11 +119,16 @@ def match(match_args: MatchArguments) -> None:
         raise ColumnsDoNotMatchError(diff)
 
     merged_profiles = merge_query_and_reference(query, reference)
+    logger.info("Merged query and reference profiles.")
     transform.verify_dataframe_integrity(merged_profiles)
+    logger.debug("Finished verifying merged profiles dataframe.")
 
     profiles_prepared: npt.NDArray = transform.prep_data(
         merged_profiles, match_args.filter_threshold, transform.transform_data
     )
+    logger.debug("Converted prepared profiles to numpy array.")
 
     fast_match_results: npt.NDArray = run_fast_matching(profiles_prepared, query.height, match_args)
+    logger.info(f"Finished calculations and writing to output: {match_args.output}")
     prepare_fast_match_outputs(fast_match_results, merged_profiles, match_args.output)
+    logger.info("Finished.")

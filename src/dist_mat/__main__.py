@@ -8,6 +8,7 @@ import importlib.metadata
 __version__ = importlib.metadata.version(__package__ or __name__)
 
 import argparse
+import logging
 import os
 import sys
 from enum import StrEnum
@@ -25,6 +26,14 @@ from dist_mat.match import MatchArguments, match
 logger = init_logger(__name__)
 
 MAX_PERCENT: float = 100.0
+
+
+class CommandError(ValueError):
+    """Generic value error for erroneous parameter entries."""
+
+    def __init__(self, error: str) -> None:
+        """Propogate string to value error for display to users."""
+        super().__init__(error)
 
 
 class Commands(StrEnum):
@@ -79,12 +88,23 @@ def cluster_threshold(float_input: str) -> float:
     return converted_input
 
 
+def verify_scaled_distance(scaled: bool, thresholds: float | list[float]) -> None:
+    """Verify scaled distance thresholds."""
+    if not scaled:
+        return
+
+    test_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
+    if test_value <= MAX_PERCENT:
+        return
+
+    err_msg: str = "Scaled distance specified, but values greater than 100.0 are specified."
+    logger.critical(err_msg)
+    raise CommandError(err_msg)
+
+
 def main() -> None:
     """Program entry-point."""
-    # TODO: Add check for scaled distances are percentage and hamming is unbound
-
-    # Global command-line arguments:
-    parent_parser = argparse.ArgumentParser(
+    parent_parser = argparse.ArgumentParser(  # Global command-line arguments:
         add_help=False,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
@@ -148,6 +168,10 @@ def main() -> None:
         type=percentage_range,
     )
 
+    parent_parser.add_argument(
+        "--verbose", action="store_true", help="Display logger debug messages."
+    )
+
     parser = argparse.ArgumentParser(
         description="A quick proof of concept of generic utilities for nomenclature assignment.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -189,7 +213,7 @@ def main() -> None:
     )
 
     parser_cluster.add_argument(
-        "--threshold",
+        "--thresholds",
         "-p",
         help="List of threshold values to use.",
         nargs="+",
@@ -231,7 +255,7 @@ def main() -> None:
     )
 
     parser_match.add_argument(
-        "--thresholds",
+        "--threshold",
         "-t",
         type=cluster_threshold,
         required=True,
@@ -250,9 +274,9 @@ def main() -> None:
 
     args = parser.parse_args(sys.argv[1:])
 
-    if args.scaled and list(filter(lambda x: x > MAX_PERCENT, args.threshold)):
-        logger.critical("Scaled distance specified, but values greater than 100.0 are specified.")
-        raise ValueError()
+    if args.verbose:
+        """Set the root loggers level to debug if verbose is enabled."""
+        logging.getLogger().setLevel(logging.DEBUG)
 
     match args.command:
         case Commands.CLUSTER:
