@@ -345,3 +345,44 @@ def test_fast_match_run_outputs(workflow_dir):
     """Verify output of fast matching workflow test."""
     output_file = Path(workflow_dir, "output.tsv")
     assert output_file.exists()
+    data = output_file.read_text().split("\n")
+    assert data[0] == "query_id\tref_id\tdist_hamming"
+    query_sample_ids = Path(workflow_dir, "tests", "R1KC1K.tail.tsv")
+    query_ids = {
+        int(i.split("\t")[0]) for i in query_sample_ids.read_text().split("\n")[1:] if i != ""
+    }
+    query_ids_read = set()
+    for row in data[1:]:
+        if not row:
+            continue
+        q, r, dist = row.split("\t")
+        q = int(q)
+        r = int(r)
+        query_ids_read.add(q)
+        dist = float(dist)
+        assert dist == float(abs(q - r))
+    assert query_ids_read == query_ids
+
+
+@pytest.mark.workflow("Run fast-matching scaled")
+def test_fast_match_run_outputs_scaled(workflow_dir):
+    """Verify output of fast matching is correct with scaled outputs."""
+    output_file = Path(workflow_dir, "output.tsv")
+    assert output_file.exists()
+    data = output_file.read_text().split("\n")
+    assert data[0] == "query_id\tref_id\tdist_scaled"
+    query_sample_ids = Path(workflow_dir, "tests", "R1KC1K.head.tsv")
+    query_ids = {
+        int(i.split("\t")[0]) for i in query_sample_ids.read_text().split("\n")[1:] if i != ""
+    }
+    query_ids_read = set()
+    for row in data[1:]:
+        if not row:
+            continue
+        q, r, dist = row.split("\t")
+        q = int(q)
+        r = int(r)
+        query_ids_read.add(q)
+        expected = float(abs(q - r) / 1000) * 100.0
+        assert expected == pytest.approx(float(dist), rel=1e-6)
+    assert query_ids_read == query_ids

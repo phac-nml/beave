@@ -94,12 +94,21 @@ def verify_scaled_distance(scaled: bool, thresholds: float | list[float]) -> Non
         return
 
     test_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
-    if test_value is not float("inf") and test_value <= MAX_PERCENT:
+    if test_value == float("inf") or test_value <= MAX_PERCENT:
         return
 
     err_msg: str = "Scaled distance specified, but values greater than 100.0 are specified."
     logger.critical(err_msg)
     raise CommandError(err_msg)
+
+
+def output_file(output: str) -> Path:
+    """Create directory for output results file if needed."""
+    handle: Path = Path(output)
+    if not handle.parent.is_dir():
+        logger.debug("Creating output directory structure.")
+        handle.parent.mkdir(parents=True, exist_ok=True)
+    return handle
 
 
 def main() -> None:
@@ -198,7 +207,7 @@ def main() -> None:
         "--tree-output",
         "-t",
         help="File path to write generated tree. [default %(default)s]",
-        type=Path,
+        type=output_file,
         required=False,
         default="clusters.nwk",
     )
@@ -207,7 +216,7 @@ def main() -> None:
         "--cluster-output",
         "-l",
         help="File path to write generated clusters. [default %(default)s]",
-        type=Path,
+        type=output_file,
         required=False,
         default="clusters.tsv",
     )
@@ -243,13 +252,13 @@ def main() -> None:
     )
 
     parser_match.add_argument(
-        "--reference", "-r", type=Path, required=True, help="Profiles to compare against."
+        "--reference", "-r", type=path_exists, required=True, help="Profiles to compare against."
     )
 
     parser_match.add_argument(
         "--query",
         "-q",
-        type=Path,
+        type=path_exists,
         required=True,
         help="Profiles containing new-samples for comparisons.",
     )
@@ -258,8 +267,7 @@ def main() -> None:
         "--threshold",
         "-t",
         type=cluster_threshold,
-        required=True,
-        help="Only report distances below specified threshold.",
+        help="Only report distances below specified threshold. [default: %(default)s]",
         default=float("inf"),
     )
 
@@ -269,7 +277,7 @@ def main() -> None:
         type=Path,
         required=False,
         help="Fast match result output tsv file. [default: %(default)s]",
-        default=Path("output.tsv"),
+        default=output_file("output.tsv"),
     )
 
     args = parser.parse_args(sys.argv[1:])
