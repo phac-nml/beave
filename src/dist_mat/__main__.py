@@ -280,6 +280,7 @@ def main() -> None:
 
     match args.command:
         case Commands.CLUSTER:
+            verify_scaled_distance(args.scaled, args.thresholds)
             cluster_args = ClusterArguments(
                 args.input,
                 args.delimiter,
@@ -296,6 +297,7 @@ def main() -> None:
             )
             cluster(cluster_args)
         case Commands.MATCH:
+            verify_scaled_distance(args.scaled, args.threshold)
             match_args = MatchArguments(
                 args.query,
                 args.reference,

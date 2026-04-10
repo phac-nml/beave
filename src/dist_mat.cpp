@@ -224,7 +224,6 @@ array_fast_match fast_match(array np_in, size_t threads, bool scaled,
     std::memcpy(&output[output_diff], results[i].data(), bytes_copy);
     output_diff += results[i].size();
   }
-  std::cout << "Saved " << output_diff << " results." << std::endl;
 
   nb::capsule owner(output, [](void *p) noexcept { delete[] (float *)p; });
   constexpr size_t records_per_row = 3;

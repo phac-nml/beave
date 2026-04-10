@@ -113,7 +113,8 @@ def read_input_profiles(input_file: Path, delimiter: str, threads: int) -> pl.Da
         missing_utf8_is_empty_string=True,
         infer_schema=False,
     )
-    # TODO drop rows that are all empty values
+
+    profiles = profiles.filter(pl.all_horizontal(pl.all() != ""))
     verify_dataframe_integrity(profiles)
 
     return profiles
