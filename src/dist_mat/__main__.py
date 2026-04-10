@@ -94,7 +94,7 @@ def verify_scaled_distance(scaled: bool, thresholds: float | list[float]) -> Non
         return
 
     test_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
-    if test_value <= MAX_PERCENT:
+    if test_value is not float("inf") and test_value <= MAX_PERCENT:
         return
 
     err_msg: str = "Scaled distance specified, but values greater than 100.0 are specified."
@@ -260,7 +260,7 @@ def main() -> None:
         type=cluster_threshold,
         required=True,
         help="Only report distances below specified threshold.",
-        default=100.0,
+        default=float("inf"),
     )
 
     parser_match.add_argument(

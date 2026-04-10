@@ -90,8 +90,8 @@ def prepare_fast_match_outputs(
         print("query_id", "ref_id", f"dist_{dist_type}", sep="\t", file=dists_out)
         for row in data:
             print(
-                profiles.row(int(row[0]))[0],
-                profiles.row(int(row[1]))[0],
+                profiles.row(int(row[0]))[1],  # 1 gets the valule offset from the index
+                profiles.row(int(row[1]))[1],
                 np.float32(row[2]),
                 sep="\t",
                 file=dists_out,
@@ -135,5 +135,11 @@ def match(match_args: MatchArguments) -> None:
 
     fast_match_results: npt.NDArray = run_fast_matching(profiles_prepared, query.height, match_args)
     logger.info(f"Finished calculations and writing to output: {match_args.output}")
-    prepare_fast_match_outputs(fast_match_results, merged_profiles, match_args)
+
+    """
+    Need to provide an index row to the passed labels or else the look up of each value from
+    the list when writing the output is incredibly slow.
+    """
+    samples: pl.DataFrame = merged_profiles.select(pl.first()).with_row_index()
+    prepare_fast_match_outputs(fast_match_results, samples, match_args)
     logger.info("Finished.")
