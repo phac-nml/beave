@@ -122,8 +122,8 @@ def match(match_args: MatchArguments) -> None:
         logger.info("Subset reference and query columns.")
 
     # Offset columns list by 1 to ignore the index column
-    reference_columns = set(reference.columns)
-    query_columns = set(query.columns)
+    reference_columns = set(reference.columns[1:])
+    query_columns = set(query.columns[1:])
     if reference_columns != query_columns:
         diff = reference_columns ^ query_columns  # report symmetric diff
         raise ColumnsDoNotMatchError(diff)

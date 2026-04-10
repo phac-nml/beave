@@ -1,29 +1,29 @@
 - name: Run cluster pass
-  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b patristic -n 2 --threshold 10.0 9.0 8.0
+  command: dist-mat cluster --input tests/R1KC1K.tsv -t out/tree.out -m average -l out/clusters.tsv -sc -b patristic -n 2 --thresholds 10.0 9.0 8.0
   files:
-    - path: "tree.out"
+    - path: "out/tree.out"
       should_exist: true
       md5sum: 245de895468635ba78925d0e05b11c6d
-    - path: clusters.tsv
+    - path: out/clusters.tsv
       should_exist: true
       md5sum: 34d06f485579d92e97da2dd26ce50ae2 
 
 - name: Run cluster pass cophenetic
   tags:
     - should_pass
-  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 --threshold 10.0 9.0 8.0
+  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree/tree.out -m average -l clusters/clusters.tsv -sc -b cophenetic -n 2 --thresholds 10.0 9.0 8.0
   files:
-    - path: "tree.out"
+    - path: "tree/tree.out"
       should_exist: true
       md5sum: 0a90b6371ef7c044447281bee283684c
-    - path: clusters.tsv
+    - path: clusters/clusters.tsv
       should_exist: true
       md5sum: 34d06f485579d92e97da2dd26ce50ae2
 
 - name: Run cluster pass cophenetic no scaled metric
   tags:
     - should_pass
-  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -c -b cophenetic -n 1 --threshold 10.0 9.0 8.0
+  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -c -b cophenetic -n 1 --thresholds 10.0 9.0 8.0
   files:
     - path: "tree.out"
       should_exist: true
@@ -35,7 +35,7 @@
 - name: Run cluster pass cophenetic no scaled or missing counted metric
   tags:
     - should_pass
-  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 3 --threshold 10.0 9.0 8.0
+  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 3 --thresholds 10.0 9.0 8.0
   files:
     - path: "tree.out"
       should_exist: true
@@ -47,7 +47,7 @@
 - name: Run cluster pass cophenetic sc flag passing 0 cores passed
   tags:
     - should_pass
-  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --threshold 10.0 9.0 8.0
+  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10.0 9.0 8.0
   files:
     - path: "tree.out"
       should_exist: true
@@ -59,7 +59,7 @@
 - name: Run cluster cophenetic fail threshold
   tags:
     - should_fail
-  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 --threshold 0.1.0
+  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 --thresholds 0.1.0
   exit_code: 2
   files:
     - path: "tree.out"
@@ -68,12 +68,12 @@
       should_exist: false
   stderr:
     contains:
-      - "dist-mat cluster: error: argument --threshold/-p: invalid cluster_threshold value: '0.1.0'"
+      - "dist-mat cluster: error: argument --thresholds/-p: invalid cluster_threshold value: '0.1.0'"
 
 - name: Run cluster fail threshold missing argument
   tags:
     - should_fail
-  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 --threshold
+  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 --thresholds
   exit_code: 2
   files:
     - path: "tree.out"
@@ -82,7 +82,7 @@
       should_exist: false
   stderr:
     contains:
-      - "dist-mat cluster: error: argument --threshold/-p: expected at least one argument"
+      - "dist-mat cluster: error: argument --thresholds/-p: expected at least one argument"
 
 - name: Run cluster csv
   tags:
@@ -122,7 +122,7 @@
       should_exist: false
   stderr:
     contains:
-      - "dist-mat cluster: error: argument --threshold/-p: invalid cluster_threshold value: '-1'"
+      - "dist-mat cluster: error: argument --thresholds/-p: invalid cluster_threshold value: '-1'"
 
 - name: Run cluster, cluster threshold should fail due to infinity being passed.
   tags:
@@ -136,7 +136,7 @@
       should_exist: false
   stderr:
     contains:
-      - "dist-mat cluster: error: argument --threshold/-p: invalid cluster_threshold value: 'inf'"
+      - "dist-mat cluster: error: argument --thresholds/-p: invalid cluster_threshold value: 'inf'"
 
 - name: Run cluster threshold should fail due to high threshold
   tags:
@@ -193,7 +193,7 @@
       - "polars.exceptions.RowsError: Missing values identified in left most column (ID column), left most column can have no missing values."
 
 - name: Run cluster known inputs complete linkage
-  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m complete -l clusters.tsv -b patristic -n 1 --threshold 5 3 0
+  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m complete -l clusters.tsv -b patristic -n 1 --thresholds 5 3 0
   files:
     - path: "tree.out"
       should_exist: true
@@ -204,7 +204,7 @@
 
 
 - name: Run cluster known inputs single linkage
-  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m single -l clusters.tsv -b patristic -n 1 --threshold 5 3 0
+  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m single -l clusters.tsv -b patristic -n 1 --thresholds 5 3 0
   files:
     - path: "tree.out"
       should_exist: true
@@ -215,7 +215,7 @@
 
 
 - name: Run cluster known inputs average linkage
-  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m average -l clusters.tsv -b patristic -n 1 --threshold 5 3 0
+  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m average -l clusters.tsv -b patristic -n 1 --thresholds 5 3 0
   files:
     - path: "tree.out"
       should_exist: true
@@ -226,7 +226,7 @@
 
 
 - name: Run cluster known inputs complete linkage cophenetic
-  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m complete -l clusters.tsv -n 1 --threshold 5 3 0
+  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m complete -l clusters.tsv -n 1 --thresholds 5 3 0
   files:
     - path: "tree.out"
       should_exist: true
@@ -237,7 +237,7 @@
 
 
 - name: Run cluster known inputs single linkage cophenetic 
-  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m single -l clusters.tsv -n 1 --threshold 5 3 0
+  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m single -l clusters.tsv -n 1 --thresholds 5 3 0
   files:
     - path: "tree.out"
       should_exist: true
@@ -248,7 +248,7 @@
 
 
 - name: Run cluster known inputs average linkage cophenetic 
-  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m average -l clusters.tsv -n 1 --threshold 5 3 0
+  command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m average -l clusters.tsv -n 1 --thresholds 5 3 0
   files:
     - path: "tree.out"
       should_exist: true

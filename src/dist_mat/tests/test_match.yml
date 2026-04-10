@@ -1,9 +1,21 @@
 - name: Run fast-matching
+  tags: 
+    - should_pass
   command: dist-mat match -n 1 -q tests/R1KC1K.tail.tsv -r tests/R1KC1K.head.tsv -o output.tsv -c
   files:
     - path: "output.tsv"
 
+- name: Run fast-matching output directory created
+  tags: 
+    - should_pass
+  command: dist-mat match -n 1 -q tests/R1KC1K.tail.tsv -r tests/R1KC1K.head.tsv -o out/output.tsv -c
+  files:
+    - path: "out/output.tsv"
+      should_exist: true
+
 - name: Run fast-matching scaled
+  tags: 
+    - should_pass
   command: dist-mat match -n 2 -r tests/R1KC1K.tail.tsv -q tests/R1KC1K.head.tsv -o output.tsv -cs
   files:
     - path: "output.tsv"
@@ -12,13 +24,13 @@
   tags:
     - should_fail
   command: dist-mat match -n 2 -r tests/R1KC1K.tail.tsv -q tests/R1KC1K.head.tsv -o output.tsv -cs -t 101
-  exit_code: 2
+  exit_code: 1
   files:
     - path: "output.tsv"
       should_exist: false
   stderr:
     contains:
-      - "Scaled distance specified, but values greater than 100.0 are specified. "
+      - "Scaled distance specified, but values greater than 100.0 are specified."
 
 - name: Run fast-matching subset columns
   tags:
@@ -27,3 +39,15 @@
   files:
     - path: "output.tsv"
       should_exist: True
+
+- name: Run fast-matching columns do not match
+  tags:
+    - should_fail
+  command: dist-mat match -n 2 -r tests/R1KC1K.tail.tsv -q src/dist_mat/tests/data/simple_test_profiles.tsv -o output.tsv -c -t 101
+  exit_code: 1
+  files:
+    - path: "output.tsv"
+      should_exist: false
+  stderr:
+    contains:
+      - "The loci in your reference set do not match those in your query. Too many differences to list: 1003"

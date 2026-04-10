@@ -99,7 +99,7 @@ def test_merge_query_and_reference(query, reference, expected):
                 }
             ),
             False,
-            ["query_id\tref_id\tdist_hamming", "1\t2\t3.0", "1\t3\t6.0", "1\t4\t9.0", ""],
+            ["query_id\tref_id\tdist_hamming", "1\t2\t3", "1\t3\t6", "1\t4\t9", ""],
         ),
     ],
 )

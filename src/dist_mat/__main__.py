@@ -274,10 +274,10 @@ def main() -> None:
     parser_match.add_argument(
         "--output",
         "-o",
-        type=Path,
+        type=output_file,
         required=False,
         help="Fast match result output tsv file. [default: %(default)s]",
-        default=output_file("output.tsv"),
+        default="output.tsv",
     )
 
     args = parser.parse_args(sys.argv[1:])
