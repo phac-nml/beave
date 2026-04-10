@@ -1,0 +1,4 @@
+- name: Run fast-matching
+  command: dist-mat match -n 1 -q tests/R1KC1K.tail.tsv -r tests/R1KC1K.head.tsv -o output.tsv -c
+  files:
+    - path: "output.tsv"

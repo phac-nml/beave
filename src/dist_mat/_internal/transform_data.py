@@ -113,8 +113,8 @@ def read_input_profiles(input_file: Path, delimiter: str, threads: int) -> pl.Da
         missing_utf8_is_empty_string=True,
         infer_schema=False,
     )
-
-    profiles = profiles.filter(pl.all_horizontal(pl.all() != ""))
+    # Remove rows which are all empty e.g. caused by new lines at the end of files
+    profiles = profiles.filter(~pl.all_horizontal(pl.all() == ""))
     verify_dataframe_integrity(profiles)
 
     return profiles

@@ -155,9 +155,6 @@ def test_benchmark_tranform_data_with_no_nulls(benchmark):
     benchmark(helper_func)
 
 
-# TODO: Need to add benchmark for polars replacing charactars with null vs replace chars later
-
-
 @pytest.mark.parametrize(
     "input,delimiter,threads,expected",
     [
