@@ -199,7 +199,6 @@ array_fast_match fast_match(array np_in, size_t threads, bool scaled,
                                thread_ranges[i], thread_ranges[i + 1], scaled,
                                count_missing, threshold, std::ref(results[i])));
   }
-  std::cout << "Finished computation::" << std::endl;
 
   for (std::thread &th : pool) {
     th.join();
