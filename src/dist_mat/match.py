@@ -1,5 +1,6 @@
 """Module for fast-matching process."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -85,14 +86,18 @@ def prepare_fast_match_outputs(
     """Write out fast-match results for each query and reference."""
     with match_args.output.open("w") as dists_out:
         dist_type: str = "hamming"
+        type_conversion: Callable[[np.float32], np.uint32] | Callable[[np.float32], np.float32] = (
+            np.uint32
+        )
         if match_args.scaled:
             dist_type = "scaled"
+            type_conversion = np.float32
         print("query_id", "ref_id", f"dist_{dist_type}", sep="\t", file=dists_out)
         for row in data:
             print(
                 profiles.row(int(row[0]))[1],  # 1 gets the valule offset from the index
                 profiles.row(int(row[1]))[1],
-                np.float32(row[2]),
+                type_conversion(row[2]),
                 sep="\t",
                 file=dists_out,
             )

@@ -7,3 +7,23 @@
   command: dist-mat match -n 2 -r tests/R1KC1K.tail.tsv -q tests/R1KC1K.head.tsv -o output.tsv -cs
   files:
     - path: "output.tsv"
+
+- name: Run fast-matching scaled with excessive distance cut-off
+  tags:
+    - should_fail
+  command: dist-mat match -n 2 -r tests/R1KC1K.tail.tsv -q tests/R1KC1K.head.tsv -o output.tsv -cs -t 101
+  exit_code: 2
+  files:
+    - path: "output.tsv"
+      should_exist: false
+  stderr:
+    contains:
+      - "Scaled distance specified, but values greater than 100.0 are specified. "
+
+- name: Run fast-matching subset columns
+  tags:
+    - should_fail
+  command: dist-mat match -n 0 -r tests/R1KC1K.tail.tsv -q tests/R1KC1K.head.tsv -o output.tsv -c -t 11 -k tests/header-keep.txt
+  files:
+    - path: "output.tsv"
+      should_exist: True

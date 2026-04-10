@@ -386,3 +386,31 @@ def test_fast_match_run_outputs_scaled(workflow_dir):
         expected = float(abs(q - r) / 1000) * 100.0
         assert expected == pytest.approx(float(dist), rel=1e-6)
     assert query_ids_read == query_ids
+
+
+@pytest.mark.workflow("Run fast-matching subset columns")
+def test_fast_match_subset_columns(workflow_dir):
+    """Verify output of fast matching is correct with scaled outputs.
+
+    I have created a set of columns to pass to the program so that only the first 10 columns
+    are saved.
+    """
+    output_file = Path(workflow_dir, "output.tsv")
+    assert output_file.exists()
+    data = output_file.read_text().split("\n")
+    max_dist_possible = 10.0
+    assert data[0] == "query_id\tref_id\tdist_hamming"
+    for row in data[1:]:
+        if not row:
+            continue
+        q, r, dist = row.split("\t")
+        q = float(q)
+        r = float(r)
+        dist = float(dist)
+
+        if q <= max_dist_possible and r <= max_dist_possible:
+            assert dist == abs(q - r)
+        elif q <= max_dist_possible or r <= max_dist_possible:
+            assert dist == (max_dist_possible - min(q, r))
+        else:
+            assert dist == 0.0
