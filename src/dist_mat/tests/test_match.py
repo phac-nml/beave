@@ -3,6 +3,7 @@
 import pytest  # noqa: I001
 
 from dataclasses import dataclass
+from itertools import product
 from pathlib import Path
 
 from dist_mat import match
@@ -369,13 +370,28 @@ def test_fast_match_run_outputs_scaled(workflow_dir):
     """Verify output of fast matching is correct with scaled outputs."""
     output_file = Path(workflow_dir, "output.tsv")
     assert output_file.exists()
-    data = output_file.read_text().split("\n")
+    data = [i for i in output_file.read_text().split("\n") if i != ""]
     assert data[0] == "query_id\tref_id\tdist_scaled"
-    query_sample_ids = Path(workflow_dir, "tests", "R1KC1K.head.tsv")
+    query_sample_ids = Path(workflow_dir, "tests", "R1KC1K.sorted.head.tsv")
+    reference_sample_ids = Path(workflow_dir, "tests", "R1KC1K.sorted.tail.tsv")
     query_ids = {
         int(i.split("\t")[0]) for i in query_sample_ids.read_text().split("\n")[1:] if i != ""
     }
+    ref_ids = {
+        int(i.split("\t")[0]) for i in reference_sample_ids.read_text().split("\n")[1:] if i != ""
+    }
+
+    expected_labels = set()
+    for v1 in range(0, len(query_ids)):
+        for v2 in range(v1 + 1, len(ref_ids) + len(query_ids)):
+            expected_labels.add((v1, v2))
+
+    assert (
+        len(expected_labels) == len(data) - 1
+    )  # verify the correct number of comparisons are made
+
     query_ids_read = set()
+    values = set()
     for row in data[1:]:
         if not row:
             continue
@@ -383,9 +399,11 @@ def test_fast_match_run_outputs_scaled(workflow_dir):
         q = int(q)
         r = int(r)
         query_ids_read.add(q)
+        values.add((q, r))
         expected = float(abs(q - r) / 1000) * 100.0
         assert expected == pytest.approx(float(dist), rel=1e-6)
     assert query_ids_read == query_ids
+    assert values == expected_labels  # verify the two sets are the same
 
 
 @pytest.mark.workflow("Run fast-matching subset columns")
