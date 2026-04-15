@@ -173,7 +173,7 @@ def main() -> None:
             "Excluded samples from analysis if it is missing more than the specified percentage "
             "of data. Must be between 0.0 and 100.0. [default %(default)s]"
         ),
-        default=100.00,
+        default=percentage_range("100.00"),
         type=percentage_range,
     )
 
