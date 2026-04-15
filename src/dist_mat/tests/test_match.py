@@ -82,23 +82,25 @@ def test_merge_query_and_reference(query, reference, expected):
     [
         (
             np.array([[0, 1, 3], [0, 2, 6], [0, 3, 9]], dtype=np.float32),
-            pl.DataFrame(
-                {
-                    "id": ["1", "2", "3", "4"],
-                    "SampleID": ["1", "2", "3", "4"],
-                }
-            ),
+            ["1", "2", "3", "4"],
+            # pl.DataFrame(
+            #    {
+            #        "id": ["1", "2", "3", "4"],
+            #        "SampleID": ["1", "2", "3", "4"],
+            #    }
+            # ),
             True,
             ["query_id\tref_id\tdist_scaled", "1\t2\t3.0", "1\t3\t6.0", "1\t4\t9.0", ""],
         ),
         (
             np.array([[0, 1, 3], [0, 2, 6], [0, 3, 9]], dtype=np.float32),
-            pl.DataFrame(
-                {
-                    "id": ["1", "2", "3", "4"],
-                    "SampleID": ["1", "2", "3", "4"],
-                }
-            ),
+            ["1", "2", "3", "4"],
+            # pl.DataFrame(
+            #    {
+            #        "id": ["1", "2", "3", "4"],
+            #        "SampleID": ["1", "2", "3", "4"],
+            #    }
+            # ),
             False,
             ["query_id\tref_id\tdist_hamming", "1\t2\t3", "1\t3\t6", "1\t4\t9", ""],
         ),
@@ -112,8 +114,9 @@ def test_prepare_fast_match_outputs(tmp_path, input, sample_names, scaled, expec
     class MatchArguments:
         output: Path
         scaled: bool
+        delimiter: str
 
-    input_args = MatchArguments(output=file_out, scaled=scaled)
+    input_args = MatchArguments(output=file_out, scaled=scaled, delimiter="\t")
     match.prepare_fast_match_outputs(input, sample_names, input_args)  # type: ignore[reportArgumentType]
     text = file_out.read_text().split("\n")
     assert text == expected

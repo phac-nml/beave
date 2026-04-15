@@ -1,10 +1,8 @@
 """Module for fast-matching process."""
 
-from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-import numpy as np
 import numpy.typing as npt
 import polars as pl
 
@@ -81,26 +79,35 @@ def run_fast_matching(
 
 
 def prepare_fast_match_outputs(
-    data: npt.NDArray, profiles: pl.DataFrame, match_args: MatchArguments
+    # data: npt.NDArray, profiles: pl.DataFrame, match_args: MatchArguments
+    data: npt.NDArray,
+    profiles: list[str],
+    match_args: MatchArguments,
 ) -> None:
     """Write out fast-match results for each query and reference."""
-    with match_args.output.open("w") as dists_out:
-        dist_type: str = "hamming"
-        type_conversion: Callable[[np.float32], np.uint32] | Callable[[np.float32], np.float32] = (
-            np.uint32
-        )
-        if match_args.scaled:
-            dist_type = "scaled"
-            type_conversion = np.float32
-        print("query_id", "ref_id", f"dist_{dist_type}", sep="\t", file=dists_out)
-        for row in data:
-            print(
-                profiles.row(int(row[0]))[1],  # 1 gets the valule offset from the index
-                profiles.row(int(row[1]))[1],
-                type_conversion(row[2]),
-                sep="\t",
-                file=dists_out,
-            )
+    dist_type: str = "hamming"
+    # type_conversion: Callable[[np.float32], np.uint32] | Callable[[np.float32], np.float32] = (
+    #    np.uint32
+    # )
+    query_id_col = "query_id"
+    ref_id_col = "ref_id"
+    type_conversion = pl.UInt32
+    if match_args.scaled:
+        dist_type = "scaled"
+        type_conversion = pl.Float32
+
+    output_data = pl.from_numpy(
+        data,
+        schema={
+            query_id_col: pl.UInt32,
+            ref_id_col: pl.UInt32,
+            f"dist_{dist_type}": type_conversion,
+        },
+    )
+    output_data = output_data.with_columns(
+        pl.col([query_id_col, ref_id_col]).map_elements(lambda x: profiles[int(x)])
+    )
+    output_data.write_csv(match_args.output, separator=match_args.delimiter)
 
 
 def match(match_args: MatchArguments) -> None:
@@ -145,6 +152,8 @@ def match(match_args: MatchArguments) -> None:
     Need to provide an index row to the passed labels or else the look up of each value from
     the list when writing the output is incredibly slow.
     """
-    samples: pl.DataFrame = merged_profiles.select(pl.first()).with_row_index()
+    # TODO verify if list or df is faster
+    # samples: pl.DataFrame = merged_profiles.select(pl.first()).with_row_index()
+    samples: list[str] = merged_profiles.select(pl.first()).to_series().to_list()
     prepare_fast_match_outputs(fast_match_results, samples, match_args)
     logger.info("Finished.")

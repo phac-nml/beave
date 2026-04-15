@@ -1,5 +1,6 @@
 """Internal functions used for data loading and transformation."""
 
+import itertools
 import math
 from collections.abc import Callable
 from pathlib import Path
@@ -113,6 +114,7 @@ def read_input_profiles(input_file: Path, delimiter: str, threads: int) -> pl.Da
         missing_utf8_is_empty_string=True,
         infer_schema=False,
     )
+
     # Remove rows which are all empty e.g. caused by new lines at the end of files
     profiles = profiles.filter(~pl.all_horizontal(pl.all() == ""))
     verify_dataframe_integrity(profiles)
@@ -177,13 +179,14 @@ def transform_data_hashes(profiles: pl.DataFrame, threshold: float) -> pl.DataFr
     return profiles
 
 
-def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
+def transform_data_unpivot(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     """Return data prepared for calc_dists.
 
     Transform the dataframe of profiles by creating a look up table to cast values to integers,
     converting missing allele charactars to zeroes and filtering rows.
+
+    Uses unpivot which works but we have observed slow downs on large datasets and segmentation faults.
     """
-    # Create mapping instead of using hashes
     values_columns = 1
     unique_values = (
         profiles.select(pl.all().exclude(profiles.columns[0]))
@@ -192,6 +195,7 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
         .unique()
         .to_list()
     )
+
     logger.debug("Identified unique values for re-mapping.")
 
     char_mapping = (
@@ -211,6 +215,27 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
         .replace(char_mapping)
         .cast(pl.UInt32)  # strict cast will throw an error if any overflow occurs
     )
+
+    profiles = filter_rows(profiles, threshold)
+    return profiles
+
+
+def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
+    """Return data prepared for calc_dists.
+
+    Transform the dataframe of profiles by creating a look up table to cast values to integers,
+    converting missing allele charactars to zeroes and filtering rows.
+    """
+    profiles_dict = profiles.select(pl.all().exclude(profiles.columns[0])).to_dict(as_series=False)
+    unique_values = set(itertools.chain(*list(profiles_dict.values())))
+    mapping = {
+        key: number for key, number in zip(unique_values, range(1, len(unique_values) + 1))
+    } | REPLACE_CHARS
+    logger.debug("Identified unique values for re-mapping.")
+    profiles = profiles.with_columns(
+        pl.all().exclude(profiles.columns[0]).replace(mapping).cast(pl.UInt32)
+    )
+
     logger.debug("Finished replacing profiles with integer mapping.")
 
     profiles = filter_rows(profiles, threshold)

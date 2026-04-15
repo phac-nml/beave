@@ -41,6 +41,12 @@ def test_benchmark_data_transformation_map(benchmark, test_df):
     assert True
 
 
+def test_benchmark_data_transformation_map_unpivot(benchmark, test_df):
+    """Benchmarks for different data transformation methods."""
+    benchmark(transform.transform_data_unpivot, test_df, 1.00)
+    assert True
+
+
 def test_benchmark_unique_values_polars_unpivot(benchmark, test_df):
     """Benchmark creation of unique values for mapping."""
 
