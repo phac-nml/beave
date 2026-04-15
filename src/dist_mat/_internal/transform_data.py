@@ -209,7 +209,7 @@ def transform_data_unpivot(profiles: pl.DataFrame, threshold: float) -> pl.DataF
     )  # Create new dictionary, REPLACE_CHARS keys overwrite those in new dictionary
 
     logger.debug("Replacing profiles with integer mapping.")
-    profiles = profiles.with_columns(
+    profiles = profiles.with_columns_seq(
         pl.all()
         .exclude(profiles.columns[0])  # skip id column
         .replace(char_mapping)
