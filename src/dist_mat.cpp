@@ -139,7 +139,6 @@ array_out calculate_distances(array np_in, size_t threads, bool scaled,
 
   // Store the number of profiles required
   size_t number_profiles = np_in.shape(0);
-
   // Determine the thread ranges to be used
   std::vector<size_t> ranges = get_thread_ranges(threads, number_profiles);
   std::vector<std::thread> pool;
@@ -210,29 +209,39 @@ array_fast_match fast_match(array np_in, size_t threads, bool scaled,
   // to the data.
 
   size_t recorded_results = results[0].size();
+  std::vector<float> *output = new std::vector<float>(
+      std::move(results[0])); // heap allocate first value on heap
+  //
   // Get capacity of each filled vector
   if (results.size() > 1) {
     recorded_results = std::ranges::fold_left(
-        results, 0,
+        results.begin() + 1, results.end(), recorded_results,
         [](size_t acc, const std::vector<float> &x) { return acc + x.size(); });
   }
 
-  float *output = new float[recorded_results];
-  size_t output_diff = 0;
+  output->reserve(recorded_results);
+
+  // float *output = new float[recorded_results];
+
+  // size_t output_diff = 0;
   for (size_t i = 0; i < results.size(); i++) {
-    size_t bytes_copy = results[i].size() * sizeof(float);
-    std::memcpy(&output[output_diff], results[i].data(), bytes_copy);
-    output_diff += results[i].size();
+    // size_t bytes_copy = results[i].size() * sizeof(float);
+    // std::memcpy(&output[output_diff], results[i].data(), bytes_copy);
+    // output_diff += results[i].size();
+    output->insert(output->end(), results[i].begin(), results[i].end());
   }
 
-  nb::capsule owner(output, [](void *p) noexcept { delete[] (float *)p; });
+  // nb::capsule owner(output, [](void *p) noexcept { delete[] (float *)p; });
+  nb::capsule owner(output, [](void *p) noexcept {
+    delete reinterpret_cast<std::vector<float> *>(p);
+  });
   constexpr size_t records_per_row = 3;
   size_t rows =
       recorded_results / records_per_row; // Should be at most 3 values
-  return array_fast_match(output, {rows, records_per_row}, owner);
+  // return array_fast_match(output, {rows, records_per_row}, owner);
+  return array_fast_match(output->data(), {rows, records_per_row}, owner);
 }
 
-// define Python module, expose py_cube function as "cube" to python
 NB_MODULE(dist_mat_ext, m) {
 
   m.doc() = "Fast distance matrix computation exploiting simd intrinsics and "
