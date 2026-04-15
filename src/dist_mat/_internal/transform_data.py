@@ -179,13 +179,14 @@ def transform_data_hashes(profiles: pl.DataFrame, threshold: float) -> pl.DataFr
     return profiles
 
 
-def transform_data_unpivot(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
+def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     """Return data prepared for calc_dists.
 
     Transform the dataframe of profiles by creating a look up table to cast values to integers,
     converting missing allele charactars to zeroes and filtering rows.
 
-    Uses unpivot which works but we have observed slow downs on large datasets and segmentation faults.
+    Uses unpivot which works but we have observed slow downs on large datasets and
+    segmentation faults.
     """
     values_columns = 1
     unique_values = (
@@ -220,7 +221,7 @@ def transform_data_unpivot(profiles: pl.DataFrame, threshold: float) -> pl.DataF
     return profiles
 
 
-def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
+def transform_data_unpivot(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     """Return data prepared for calc_dists.
 
     Transform the dataframe of profiles by creating a look up table to cast values to integers,
