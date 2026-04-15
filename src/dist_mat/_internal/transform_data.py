@@ -192,6 +192,7 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
         .unique()
         .to_list()
     )
+    logger.debug("Identified unique values for re-mapping.")
 
     char_mapping = (
         {  # start mapping at 1, as 0 is used for missing values and add one to not miss values
@@ -203,12 +204,14 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
         | REPLACE_CHARS
     )  # Create new dictionary, REPLACE_CHARS keys overwrite those in new dictionary
 
+    logger.debug("Replacing profiles with integer mapping.")
     profiles = profiles.with_columns(
         pl.all()
         .exclude(profiles.columns[0])  # skip id column
         .replace(char_mapping)
         .cast(pl.UInt32)  # strict cast will throw an error if any overflow occurs
     )
+    logger.debug("Finished replacing profiles with integer mapping.")
 
     profiles = filter_rows(profiles, threshold)
     return profiles
