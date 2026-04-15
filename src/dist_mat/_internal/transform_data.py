@@ -253,7 +253,7 @@ def prep_data(
     profiles = transformation_func(profiles, threshold)
     profiles_numpy = (
         profiles.select([pl.col(i) for i in data_columns])
-        .to_numpy(writable=False)
+        .to_numpy(writable=False, order="c")
         .astype(np.uint32)
     )
     return profiles_numpy
