@@ -153,6 +153,7 @@ def match(match_args: MatchArguments) -> None:
     the list when writing the output is incredibly slow.
     """
     # TODO verify if list or df is faster
+    # samples: pl.DataFrame = merged_profiles.select(pl.first()).with_row_index()
     samples: list[str] = merged_profiles.select(pl.first()).to_series().to_list()
     prepare_fast_match_outputs(fast_match_results, samples, match_args)
     logger.info("Finished.")
