@@ -79,9 +79,8 @@ def run_fast_matching(
 
 
 def prepare_fast_match_outputs(
-    # data: npt.NDArray, profiles: pl.DataFrame, match_args: MatchArguments
     data: npt.NDArray,
-    profiles: pl.Series,
+    profiles: npt.NDArray,
     match_args: MatchArguments,
 ) -> None:
     """Write out fast-match results for each query and reference."""
@@ -109,6 +108,7 @@ def prepare_fast_match_outputs(
 
 def match(match_args: MatchArguments) -> None:
     """Driver function for fast-matching."""
+    logger.debug("Launching fast-matching.")
     with pl.StringCache():
         query = transform.read_input_profiles(
             match_args.query, match_args.delimiter, match_args.cores
@@ -153,10 +153,6 @@ def match(match_args: MatchArguments) -> None:
     Need to provide an index row to the passed labels or else the look up of each value from
     the list when writing the output is incredibly slow.
     """
-    # TODO verify if list or df is faster
-    # samples: pl.DataFrame = merged_profiles.select(pl.first()).with_row_index()
-    samples: pl.Series = merged_profiles.select(pl.first()).to_series()
-    # samples: pl.DataFrame = merged_profiles.select(pl.first()).with_row_index()
-    # samples: list[str] = merged_profiles.select(pl.first()).to_series().to_list()
+    samples: npt.NDArray = merged_profiles.select(pl.first()).to_series().to_numpy()
     prepare_fast_match_outputs(fast_match_results, samples, match_args)
     logger.info("Finished.")
