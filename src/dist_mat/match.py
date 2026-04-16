@@ -141,7 +141,7 @@ def match(match_args: MatchArguments) -> None:
     logger.debug("Finished verifying merged profiles dataframe.")
 
     profiles_prepared: npt.NDArray = transform.prep_data(
-        merged_profiles, match_args.filter_threshold, transform.transform_data
+        merged_profiles, match_args.filter_threshold, transform.transform_data_hashes
     )
     logger.debug("Converted prepared profiles to numpy array.")
 
@@ -153,7 +153,6 @@ def match(match_args: MatchArguments) -> None:
     the list when writing the output is incredibly slow.
     """
     # TODO verify if list or df is faster
-    # samples: pl.DataFrame = merged_profiles.select(pl.first()).with_row_index()
     samples: list[str] = merged_profiles.select(pl.first()).to_series().to_list()
     prepare_fast_match_outputs(fast_match_results, samples, match_args)
     logger.info("Finished.")
