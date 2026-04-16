@@ -81,14 +81,11 @@ def run_fast_matching(
 def prepare_fast_match_outputs(
     # data: npt.NDArray, profiles: pl.DataFrame, match_args: MatchArguments
     data: npt.NDArray,
-    profiles: list[str],
+    profiles: pl.Series,
     match_args: MatchArguments,
 ) -> None:
     """Write out fast-match results for each query and reference."""
     dist_type: str = "hamming"
-    # type_conversion: Callable[[np.float32], np.uint32] | Callable[[np.float32], np.float32] = (
-    #    np.uint32
-    # )
     query_id_col = "query_id"
     ref_id_col = "ref_id"
     type_conversion = pl.UInt32
@@ -112,12 +109,16 @@ def prepare_fast_match_outputs(
 
 def match(match_args: MatchArguments) -> None:
     """Driver function for fast-matching."""
-    query = transform.read_input_profiles(match_args.query, match_args.delimiter, match_args.cores)
-    logger.debug("Finished reading query profiles.")
-    reference = transform.read_input_profiles(
-        match_args.reference, match_args.delimiter, match_args.cores
-    )
-    logger.debug("Finished reading reference profiles.")
+    with pl.StringCache():
+        query = transform.read_input_profiles(
+            match_args.query, match_args.delimiter, match_args.cores
+        )
+        logger.debug("Finished reading query profiles.")
+        reference = transform.read_input_profiles(
+            match_args.reference, match_args.delimiter, match_args.cores
+        )
+        logger.debug("Finished reading reference profiles.")
+
     logger.info("Finished reading reference and query profiles.")
     if match_args.columns_path:
         columns_to_keep = transform.get_subset_columns(match_args.columns_path)
@@ -141,7 +142,7 @@ def match(match_args: MatchArguments) -> None:
     logger.debug("Finished verifying merged profiles dataframe.")
 
     profiles_prepared: npt.NDArray = transform.prep_data(
-        merged_profiles, match_args.filter_threshold, transform.transform_data_hashes
+        merged_profiles, match_args.filter_threshold, transform.transform_data_categorical_encoding
     )
     logger.debug("Converted prepared profiles to numpy array.")
 
@@ -154,6 +155,8 @@ def match(match_args: MatchArguments) -> None:
     """
     # TODO verify if list or df is faster
     # samples: pl.DataFrame = merged_profiles.select(pl.first()).with_row_index()
-    samples: list[str] = merged_profiles.select(pl.first()).to_series().to_list()
+    samples: pl.Series = merged_profiles.select(pl.first()).to_series()
+    # samples: pl.DataFrame = merged_profiles.select(pl.first()).with_row_index()
+    # samples: list[str] = merged_profiles.select(pl.first()).to_series().to_list()
     prepare_fast_match_outputs(fast_match_results, samples, match_args)
     logger.info("Finished.")

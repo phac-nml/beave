@@ -23,13 +23,22 @@ class AllColumnsFilteredError(Exception):
 
 
 MISSING_VALUE = np.uint32(0)
+# REPLACE_CHARS = {
+#    "?": MISSING_VALUE,
+#    " ": MISSING_VALUE,
+#    "-": MISSING_VALUE,
+#    "": MISSING_VALUE,
+#    "_": MISSING_VALUE,
+#    "0": MISSING_VALUE,
+# }  # mappings to replace fields with zeroes
+
 REPLACE_CHARS = {
-    "?": MISSING_VALUE,
-    " ": MISSING_VALUE,
-    "-": MISSING_VALUE,
-    "": MISSING_VALUE,
-    "_": MISSING_VALUE,
-    "0": MISSING_VALUE,
+    "?": None,
+    " ": None,
+    "-": None,
+    "": None,
+    "_": None,
+    "0": None,
 }  # mappings to replace fields with zeroes
 
 
@@ -80,7 +89,8 @@ def verify_dataframe_integrity(profiles: pl.DataFrame):
         raise pl.exceptions.RowsError(err_string)
 
     # Cannot use null_count in polars for this, as we convert all null values into empty strings
-    if profiles.select((pl.nth(0) == "").sum())[0, 0] >= 1:
+    # if profiles.select((pl.nth(0) == "").sum())[0, 0] >= 1:
+    if profiles.select(pl.nth(0).null_count())[0, 0] >= 1:
         err_string = (
             "Missing values identified in left most column (ID column), left most column "
             "can have no missing values."
@@ -111,12 +121,24 @@ def read_input_profiles(input_file: Path, delimiter: str, threads: int) -> pl.Da
         n_threads=threads,
         has_header=True,
         raise_if_empty=True,
-        missing_utf8_is_empty_string=True,
+        # missing_utf8_is_empty_string=True,
         infer_schema=False,
+        # null_values=list(REPLACE_CHARS.keys()),
     )
 
+    profiles = profiles.with_columns(
+        pl.all().exclude(profiles.columns[0]).replace(old=list(REPLACE_CHARS.keys()), new=None)
+    )
     # Remove rows which are all empty e.g. caused by new lines at the end of files
-    profiles = profiles.filter(~pl.all_horizontal(pl.all() == ""))
+    # profiles = profiles.filter(~pl.all_horizontal(pl.all() == ""))
+    profiles = profiles.filter(~pl.all_horizontal(pl.all().is_null()))
+
+    profiles = profiles.with_columns(
+        pl.all()
+        .exclude(profiles.columns[0])
+        .cast(pl.Categorical, strict=False)  # strict is false otherwise null is an error
+    )
+
     verify_dataframe_integrity(profiles)
 
     return profiles
@@ -189,12 +211,17 @@ def transform_data_categorical_encoding(profiles: pl.DataFrame, threshold: float
     segmentation faults.
 
     """
-    profiles = profiles.with_columns(pl.all().exclude(profiles.columns[0]).cast(pl.Categorical))
+    profiles = profiles.with_columns(
+        pl.all().exclude(profiles.columns[0]).to_physical().cast(pl.UInt32)
+    )
 
-    logger.debug("Identified unique values for re-mapping.")
-
-    logger.debug("Replacing profiles with integer mapping.")
-
+    max_value: int = (
+        profiles.select(pl.all().exclude(profiles.columns[0])).max().max_horizontal()[0] + 1
+    )
+    profiles = profiles.with_columns(
+        pl.all().exclude(profiles.columns[0]).replace(0, max_value)  # max value +1 so it is unique
+    )
+    profiles = profiles.fill_null(0)
     profiles = filter_rows(profiles, threshold)
     return profiles
 
@@ -273,8 +300,6 @@ def prep_data(
     data_columns = profiles.columns[1:]  # only apply functions to loci columns
     profiles = transformation_func(profiles, threshold)
     profiles_numpy = (
-        profiles.select([pl.col(i) for i in data_columns])
-        .to_numpy(writable=False, order="c")
-        .astype(np.uint32)
+        profiles.select(pl.col(data_columns)).to_numpy(writable=False, order="c").astype(np.uint32)
     )
     return profiles_numpy
