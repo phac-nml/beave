@@ -179,6 +179,26 @@ def transform_data_hashes(profiles: pl.DataFrame, threshold: float) -> pl.DataFr
     return profiles
 
 
+def transform_data_categorical_encoding(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
+    """Return data prepared for calc_dists.
+
+    Transform the dataframe of profiles by creating a look up table to cast values to integers,
+    converting missing allele charactars to zeroes and filtering rows.
+
+    Uses unpivot which works but we have observed slow downs on large datasets and
+    segmentation faults.
+
+    """
+    profiles = profiles.with_columns(pl.all().exclude(profiles.columns[0]).cast(pl.Categorical))
+
+    logger.debug("Identified unique values for re-mapping.")
+
+    logger.debug("Replacing profiles with integer mapping.")
+
+    profiles = filter_rows(profiles, threshold)
+    return profiles
+
+
 def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     """Return data prepared for calc_dists.
 
@@ -187,6 +207,7 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
 
     Uses unpivot which works but we have observed slow downs on large datasets and
     segmentation faults.
+
     """
     values_columns = 1
     unique_values = (
@@ -221,7 +242,7 @@ def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     return profiles
 
 
-def transform_data_unpivot(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
+def transform_data_python(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     """Return data prepared for calc_dists.
 
     Transform the dataframe of profiles by creating a look up table to cast values to integers,
