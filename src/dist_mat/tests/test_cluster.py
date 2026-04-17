@@ -35,132 +35,6 @@ def test_benchmark_data_transformation_hashes(benchmark, test_df):
     assert True
 
 
-def test_benchmark_data_transformation_map(benchmark, test_df):
-    """Benchmarks for different data transformation methods."""
-    benchmark(transform.transform_data, test_df, 1.00)
-    assert True
-
-
-def test_benchmark_data_transformation_map_unpivot(benchmark, test_df):
-    """Benchmarks for different data transformation methods."""
-    benchmark(transform.transform_data_python, test_df, 1.00)
-    assert True
-
-
-def test_benchmark_unique_values_polars_unpivot(benchmark, test_df):
-    """Benchmark creation of unique values for mapping."""
-
-    def helper_func():
-        values_columns = 1
-        unique_values = (  # noqa: F841
-            test_df.select(pl.all().exclude(test_df.columns[0]))
-            .unpivot()
-            .to_series(values_columns)
-            .unique()
-            .to_list()
-        )
-
-    benchmark(helper_func)
-
-
-def test_benchmark_unique_values_polars_list(benchmark, test_df):
-    """Benchmark creation of unique values for mapping."""
-
-    def helper_func():
-        unique_values = (  # noqa: F841
-            pl.concat(s.unique() for s in test_df.select(pl.all().exclude(test_df.columns[0])))
-            .unique()
-            .to_list()
-        )
-
-    benchmark(helper_func)
-
-
-def test_benchmark_tranform_data_with_nulls(benchmark):
-    """Benchmark for testing if loading profiles with nulls is faster."""
-
-    def helper_func():
-        profiles = pl.read_csv(
-            "tests/R1KC1K.tsv",
-            separator="\t",
-            n_threads=1,
-            has_header=True,
-            raise_if_empty=True,
-            missing_utf8_is_empty_string=True,
-            infer_schema=False,
-            null_values=list(transform.REPLACE_CHARS.keys()),
-        )
-        profiles = profiles.fill_null(0)
-
-        values_columns = 1
-        unique_values = (
-            profiles.select(pl.all().exclude(profiles.columns[0]))
-            .unpivot()
-            .to_series(values_columns)
-            .unique()
-            .to_list()
-        )
-
-        char_mapping = {
-            value: idx
-            for value, idx in zip(
-                unique_values, np.arange(1, len(unique_values) + 1, dtype=np.uint32)
-            )
-        }
-
-        profiles = profiles.with_columns(
-            pl.all()
-            .exclude(profiles.columns[0])  # skip id column
-            .replace(char_mapping)
-            .cast(pl.UInt32)  # strict cast will throw an error if any overflow occurs
-        )
-
-    benchmark(helper_func)
-
-
-def test_benchmark_tranform_data_with_no_nulls(benchmark):
-    """Benchmark for testing if loading profiles with nulls is faster."""
-
-    def helper_func():
-        profiles = pl.read_csv(
-            "tests/R1KC1K.tsv",
-            separator="\t",
-            n_threads=1,
-            has_header=True,
-            raise_if_empty=True,
-            missing_utf8_is_empty_string=True,
-            infer_schema=False,
-        )
-
-        values_columns = 1
-        unique_values = (
-            profiles.select(pl.all().exclude(profiles.columns[0]))
-            .unpivot()
-            .to_series(values_columns)
-            .unique()
-            .to_list()
-        )
-
-        char_mapping = (
-            {  # start mapping at 1, as 0 is used for missing values and add one to not miss values
-                value: idx
-                for value, idx in zip(
-                    unique_values, np.arange(1, len(unique_values) + 1, dtype=np.uint32)
-                )
-            }
-            | transform.REPLACE_CHARS
-        )  # Create new dictionary, REPLACE_CHARS keys overwrite those in new dictionary
-
-        profiles = profiles.with_columns(
-            pl.all()
-            .exclude(profiles.columns[0])  # skip id column
-            .replace(char_mapping)
-            .cast(pl.UInt32)  # strict cast will throw an error if any overflow occurs
-        )
-
-    benchmark(helper_func)
-
-
 @pytest.mark.parametrize(
     "input,delimiter,threads,expected",
     [
@@ -185,7 +59,7 @@ def test_benchmark_tranform_data_with_no_nulls(benchmark):
                 {
                     "SampleID": ["1", "2", "3"],
                     "A": [str(1), str(4), str(7)],
-                    "B": ["", str(5), str(8)],
+                    "B": [None, str(5), str(8)],
                     "C": [str(3), str(6), str(9)],
                 },
                 strict=False,
@@ -499,12 +373,22 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
                 {
                     "SampleID": ["a", "b", "c", "d"],
                     "A": ["2", "2", "2", "2"],
-                    "b": ["2", "2", "?", "2"],
-                    "c": ["2", "2", "", "2"],
-                    "d": ["2", "2", " ", "2"],
-                    "e": ["2", "2", "_", "2"],
-                    "f": ["2", "2", "-", "2"],
-                    "g": ["2", "2", "0", "2"],
+                    "b": ["2", "2", None, "2"],
+                    "c": ["2", "2", None, "2"],
+                    "d": ["2", "2", None, "2"],
+                    "e": ["2", "2", None, "2"],
+                    "f": ["2", "2", None, "2"],
+                    "g": ["2", "2", None, "2"],
+                },
+                schema={
+                    "SampleID": pl.String,
+                    "A": pl.Categorical,
+                    "b": pl.Categorical,
+                    "c": pl.Categorical,
+                    "d": pl.Categorical,
+                    "e": pl.Categorical,
+                    "f": pl.Categorical,
+                    "g": pl.Categorical,
                 },
             ),
             1.00,
@@ -561,12 +445,22 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
                 {
                     "SampleID": ["a", "b", "c", "d"],
                     "A": ["2", "2", "2", "2"],
-                    "b": ["2", "2", "?", "2"],
-                    "c": ["2", "2", "", "2"],
-                    "d": ["2", "2", " ", "2"],
-                    "e": ["2", "2", "_", "2"],
-                    "f": ["2", "2", "-", "2"],
-                    "g": ["2", "2", "0", "2"],
+                    "b": ["2", "2", None, "2"],
+                    "c": ["2", "2", None, "2"],
+                    "d": ["2", "2", None, "2"],
+                    "e": ["2", "2", None, "2"],
+                    "f": ["2", "2", None, "2"],
+                    "g": ["2", "2", None, "2"],
+                },
+                schema={
+                    "SampleID": pl.String,
+                    "A": pl.Categorical,
+                    "b": pl.Categorical,
+                    "c": pl.Categorical,
+                    "d": pl.Categorical,
+                    "e": pl.Categorical,
+                    "f": pl.Categorical,
+                    "g": pl.Categorical,
                 },
             ),
             0.00,
@@ -616,12 +510,22 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
                 {
                     "SampleID": ["a", "b", "c", "d"],
                     "A": ["2", "2", "2", "2"],
-                    "b": ["2", "2", "?", "2"],
-                    "c": ["2", "2", "", "2"],
-                    "d": ["2", "2", " ", "2"],
-                    "e": ["2", "2", "_", "2"],
-                    "f": ["2", "2", "-", "2"],
-                    "g": ["2", "2", "0", "2"],
+                    "b": ["2", "2", None, "2"],
+                    "c": ["2", "2", None, "2"],
+                    "d": ["2", "2", None, "2"],
+                    "e": ["2", "2", None, "2"],
+                    "f": ["2", "2", None, "2"],
+                    "g": ["2", "2", None, "2"],
+                },
+                schema={
+                    "SampleID": pl.String,
+                    "A": pl.Categorical,
+                    "b": pl.Categorical,
+                    "c": pl.Categorical,
+                    "d": pl.Categorical,
+                    "e": pl.Categorical,
+                    "f": pl.Categorical,
+                    "g": pl.Categorical,
                 },
             ),
             0.25,
@@ -670,7 +574,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
 )
 def test_transform_data(data, threshold, expected):
     """Tests for mapping tranformation and filtering of data."""
-    out = transform.transform_data(data, threshold)
+    out = transform.transform_data_categorical_encoding(data, threshold)
     assert out.shape == expected.shape  # verify shape as map values will change on each run
 
 

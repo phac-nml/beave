@@ -23,15 +23,6 @@ class AllColumnsFilteredError(Exception):
 
 
 MISSING_VALUE = np.uint32(0)
-# REPLACE_CHARS = {
-#    "?": MISSING_VALUE,
-#    " ": MISSING_VALUE,
-#    "-": MISSING_VALUE,
-#    "": MISSING_VALUE,
-#    "_": MISSING_VALUE,
-#    "0": MISSING_VALUE,
-# }  # mappings to replace fields with zeroes
-
 REPLACE_CHARS = {
     "?": None,
     " ": None,
@@ -121,16 +112,13 @@ def read_input_profiles(input_file: Path, delimiter: str, threads: int) -> pl.Da
         n_threads=threads,
         has_header=True,
         raise_if_empty=True,
-        # missing_utf8_is_empty_string=True,
         infer_schema=False,
-        # null_values=list(REPLACE_CHARS.keys()),
     )
 
     profiles = profiles.with_columns(
         pl.all().exclude(profiles.columns[0]).replace(old=list(REPLACE_CHARS.keys()), new=None)
     )
     # Remove rows which are all empty e.g. caused by new lines at the end of files
-    # profiles = profiles.filter(~pl.all_horizontal(pl.all() == ""))
     profiles = profiles.filter(~pl.all_horizontal(pl.all().is_null()))
 
     profiles = profiles.with_columns(
@@ -180,6 +168,10 @@ def transform_data_hashes(profiles: pl.DataFrame, threshold: float) -> pl.DataFr
 
     Transform the dataframe of profiles by hashing the entries, converting missing allele
     charactars to zeroes and filtering rows.
+
+
+    Note: This function requires the data in polars to not be read in as categorical but as strings
+    and no nulls present in the database.
     """
     data_columns = profiles.columns[1:]  # only apply functions to loci columns
     profiles = profiles.with_columns(
@@ -222,71 +214,6 @@ def transform_data_categorical_encoding(profiles: pl.DataFrame, threshold: float
         pl.all().exclude(profiles.columns[0]).replace(0, max_value)  # max value +1 so it is unique
     )
     profiles = profiles.fill_null(0)
-    profiles = filter_rows(profiles, threshold)
-    return profiles
-
-
-def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
-    """Return data prepared for calc_dists.
-
-    Transform the dataframe of profiles by creating a look up table to cast values to integers,
-    converting missing allele charactars to zeroes and filtering rows.
-
-    Uses unpivot which works but we have observed slow downs on large datasets and
-    segmentation faults.
-
-    """
-    values_columns = 1
-    unique_values = (
-        profiles.select(pl.all().exclude(profiles.columns[0]))
-        .unpivot()
-        .to_series(values_columns)
-        .unique()
-        .to_list()
-    )
-
-    logger.debug("Identified unique values for re-mapping.")
-
-    char_mapping = (
-        {  # start mapping at 1, as 0 is used for missing values and add one to not miss values
-            value: idx
-            for value, idx in zip(
-                unique_values, np.arange(1, len(unique_values) + 1, dtype=np.uint32)
-            )
-        }
-        | REPLACE_CHARS
-    )  # Create new dictionary, REPLACE_CHARS keys overwrite those in new dictionary
-
-    logger.debug("Replacing profiles with integer mapping.")
-    profiles = profiles.with_columns_seq(
-        pl.all()
-        .exclude(profiles.columns[0])  # skip id column
-        .replace(char_mapping)
-        .cast(pl.UInt32)  # strict cast will throw an error if any overflow occurs
-    )
-
-    profiles = filter_rows(profiles, threshold)
-    return profiles
-
-
-def transform_data_python(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
-    """Return data prepared for calc_dists.
-
-    Transform the dataframe of profiles by creating a look up table to cast values to integers,
-    converting missing allele charactars to zeroes and filtering rows.
-    """
-    profiles_dict = profiles.select(pl.all().exclude(profiles.columns[0])).to_dict(as_series=False)
-    unique_values = set(itertools.chain(*list(profiles_dict.values())))
-    mapping = {
-        key: number for key, number in zip(unique_values, range(1, len(unique_values) + 1))
-    } | REPLACE_CHARS
-    logger.debug("Identified unique values for re-mapping.")
-    profiles = profiles.with_columns(
-        pl.all().exclude(profiles.columns[0]).replace(mapping).cast(pl.UInt32)
-    )
-
-    logger.debug("Finished replacing profiles with integer mapping.")
-
     profiles = filter_rows(profiles, threshold)
     return profiles
 

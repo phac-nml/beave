@@ -87,7 +87,7 @@ def prepare_fast_match_outputs(
     dist_type: str = "hamming"
     query_id_col = "query_id"
     ref_id_col = "ref_id"
-    type_conversion = pl.UInt32
+    type_conversion: type[pl.UInt32] | type[pl.Float32] = pl.UInt32
     if match_args.scaled:
         dist_type = "scaled"
         type_conversion = pl.Float32

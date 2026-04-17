@@ -15,7 +15,7 @@ from dist_mat._internal.transform_data import (
     prep_data,
     read_input_profiles,
     subset_columns,
-    transform_data,
+    transform_data_categorical_encoding,
 )
 
 logger = init_logger(__name__)
@@ -128,7 +128,7 @@ def compute_dists(
     filter_threshold: float = 1.0,
 ) -> npt.NDArray:
     """Compute the 1D array required by scipy for generation of the linkage matrix."""
-    prepared_profiles = prep_data(profiles, filter_threshold, transform_data)
+    prepared_profiles = prep_data(profiles, filter_threshold, transform_data_categorical_encoding)
     logger.debug("Tranformed data for computation in C++ sub-routine.")
     distances = dm.calc_dists(prepared_profiles, threads, scaled, count_missing)
     logger.debug("Finished C++ sub-routine.")
