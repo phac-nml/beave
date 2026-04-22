@@ -6,9 +6,9 @@ from pathlib import Path
 import numpy.typing as npt
 import polars as pl
 
-import dist_mat._internal.transform_data as transform
+import dist_mat.transform_data as transform
 from dist_mat import fast_match
-from dist_mat._internal.log import init_logger
+from dist_mat.log import init_logger
 
 logger = init_logger(__name__)
 

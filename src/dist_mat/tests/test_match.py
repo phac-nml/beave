@@ -3,7 +3,6 @@
 import pytest  # noqa: I001
 
 from dataclasses import dataclass
-from itertools import product
 from pathlib import Path
 
 from dist_mat import match

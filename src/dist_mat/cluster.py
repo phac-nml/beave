@@ -10,8 +10,8 @@ import scipy
 from numpy import typing as npt
 
 import dist_mat as dm
-from dist_mat._internal.log import init_logger
-from dist_mat._internal.transform_data import (
+from dist_mat.log import init_logger
+from dist_mat.transform_data import (
     prep_data,
     read_input_profiles,
     subset_columns,
