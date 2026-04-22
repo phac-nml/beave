@@ -355,11 +355,21 @@ def test_run_fast_matching(profiles, query_size, match_args, expected):
         ),
     ],
 )
-def test_match(tmp_path, input, profile_width, expected_header):
+def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
     """Test of main match function."""
     output = tmp_path / "output.tsv"
+
+    class MockInfo:
+        def __init__(self, dtype) -> None:
+            self.max = 500
+            self.min = 0
+            self.dtype = dtype
+
     input.output = output
+    monkeypatch.setattr(np, "iinfo", MockInfo)
     match.match(input)
+    # TODO: add verification that the final outputs have the correct length as we now have batched
+    # writes
     data = output.read_text().split("\n")
     assert data[0] == expected_header
     for row in data[1:]:

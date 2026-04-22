@@ -1,8 +1,10 @@
 """Module for fast-matching process."""
 
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 
+import numpy as np
 import numpy.typing as npt
 import polars as pl
 
@@ -11,6 +13,13 @@ from dist_mat import fast_match
 from dist_mat.log import init_logger
 
 logger = init_logger(__name__)
+
+
+class MatchColumns(StrEnum):
+    """The final column names for the fast-matching output."""
+
+    QUERY = "query_id"
+    REFERENCE = "ref_id"
 
 
 @dataclass(slots=True)
@@ -78,6 +87,23 @@ def run_fast_matching(
     return fast_match_data
 
 
+def prepare_slice_to_write(
+    slice: npt.NDArray, schema: pl.Schema, id_columns: npt.NDArray
+) -> pl.DataFrame:
+    """Prepare polars DataFrame of the final outputs for writing to a csv."""
+    output_data = pl.from_numpy(
+        slice,
+        schema=schema,
+    )
+
+    output_data = output_data.with_columns(
+        pl.col([MatchColumns.QUERY, MatchColumns.REFERENCE]).map_elements(
+            lambda x: id_columns[int(x)]
+        )
+    )
+    return output_data
+
+
 def prepare_fast_match_outputs(
     data: npt.NDArray,
     profiles: npt.NDArray,
@@ -85,25 +111,40 @@ def prepare_fast_match_outputs(
 ) -> None:
     """Write out fast-match results for each query and reference."""
     dist_type: str = transform.DistanceTypes.HAMMING
-    query_id_col = "query_id"
-    ref_id_col = "ref_id"
     type_conversion: type[pl.UInt32] | type[pl.Float32] = pl.UInt32
     if match_args.scaled:
         dist_type = transform.DistanceTypes.SCALED
         type_conversion = pl.Float32
 
-    output_data = pl.from_numpy(
-        data,
-        schema={
-            query_id_col: pl.UInt32,
-            ref_id_col: pl.UInt32,
+    max_int: int = np.iinfo(np.uint32).max - 1  # Get max number of rows for a polars dataframe
+    output_schema = pl.Schema(
+        {
+            MatchColumns.QUERY: pl.UInt32,
+            MatchColumns.REFERENCE: pl.UInt32,
             f"dist_{dist_type}": type_conversion,
-        },
+        }
     )
-    output_data = output_data.with_columns(
-        pl.col([query_id_col, ref_id_col]).map_elements(lambda x: profiles[int(x)])
-    )
+
+    output_data: pl.DataFrame = prepare_slice_to_write(data[:max_int], output_schema, profiles)
+    logger.info(f"Writing to {match_args.output}.")
     output_data.write_csv(match_args.output, separator=match_args.delimiter)
+
+    if len(data) < max_int:
+        """
+        If the length of data is less than max_int, we can exit the program now.
+        However list slicing is not inclusive of the final index, therefore we must
+        still proceed to an additional write, even if the number of values is
+        equal to max_int
+        """
+        return None
+
+    logger.info(f"Final output exceeds the number {max_int}, batching additional writes.")
+    # write additional outputs if a 32 bit integer is exceeded
+    with open(match_args.output, "a") as output:
+        for idx in range(max_int, len(data), max_int):
+            output_data = prepare_slice_to_write(data[idx : idx + max_int], output_schema, profiles)
+            # Do not print header as
+            output_data.write_csv(output, include_header=False, separator=match_args.delimiter)
 
 
 def match(match_args: MatchArguments) -> None:
