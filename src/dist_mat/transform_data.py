@@ -76,7 +76,7 @@ def get_subset_columns(columns_path: Path) -> set[str]:
     return columns
 
 
-def verify_dataframe_integrity(profiles: pl.DataFrame):
+def verify_dataframe_integrity(profiles: pl.DataFrame) -> None:
     """Perform sanity checks on dataframes shape."""
     if profiles.shape[1] <= 1:
         err_string = (
