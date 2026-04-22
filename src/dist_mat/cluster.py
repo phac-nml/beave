@@ -182,7 +182,7 @@ def convert_branch_lengths(
     if branch_length_type == BranchLengthType.PATRISTIC:
         for row in linkage_matrix:
             row[LinkageMatrixFields.DISTANCE.value] *= 0.5
-            logger.info("Converted branc lengths to patristic distances.")
+            logger.info("Converted branch lengths to patristic distances.")
     return linkage_matrix
 
 
@@ -196,8 +196,9 @@ def cluster(cluster_args: ClusterArguments) -> None:
     logger.info("Loaded profiles")
 
     if cluster_args.columns_path:
+        logger.info("Subsetting columns.")
         profiles = subset_columns(profiles, cluster_args.columns_path, None)
-        logger.info("Subset columns.")
+        logger.debug("Finished subsetting columns.")
 
     distances = compute_dists(
         profiles,

@@ -152,7 +152,7 @@ def main() -> None:
     parent_parser.add_argument(
         "--count-missing",
         "-c",
-        help="Count missing values in allele profiles differences.",
+        help="Count missing values as differences.",
         action="store_true",
     )
 
@@ -161,7 +161,7 @@ def main() -> None:
         "-s",
         help=(
             "Compute the scaled distance. Distance is presented as a percentage, or a value "
-            "between 0.0-100.0"
+            "between [0.0-100.0]"
         ),
         action="store_true",
     )
@@ -170,8 +170,8 @@ def main() -> None:
         "--filter-threshold",
         "-f",
         help=(
-            "Excluded samples from analysis if it is missing more than the specified percentage "
-            "of data. Must be between 0.0 and 100.0. [default 100.0]"
+            "Exclude samples from analysis if they are missing more than the specified percentage "
+            "of data. Must be between [0.0-100.0]. [default 100.0]"
         ),
         default=percentage_range("100.00"),
         type=percentage_range,
@@ -244,7 +244,7 @@ def main() -> None:
         "-b",
         default=BranchLengthType.COPHENETIC.value,
         choices=[i.value for i in BranchLengthType],
-        help="Determine how to display tree lenghts in the newick file. [default %(default)s]",
+        help="Determine how to display tree lenghts in the Newick file. [default %(default)s]",
     )
 
     parser_match = subparsers.add_parser(
@@ -252,7 +252,11 @@ def main() -> None:
     )
 
     parser_match.add_argument(
-        "--reference", "-r", type=path_exists, required=True, help="Profiles to compare against."
+        "--reference",
+        "-r",
+        type=path_exists,
+        required=True,
+        help="Profiles to compare against. Query samples will be included in comparisons.",
     )
 
     parser_match.add_argument(

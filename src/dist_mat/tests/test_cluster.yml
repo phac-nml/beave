@@ -190,7 +190,7 @@
       should_exist: false
   stderr:
     contains:
-      - "polars.exceptions.RowsError: Missing values identified in left most column (ID column), left most column can have no missing values."
+      - "MissingIDValueError: Missing values identified in left most column (ID column). The left most column can have no missing values."
 
 - name: Run cluster known inputs complete linkage
   command: dist-mat cluster --input src/dist_mat/tests/data/test_constructed.tsv -t tree.out -m complete -l clusters.tsv -b patristic -n 1 --thresholds 5 3 0

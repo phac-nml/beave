@@ -84,12 +84,12 @@ def prepare_fast_match_outputs(
     match_args: MatchArguments,
 ) -> None:
     """Write out fast-match results for each query and reference."""
-    dist_type: str = "hamming"
+    dist_type: str = transform.DistanceTypes.HAMMING
     query_id_col = "query_id"
     ref_id_col = "ref_id"
     type_conversion: type[pl.UInt32] | type[pl.Float32] = pl.UInt32
     if match_args.scaled:
-        dist_type = "scaled"
+        dist_type = transform.DistanceTypes.SCALED
         type_conversion = pl.Float32
 
     output_data = pl.from_numpy(

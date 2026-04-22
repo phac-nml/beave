@@ -184,12 +184,12 @@ options:
   --columns, -k COLUMNS
                         A file containing a single column of the column names to subset from the passed allele
                         profiles.
-  --count-missing, -c   Count missing values in allele profiles differences.
+  --count-missing, -c   Count missing values as differences.
   --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between
-                        0.0-100.0
+                        [0.0-100.0]
   --filter-threshold, -f FILTER_THRESHOLD
                         Excluded samples from analysis if it is missing more than the specified percentage of data.
-                        Must be between 0.0 and 100.0. [default 100.0]
+                        Must be between [0.0-100.0]. [default 100.0]
   --verbose             Display logger debug messages.
   --input, -i INPUT     Input alleles.
   --tree-output, -t TREE_OUTPUT
@@ -208,7 +208,7 @@ options:
 >>> dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10 9 8
 ```
 
-For running fast matching e.g. comparing a small group of query samples against a group of references. Use the `match` argument. The long form options are shown below:
+The match argument may be used to compare the distances between a small group of query samples against a group of reference samples. The parameters for running match are described below:
 
 ```Bash
 >>> dist-mat match --help
@@ -225,12 +225,12 @@ options:
   --columns, -k COLUMNS
                         A file containing a single column of the column names to subset from the passed allele
                         profiles.
-  --count-missing, -c   Count missing values in allele profiles differences.
+  --count-missing, -c   Count missing values as differences.
   --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between
-                        0.0-100.0
+                        [0.0-100.0]
   --filter-threshold, -f FILTER_THRESHOLD
                         Excluded samples from analysis if it is missing more than the specified percentage of data.
-                        Must be between 0.0 and 100.0. [default 100.0]
+                        Must be between [0.0-100.0]. [default 100.0]
   --verbose             Display logger debug messages.
   --reference, -r REFERENCE
                         Profiles to compare against.
@@ -248,7 +248,7 @@ options:
 
 The inputs for this program must be tabular, any delimiter is supported as long is it is a single character. The first column of the file must contain no duplicates or missing values. The columns are not inspected to verify unique values only, so duplicate column names will be name mangled and treated as another unique column. The characters "?", " ", "", "-", "\_", and "0" are treated as missing values by the program unless the `-c` option is added to the program. All other values are treated as a valid alleles. Example inputs can be found in the `tests` folder. Thresholds are always converted to float values, however you can specify either integers not just decimals.
 
-When running `match` the query and reference profiles will be merged by the program. If duplicate ID's are detected an error will be raised by the program.
+When running `match`, the query and reference profiles will be merged by the program. If duplicate ID's are detected an error will be raised by the program.
 
 ### Data Output
 

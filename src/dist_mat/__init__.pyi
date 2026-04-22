@@ -27,7 +27,8 @@ def fast_match(
     Function returns an array of arrays, with 3 columns, column 1 and 2 contain a numpy.uint32.
     The values in columns 1 and 2 correspond to the index of the associated samples input names.
     The input names are typically stored in the dataframe containing the input profiles.
-    Column 3 contains a numpy.float32 value which is the distance between the two values.
+    Column 3 contains a numpy.float32 value which is the distance between the two corresponding
+    samples.
     """
 
 __all__ = ["calc_dists", "fast_match"]
