@@ -14,13 +14,13 @@ import sys
 from enum import StrEnum
 from pathlib import Path
 
-from dist_mat._internal.log import init_logger
 from dist_mat.cluster import (
     BranchLengthType,
     ClusterArguments,
     LinkageMetric,
     cluster,
 )
+from dist_mat.log import init_logger
 from dist_mat.match import MatchArguments, match
 
 logger = init_logger(__name__)

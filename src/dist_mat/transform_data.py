@@ -9,7 +9,7 @@ import numpy as np
 import numpy.typing as npt
 import polars as pl
 
-from dist_mat._internal.log import init_logger
+from dist_mat.log import init_logger
 
 logger = init_logger(__name__)
 

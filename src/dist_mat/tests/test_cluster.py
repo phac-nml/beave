@@ -4,7 +4,7 @@ import pytest  # noqa: I001
 
 import dist_mat
 from dist_mat import cluster
-import dist_mat.transform_data as transform
+from dist_mat import transform_data as transform
 
 import hashlib
 from pathlib import Path
