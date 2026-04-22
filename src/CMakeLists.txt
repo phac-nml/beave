@@ -29,7 +29,7 @@ elseif(TARGET_GROUP STREQUAL test)
     to $<TARGET_FILE_DIR:tests-catch2>"
   )
 
-  add_test(NAME UNIT-TESTS WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests" COMMAND tests-catch2)
+  add_test(NAME UNIT-TESTS WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/dist-mat/tests/data" COMMAND tests-catch2)
 
   add_executable(tests-exe ${SOURCES})
   target_include_directories(tests-exe PUBLIC ${CMAKE_CURRENT_LIST_DIR})

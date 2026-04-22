@@ -1,5 +1,5 @@
 - name: Run cluster pass
-  command: dist-mat cluster --input tests/R1KC1K.tsv -t out/tree.out -m average -l out/clusters.tsv -sc -b patristic -n 2 --thresholds 10.0 9.0 8.0
+  command: dist-mat cluster --input src/dist-mat/tests/data/R1KC1K.tsv -t out/tree.out -m average -l out/clusters.tsv -sc -b patristic -n 2 --thresholds 10.0 9.0 8.0
   files:
     - path: "out/tree.out"
       should_exist: true
@@ -11,7 +11,7 @@
 - name: Run cluster pass cophenetic
   tags:
     - should_pass
-  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree/tree.out -m average -l clusters/clusters.tsv -sc -b cophenetic -n 2 --thresholds 10.0 9.0 8.0
+  command: dist-mat cluster --input src/dist-mat/tests/data/R1KC1K.tsv -t tree/tree.out -m average -l clusters/clusters.tsv -sc -b cophenetic -n 2 --thresholds 10.0 9.0 8.0
   files:
     - path: "tree/tree.out"
       should_exist: true
@@ -23,7 +23,7 @@
 - name: Run cluster pass cophenetic no scaled metric
   tags:
     - should_pass
-  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -c -b cophenetic -n 1 --thresholds 10.0 9.0 8.0
+  command: dist-mat cluster --input src/dist-mat/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -c -b cophenetic -n 1 --thresholds 10.0 9.0 8.0
   files:
     - path: "tree.out"
       should_exist: true
@@ -35,7 +35,7 @@
 - name: Run cluster pass cophenetic no scaled or missing counted metric
   tags:
     - should_pass
-  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 3 --thresholds 10.0 9.0 8.0
+  command: dist-mat cluster --input src/dist-mat/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 3 --thresholds 10.0 9.0 8.0
   files:
     - path: "tree.out"
       should_exist: true
@@ -47,7 +47,7 @@
 - name: Run cluster pass cophenetic sc flag passing 0 cores passed
   tags:
     - should_pass
-  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10.0 9.0 8.0
+  command: dist-mat cluster --input src/dist-mat/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10.0 9.0 8.0
   files:
     - path: "tree.out"
       should_exist: true
@@ -59,7 +59,7 @@
 - name: Run cluster cophenetic fail threshold
   tags:
     - should_fail
-  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 --thresholds 0.1.0
+  command: dist-mat cluster --input src/dist-mat/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 --thresholds 0.1.0
   exit_code: 2
   files:
     - path: "tree.out"
@@ -73,7 +73,7 @@
 - name: Run cluster fail threshold missing argument
   tags:
     - should_fail
-  command: dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 --thresholds
+  command: dist-mat cluster --input src/dist-mat/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 --thresholds
   exit_code: 2
   files:
     - path: "tree.out"
@@ -87,7 +87,7 @@
 - name: Run cluster csv
   tags:
     - should_pass
-  command: dist-mat cluster --input tests/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
+  command: dist-mat cluster --input src/dist-mat/tests/data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
   files:
     - path: "tree.out"
       should_exist: true
@@ -99,7 +99,7 @@
 - name: Run cluster threshold should fail due to negative number being passed
   tags:
     - should_fail
-  command: dist-mat cluster --input tests/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d , -f -1
+  command: dist-mat cluster --input src/dist-mat/tests/data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d , -f -1
   exit_code: 2
   files:
     - path: "tree.out"
@@ -113,7 +113,7 @@
 - name: Run cluster, cluster threshold should fail due to negative number being passed.
   tags:
     - should_fail
-  command: dist-mat cluster --input tests/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -1 -d , 
+  command: dist-mat cluster --input src/dist-mat/tests/data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -1 -d , 
   exit_code: 2
   files:
     - path: "tree.out"
@@ -127,7 +127,7 @@
 - name: Run cluster, cluster threshold should fail due to infinity being passed.
   tags:
     - should_fail
-  command: dist-mat cluster --input tests/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 inf -d , 
+  command: dist-mat cluster --input src/dist-mat/tests/data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 inf -d , 
   exit_code: 2
   files:
     - path: "tree.out"
@@ -142,7 +142,7 @@
   tags:
     - should_fail
   exit_code: 2
-  command: dist-mat cluster --input tests/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d , -f 101
+  command: dist-mat cluster --input src/dist-mat/tests/data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d , -f 101
   files:
     - path: "tree.out"
       should_exist: false
@@ -155,7 +155,7 @@
 - name: Run cluster threshold should pass
   tags:
     - should_pass
-  command: dist-mat cluster --input tests/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d , -f 50.0
+  command: dist-mat cluster --input src/dist-mat/tests/data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d , -f 50.0
   files:
     - path: "tree.out"
       should_exist: true
@@ -167,7 +167,7 @@
 - name: Run cluster file does not exist
   tags:
     - should_fail
-  command: dist-mat cluster --input tests/R1KC1K.2-zeroes.does-not-exist.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
+  command: dist-mat cluster --input src/dist-mat/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
   exit_code: 1
   files:
     - path: "tree.out"
@@ -176,7 +176,7 @@
       should_exist: false
   stderr:
     contains:
-      - "FileNotFoundError: Input file does not exist. tests/R1KC1K.2-zeroes.does-not-exist.csv"
+      - "FileNotFoundError: Input file does not exist. src/dist-mat/tests/data/R1KC1K.2-zeroes.does-not-exist.csv"
 
 - name: Run cluster id contains null value
   tags:
