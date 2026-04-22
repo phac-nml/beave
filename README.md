@@ -204,8 +204,8 @@ options:
                         Determine how to display tree lenghts in the newick file. [default cophenetic]
 
 >>> # Example programs
->>> dist-mat cluster --input tests/R1KC1K.2-zeroes.does-not-exist.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
->>> dist-mat cluster --input tests/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10 9 8
+>>> dist-mat cluster --input src/dist_mat/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
+>>> dist-mat cluster --input src/dist_mat/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10 9 8
 ```
 
 The match argument may be used to compare the distances between a small group of query samples against a group of reference samples. The parameters for running match are described below:
@@ -240,8 +240,8 @@ options:
   --output, -o OUTPUT   Fast match result output tsv file. [default: output.tsv]
 
 >>> # Example programs
->>> dist-mat match -q tests/R1KC1K.head.tsv -r tests/R1KC1K.tail.tsv -sc --verbose
->>> dist-mat match -q tests/R1KC1K.head.tsv -r tests/R1KC1K.tail.tsv -t 101 -m average -o output.tsv -n 1
+>>> dist-mat match -q src/dist_mat/tests/data/R1KC1K.head.tsv -r src/dist_mat/tests/data/R1KC1K.tail.tsv -sc --verbose
+>>> dist-mat match -q src/dist_mat/tests/data/R1KC1K.head.tsv -r src/dist_mat/tests/data/R1KC1K.tail.tsv -t 101 -m average -o output.tsv -n 1
 ```
 
 ### Data Input
