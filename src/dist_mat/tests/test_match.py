@@ -361,17 +361,35 @@ def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
 
     class MockInfo:
         def __init__(self, dtype) -> None:
-            self.max = 374253
+            self.max = 10000
             self.min = 0
             self.dtype = dtype
 
     input.output = output
     monkeypatch.setattr(np, "iinfo", MockInfo)
     match.match(input)
-    # TODO: add verification that the final outputs have the correct length as we now have batched
-    # writes
-    data = output.read_text().split("\n")
-    print("input profiles", len(data))
+    data = [i for i in output.read_text().split("\n") if i != ""]
+    if input.threshold is float("inf"):
+        expected_output_size_no_filtering = 374250
+        """
+        Tests without filtering have an input size of 499 and a reference query size
+        of 501. The expected number of comparisons can be calculated by first calculating
+        the number of comparisons of all query samples against themselves.
+
+
+        Query vs Query comparisons = (499(499-1))/2 # result is a triangle number
+        Query vs Reference comparisons = 499 * 501 # not divided by two, as no self comparisons made
+
+        Both numbers are summed:
+        (499 * (499 - 1)) / 2 = 124,251
+        (499 * 501) = 249,999
+        number of comparisons = 124,251 + 249,999
+
+        This assertion is not tested for all test inputs, as incorporating a threshold
+        into the calculation is a more complicated.
+        """
+        assert len(data) - 1 == expected_output_size_no_filtering
+
     assert data[0] == expected_header
     for row in data[1:]:
         if not row:
@@ -386,6 +404,37 @@ def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
             expected = float(dist)
         assert dist <= input.threshold
         assert expected == pytest.approx(float(dist), rel=1e-6)
+
+
+@pytest.mark.parametrize(
+    "input",
+    [
+        match.MatchArguments(
+            Path("src/dist_mat/tests/data/HashesOnlyQuery.csv"),
+            Path("src/dist_mat/tests/data/HashesOnlyReference.tsv"),
+            float("inf"),
+            0,
+            None,
+            ",",
+            True,
+            False,
+            100.0,
+            Path(""),
+        ),
+    ],
+)
+def test_match_all_match(tmp_path, input):
+    """Verify the outputs match is correct with non-uniform inputs."""
+    output = tmp_path / "output.tsv"
+    input.output = output
+    match.match(input)
+    data = [i for i in output.read_text().split("\n") if i != ""]
+    for row in data[1:]:
+        q, r, dist = row.split("\t")
+        q = int(q)
+        r = int(r)
+        dist = int(dist)
+        print(dist)
 
 
 @pytest.mark.workflow("Run fast-matching")
