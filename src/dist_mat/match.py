@@ -1,5 +1,6 @@
 """Module for fast-matching process."""
 
+import gc
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -129,6 +130,7 @@ def prepare_fast_match_outputs(
     logger.info(f"Writing to {match_args.output}.")
     output_data.write_csv(match_args.output, separator=match_args.delimiter)
     output_data.clear()
+    gc.collect()
 
     if len(data) < max_int:
         """
@@ -148,6 +150,7 @@ def prepare_fast_match_outputs(
             # Do not print header as
             output_data.write_csv(output, include_header=False, separator=match_args.delimiter)
             output_data.clear()  # Clear the DF after each write to prvent OOM errors
+            gc.collect()
 
 
 def match(match_args: MatchArguments) -> None:
