@@ -142,6 +142,7 @@ def prepare_fast_match_outputs(
     # write additional outputs if a 32 bit integer is exceeded
     with open(match_args.output, "a") as output:
         for idx in range(max_int, len(data), max_int):
+            logger.debug(f"Writing batch {idx}-{idx + max_int}")
             output_data = prepare_slice_to_write(data[idx : idx + max_int], output_schema, profiles)
             # Do not print header as
             output_data.write_csv(output, include_header=False, separator=match_args.delimiter)

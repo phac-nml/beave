@@ -291,8 +291,8 @@ def test_run_fast_matching(profiles, query_size, match_args, expected):
     [
         (
             match.MatchArguments(
-                Path("tests/R1KC1K.head.tsv"),
-                Path("tests/R1KC1K.tail.tsv"),
+                Path("src/dist_mat/tests/data/R1KC1K.head.tsv"),
+                Path("src/dist_mat/tests/data/R1KC1K.tail.tsv"),
                 float("inf"),
                 0,
                 None,
@@ -307,8 +307,8 @@ def test_run_fast_matching(profiles, query_size, match_args, expected):
         ),
         (
             match.MatchArguments(
-                Path("tests/R1KC1K.head.tsv"),
-                Path("tests/R1KC1K.tail.tsv"),
+                Path("src/dist_mat/tests/data/R1KC1K.head.tsv"),
+                Path("src/dist_mat/tests/data/R1KC1K.tail.tsv"),
                 float("inf"),
                 2,
                 None,
@@ -323,8 +323,8 @@ def test_run_fast_matching(profiles, query_size, match_args, expected):
         ),
         (
             match.MatchArguments(
-                Path("tests/R1KC1K.head.tsv"),
-                Path("tests/R1KC1K.tail.tsv"),
+                Path("src/dist_mat/tests/data/R1KC1K.head.tsv"),
+                Path("src/dist_mat/tests/data/R1KC1K.tail.tsv"),
                 80.0,
                 3,
                 None,
@@ -339,8 +339,8 @@ def test_run_fast_matching(profiles, query_size, match_args, expected):
         ),
         (
             match.MatchArguments(
-                Path("tests/R1KC1K.head.tsv"),
-                Path("tests/R1KC1K.tail.tsv"),
+                Path("src/dist_mat/tests/data/R1KC1K.head.tsv"),
+                Path("src/dist_mat/tests/data/R1KC1K.tail.tsv"),
                 float("inf"),
                 3,
                 None,
@@ -361,7 +361,7 @@ def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
 
     class MockInfo:
         def __init__(self, dtype) -> None:
-            self.max = 500
+            self.max = 374253
             self.min = 0
             self.dtype = dtype
 
@@ -371,6 +371,7 @@ def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
     # TODO: add verification that the final outputs have the correct length as we now have batched
     # writes
     data = output.read_text().split("\n")
+    print("input profiles", len(data))
     assert data[0] == expected_header
     for row in data[1:]:
         if not row:
