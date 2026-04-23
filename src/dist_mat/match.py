@@ -128,6 +128,7 @@ def prepare_fast_match_outputs(
     output_data: pl.DataFrame = prepare_slice_to_write(data[:max_int], output_schema, profiles)
     logger.info(f"Writing to {match_args.output}.")
     output_data.write_csv(match_args.output, separator=match_args.delimiter)
+    output_data.clear()
 
     if len(data) < max_int:
         """
@@ -146,6 +147,7 @@ def prepare_fast_match_outputs(
             output_data = prepare_slice_to_write(data[idx : idx + max_int], output_schema, profiles)
             # Do not print header as
             output_data.write_csv(output, include_header=False, separator=match_args.delimiter)
+            output_data.clear()  # Clear the DF after each write to prvent OOM errors
 
 
 def match(match_args: MatchArguments) -> None:
