@@ -395,7 +395,7 @@ def test_fast_match_run_outputs(workflow_dir):
     assert output_file.exists()
     data = output_file.read_text().split("\n")
     assert data[0] == "query_id\tref_id\tdist_hamming"
-    query_sample_ids = Path(workflow_dir, "tests", "R1KC1K.tail.tsv")
+    query_sample_ids = Path(workflow_dir, "src", "dist_mat", "tests", "data", "R1KC1K.tail.tsv")
     query_ids = {
         int(i.split("\t")[0]) for i in query_sample_ids.read_text().split("\n")[1:] if i != ""
     }
@@ -419,8 +419,12 @@ def test_fast_match_run_outputs_scaled(workflow_dir):
     assert output_file.exists()
     data = [i for i in output_file.read_text().split("\n") if i != ""]
     assert data[0] == "query_id\tref_id\tdist_scaled"
-    query_sample_ids = Path(workflow_dir, "tests", "R1KC1K.sorted.head.tsv")
-    reference_sample_ids = Path(workflow_dir, "tests", "R1KC1K.sorted.tail.tsv")
+    query_sample_ids = Path(
+        workflow_dir, "src", "dist_mat", "tests", "data", "R1KC1K.sorted.head.tsv"
+    )
+    reference_sample_ids = Path(
+        workflow_dir, "src", "dist_mat", "tests", "data", "R1KC1K.sorted.tail.tsv"
+    )
     query_ids = {
         int(i.split("\t")[0]) for i in query_sample_ids.read_text().split("\n")[1:] if i != ""
     }

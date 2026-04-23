@@ -972,9 +972,9 @@ def test_calc_dists_fuzzing_hypothesis_no_infinites(arr):
 @pytest.mark.parametrize(
     "input,scaled,count_missing",
     [
-        (Path("tests/R1KC1K.tsv"), True, True),
-        (Path("tests/R1KC1K.tsv"), False, True),
-        (Path("tests/R1KC1K.tsv"), False, True),
+        (Path("src/dist_mat/tests/data/R1KC1K.tsv"), True, True),
+        (Path("src/dist_mat/tests/data/R1KC1K.tsv"), False, True),
+        (Path("src/dist_mat/tests/data/R1KC1K.tsv"), False, True),
     ],
 )
 def test_calc_dists_file_inputs(input, scaled, count_missing):
