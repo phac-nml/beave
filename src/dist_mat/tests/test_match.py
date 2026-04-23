@@ -3,6 +3,7 @@
 import pytest  # noqa: I001
 
 from dataclasses import dataclass
+import hashlib
 from pathlib import Path
 
 from dist_mat import match
@@ -411,7 +412,7 @@ def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
     [
         match.MatchArguments(
             Path("src/dist_mat/tests/data/HashesOnlyQuery.csv"),
-            Path("src/dist_mat/tests/data/HashesOnlyReference.tsv"),
+            Path("src/dist_mat/tests/data/HashesOnlyReference.csv"),
             float("inf"),
             0,
             None,
@@ -429,12 +430,15 @@ def test_match_all_match(tmp_path, input):
     input.output = output
     match.match(input)
     data = [i for i in output.read_text().split("\n") if i != ""]
+    outputs_column_width = 299
     for row in data[1:]:
-        q, r, dist = row.split("\t")
-        q = int(q)
-        r = int(r)
+        q, r, dist = row.split(input.delimiter)
+        hashed_reference_value = hashlib.md5(r.encode("utf8")).hexdigest()
         dist = int(dist)
-        print(dist)
+        if q == hashed_reference_value:
+            assert dist == 0
+        else:
+            assert dist == outputs_column_width
 
 
 @pytest.mark.workflow("Run fast-matching")
