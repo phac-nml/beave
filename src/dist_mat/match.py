@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
+import numpy as np
 import numpy.typing as npt
 import polars as pl
 
@@ -99,7 +100,7 @@ def prepare_slice_to_write(
 
     output_data = output_data.with_columns(
         pl.col([MatchColumns.QUERY, MatchColumns.REFERENCE]).map_elements(
-            lambda x: id_columns[int(x)]
+            lambda x: id_columns[np.uint64(np.float32(x))], return_dtype=pl.String
         )
     )
     return output_data
@@ -118,8 +119,8 @@ def prepare_fast_match_outputs(
         type_conversion = pl.Float32
     output_schema = pl.Schema(
         {
-            MatchColumns.QUERY: pl.UInt32,
-            MatchColumns.REFERENCE: pl.UInt32,
+            MatchColumns.QUERY: pl.String,
+            MatchColumns.REFERENCE: pl.String,
             f"dist_{dist_type}": type_conversion,
         }
     )
