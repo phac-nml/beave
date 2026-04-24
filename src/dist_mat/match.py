@@ -14,7 +14,7 @@ from dist_mat.log import init_logger
 
 logger = init_logger(__name__)
 
-MAX_ROWS_WRITE_BATCH: int = 100_000_000
+MAX_ROWS_WRITE_BATCH: int = 1_000_000_000  # needs to be less than int max of 32bit int
 
 
 class MatchColumns(StrEnum):
@@ -133,10 +133,10 @@ def prepare_fast_match_outputs(
 
     if len(data) < MAX_ROWS_WRITE_BATCH:
         """
-        If the length of data is less than max_int, we can exit the program now.
+        If the length of data is less than MAX_ROWS_WRITE_BATCH, we can exit the program now.
         However list slicing is not inclusive of the final index, therefore we must
         still proceed to an additional write, even if the number of values is
-        equal to max_int
+        equal to MAX_ROWS_WRITE_BATCH
         """
         return None
 
