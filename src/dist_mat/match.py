@@ -1,11 +1,9 @@
 """Module for fast-matching process."""
 
-import gc
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-import numpy as np
 import numpy.typing as npt
 import polars as pl
 
@@ -14,6 +12,8 @@ from dist_mat import fast_match
 from dist_mat.log import init_logger
 
 logger = init_logger(__name__)
+
+MAX_ROWS_WRITE_BATCH: int = 1_000_000
 
 
 class MatchColumns(StrEnum):
@@ -116,8 +116,6 @@ def prepare_fast_match_outputs(
     if match_args.scaled:
         dist_type = transform.DistanceTypes.SCALED
         type_conversion = pl.Float32
-
-    max_int: int = np.iinfo(np.uint32).max - 1  # Get max number of rows for a polars dataframe
     output_schema = pl.Schema(
         {
             MatchColumns.QUERY: pl.UInt32,
@@ -126,13 +124,13 @@ def prepare_fast_match_outputs(
         }
     )
 
-    output_data: pl.DataFrame = prepare_slice_to_write(data[:max_int], output_schema, profiles)
+    output_data: pl.DataFrame = prepare_slice_to_write(
+        data[:MAX_ROWS_WRITE_BATCH], output_schema, profiles
+    )
     logger.info(f"Writing to {match_args.output}.")
     output_data.write_csv(match_args.output, separator=match_args.delimiter)
-    output_data.clear()
-    gc.collect()
 
-    if len(data) < max_int:
+    if len(data) < MAX_ROWS_WRITE_BATCH:
         """
         If the length of data is less than max_int, we can exit the program now.
         However list slicing is not inclusive of the final index, therefore we must
@@ -141,16 +139,16 @@ def prepare_fast_match_outputs(
         """
         return None
 
-    logger.info(f"Final output exceeds the number {max_int}, batching additional writes.")
+    logger.info(f"Final output is being written in batches of {MAX_ROWS_WRITE_BATCH}.")
     # write additional outputs if a 32 bit integer is exceeded
     with open(match_args.output, "a") as output:
-        for idx in range(max_int, len(data), max_int):
-            logger.debug(f"Writing batch {idx}-{idx + max_int}")
-            output_data = prepare_slice_to_write(data[idx : idx + max_int], output_schema, profiles)
+        for idx in range(MAX_ROWS_WRITE_BATCH, len(data), MAX_ROWS_WRITE_BATCH):
+            logger.debug(f"Writing batch {idx}-{idx + MAX_ROWS_WRITE_BATCH}")
+            output_data = prepare_slice_to_write(
+                data[idx : idx + MAX_ROWS_WRITE_BATCH], output_schema, profiles
+            )
             # Do not print header as
             output_data.write_csv(output, include_header=False, separator=match_args.delimiter)
-            output_data.clear()  # Clear the DF after each write to prvent OOM errors
-            gc.collect()
 
 
 def match(match_args: MatchArguments) -> None:

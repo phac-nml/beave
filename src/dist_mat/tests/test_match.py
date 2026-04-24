@@ -360,14 +360,8 @@ def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
     """Test of main match function."""
     output = tmp_path / "output.tsv"
 
-    class MockInfo:
-        def __init__(self, dtype) -> None:
-            self.max = 10000
-            self.min = 0
-            self.dtype = dtype
-
     input.output = output
-    monkeypatch.setattr(np, "iinfo", MockInfo)
+    monkeypatch.setattr(match, "MAX_ROWS_WRITE_BATCH", 10_000)
     match.match(input)
     data = [i for i in output.read_text().split("\n") if i != ""]
     if input.threshold is float("inf"):
