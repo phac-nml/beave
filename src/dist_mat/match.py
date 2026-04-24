@@ -139,7 +139,7 @@ def prepare_fast_match_outputs(
         """
         return None
 
-    logger.info(f"Final output is being written in batches of {MAX_ROWS_WRITE_BATCH}.")
+    logger.info(f"Final output is being written in batches of {MAX_ROWS_WRITE_BATCH:,}.")
     # write additional outputs if a 32 bit integer is exceeded
     with open(match_args.output, "a") as output:
         for idx in range(MAX_ROWS_WRITE_BATCH, len(data), MAX_ROWS_WRITE_BATCH):
