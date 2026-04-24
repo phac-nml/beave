@@ -13,7 +13,7 @@ from dist_mat.log import init_logger
 
 logger = init_logger(__name__)
 
-MAX_ROWS_WRITE_BATCH: int = 1_000_000
+MAX_ROWS_WRITE_BATCH: int = 100_000_000
 
 
 class MatchColumns(StrEnum):
