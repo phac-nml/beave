@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
+from typing import Iterable, Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -90,7 +91,7 @@ def run_fast_matching(
 
 
 def prepare_slice_to_write(
-    slice: npt.NDArray, schema: pl.Schema, id_columns: npt.NDArray
+    slice: npt.NDArray, schema: pl.Schema, replace_iterables: tuple[Sequence[str], Sequence[str]]
 ) -> pl.DataFrame:
     """Prepare polars DataFrame of the final outputs for writing to a csv."""
     output_data = pl.from_numpy(
@@ -99,9 +100,12 @@ def prepare_slice_to_write(
     )
 
     output_data = output_data.with_columns(
-        pl.col([MatchColumns.QUERY, MatchColumns.REFERENCE]).map_elements(
-            lambda x: id_columns[np.uint64(np.float32(x))], return_dtype=pl.String
+        pl.col([MatchColumns.QUERY, MatchColumns.REFERENCE]).replace(
+            old=replace_iterables[0], new=replace_iterables[1]
         )
+        # .map_elements(
+        #    lambda x: id_columns[np.uint64(np.float32(x))], return_dtype=pl.String
+        # )
     )
     return output_data
 
@@ -117,6 +121,15 @@ def prepare_fast_match_outputs(
     if match_args.scaled:
         dist_type = transform.DistanceTypes.SCALED
         type_conversion = pl.Float32
+
+    find_replace_query: tuple[Sequence[str], Sequence[str]] = (
+        [str(i) for i in np.arange(0, len(profiles), dtype=np.float32)],
+        # Ignoring type checking below as numpy arrays do not implement the full sequence protocol
+        # however for our purposes we just need the linter to pass this check as the use
+        # case works for polars `replace`
+        profiles,  # type: ignore
+    )
+
     output_schema = pl.Schema(
         {
             MatchColumns.QUERY: pl.String,
@@ -126,7 +139,7 @@ def prepare_fast_match_outputs(
     )
 
     output_data: pl.DataFrame = prepare_slice_to_write(
-        data[:MAX_ROWS_WRITE_BATCH], output_schema, profiles
+        data[:MAX_ROWS_WRITE_BATCH], output_schema, find_replace_query
     )
     logger.info(f"Writing to {match_args.output}.")
     output_data.write_csv(match_args.output, separator=match_args.delimiter)
@@ -146,7 +159,7 @@ def prepare_fast_match_outputs(
         for idx in range(MAX_ROWS_WRITE_BATCH, len(data), MAX_ROWS_WRITE_BATCH):
             logger.debug(f"Writing batch {idx}-{idx + MAX_ROWS_WRITE_BATCH}")
             output_data = prepare_slice_to_write(
-                data[idx : idx + MAX_ROWS_WRITE_BATCH], output_schema, profiles
+                data[idx : idx + MAX_ROWS_WRITE_BATCH], output_schema, find_replace_query
             )
             # Do not print header as
             output_data.write_csv(output, include_header=False, separator=match_args.delimiter)
