@@ -1,9 +1,9 @@
 """Module for fast-matching process."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import Iterable, Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -103,9 +103,6 @@ def prepare_slice_to_write(
         pl.col([MatchColumns.QUERY, MatchColumns.REFERENCE]).replace(
             old=replace_iterables[0], new=replace_iterables[1]
         )
-        # .map_elements(
-        #    lambda x: id_columns[np.uint64(np.float32(x))], return_dtype=pl.String
-        # )
     )
     return output_data
 
@@ -123,7 +120,9 @@ def prepare_fast_match_outputs(
         type_conversion = pl.Float32
 
     find_replace_query: tuple[Sequence[str], Sequence[str]] = (
-        [str(i) for i in np.arange(0, len(profiles), dtype=np.float32)],
+        [
+            str(i) for i in np.arange(0, len(profiles), dtype=np.float32)
+        ],  # float32 to match the dataframe type
         # Ignoring type checking below as numpy arrays do not implement the full sequence protocol
         # however for our purposes we just need the linter to pass this check as the use
         # case works for polars `replace`
@@ -157,7 +156,7 @@ def prepare_fast_match_outputs(
     # write additional outputs if a 32 bit integer is exceeded
     with open(match_args.output, "a") as output:
         for idx in range(MAX_ROWS_WRITE_BATCH, len(data), MAX_ROWS_WRITE_BATCH):
-            logger.debug(f"Writing batch {idx}-{idx + MAX_ROWS_WRITE_BATCH}")
+            logger.debug(f"Writing batch {idx:,}-{idx + MAX_ROWS_WRITE_BATCH:,}")
             output_data = prepare_slice_to_write(
                 data[idx : idx + MAX_ROWS_WRITE_BATCH], output_schema, find_replace_query
             )
