@@ -131,15 +131,18 @@ The output binary will be in the debug directory.
 
 The main help message for the program is shown below:
 
-```
+```Bash
 >>> dist-mat -h
-usage: dist-mat [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--version] {mcluster} ...
+usage: dist-mat [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing] [--scaled]
+                [--filter-threshold FILTER_THRESHOLD] [--verbose] [--version]
+                {cluster,match} ...
 
 A quick proof of concept of generic utilities for nomenclature assignment.
 
 positional arguments:
-  {mcluster}            Select a program to run.
-    mcluster            Run denovo clustering.
+  {cluster,match}       Select a program to run.
+    cluster             Run denovo clustering.
+    match               Run fast matching.
 
 options:
   -h, --help            show this help message and exit
@@ -147,18 +150,30 @@ options:
                         Specify the number of threads to be used. [default 12]
   --delimiter, -d DELIMITER
                         Input alleles delimiter. [default \t] (default: )
-  --version, -v         Print version and exit. (default: False)
+  --columns, -k COLUMNS
+                        A file containing a single column of the column names to subset from the passed allele
+                        profiles. (default: None)
+  --count-missing, -c   Count missing values in allele profiles differences. (default: False)
+  --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between
+                        0.0-100.0 (default: False)
+  --filter-threshold, -f FILTER_THRESHOLD
+                        Excluded samples from analysis if it is missing more than the specified percentage of data.
+                        Must be between 0.0 and 100.0. [default 100.0]
+  --verbose             Display logger debug messages. (default: False)
+  --version, -v         show program's version number and exit
 
 ```
 
-Currently only on program is available: `mcluster` the options for the program are shown below:
+To run _de-novo_ clustering use the `cluster` option. The long form options for cluster are shown below:
 
-```
->>> dist-mat mcluster --help
-usage: dist-mat mcluster [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] --input INPUT [--tree-output TREE_OUTPUT]
-                         [--cluster-output CLUSTER_OUTPUT] --thresholds THRESHOLDS [THRESHOLDS ...]
-                         [--method {ward,single,average,centroid,median,complete}] [--columns COLUMNS] [--count-missing] [--scaled]
-                         [--tree-distances {patristic,cophenetic}]
+```Bash
+>>> dist-mat cluster --help
+
+usage: dist-mat cluster [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing]
+                        [--scaled] [--filter-threshold FILTER_THRESHOLD] [--verbose] --input INPUT
+                        [--tree-output TREE_OUTPUT] [--cluster-output CLUSTER_OUTPUT]
+                        --thresholds THRESHOLDS [THRESHOLDS ...] [--method {single,average,complete}]
+                        [--tree-distances {patristic,cophenetic}]
 
 options:
   -h, --help            show this help message and exit
@@ -166,35 +181,78 @@ options:
                         Specify the number of threads to be used. [default 12]
   --delimiter, -d DELIMITER
                         Input alleles delimiter. [default \t]
+  --columns, -k COLUMNS
+                        A file containing a single column of the column names to subset from the passed allele
+                        profiles.
+  --count-missing, -c   Count missing values as differences.
+  --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between
+                        [0.0-100.0]
+  --filter-threshold, -f FILTER_THRESHOLD
+                        Excluded samples from analysis if it is missing more than the specified percentage of data.
+                        Must be between [0.0-100.0]. [default 100.0]
+  --verbose             Display logger debug messages.
   --input, -i INPUT     Input alleles.
   --tree-output, -t TREE_OUTPUT
-                        Output tree name. [default clusters.nwk]
+                        File path to write generated tree. [default clusters.nwk]
   --cluster-output, -l CLUSTER_OUTPUT
-                        Output clusters file. [default clusters.tsv]
+                        File path to write generated clusters. [default clusters.tsv]
   --thresholds, -p THRESHOLDS [THRESHOLDS ...]
                         List of threshold values to use.
-  --method, -m {single,average,centroid,median,complete}
-                        Linkage method to use. [default: average]
-  --columns, -k COLUMNS
-                        A file containing a list of columns to subset from the allele profiles.
-  --count-missing, -c   Count missing values as differences.
-  --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between 0.0-100.0
+  --method, -m {single,average,complete}
+                        Hierarchical clustering linkage to use. [default: average]
   --tree-distances, -b {patristic,cophenetic}
                         Determine how to display tree lenghts in the newick file. [default cophenetic]
- --filter-threshold, -f FILTER_THRESHOLD
-                        Excluded samples from clustering missing more than a certain percentage of alleles must be between 0.0 and 100.0. [default 0.0]
-
 
 >>> # Example programs
->>> dist-mat mcluster --input data/R1KC1K.2-zeroes.does-not-exist.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
->>> dist-mat mcluster --input data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10 9 8
+>>> dist-mat cluster --input src/dist_mat/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
+>>> dist-mat cluster --input src/dist_mat/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10 9 8
+```
+
+The match argument may be used to compare the distances between a small group of query samples against a group of reference samples. The parameters for running match are described below:
+
+```Bash
+>>> dist-mat match --help
+usage: dist-mat match [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing]
+                      [--scaled] [--filter-threshold FILTER_THRESHOLD] [--verbose] --reference REFERENCE --query QUERY
+                      [--threshold THRESHOLD] [--output OUTPUT]
+
+options:
+  -h, --help            show this help message and exit
+  --n-threads, -n N_THREADS
+                        Specify the number of threads to be used. [default 12]
+  --delimiter, -d DELIMITER
+                        Input alleles delimiter. [default \t]
+  --columns, -k COLUMNS
+                        A file containing a single column of the column names to subset from the passed allele
+                        profiles.
+  --count-missing, -c   Count missing values as differences.
+  --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between
+                        [0.0-100.0]
+  --filter-threshold, -f FILTER_THRESHOLD
+                        Excluded samples from analysis if it is missing more than the specified percentage of data.
+                        Must be between [0.0-100.0]. [default 100.0]
+  --verbose             Display logger debug messages.
+  --reference, -r REFERENCE
+                        Profiles to compare against.
+  --query, -q QUERY     Profiles containing new-samples for comparisons.
+  --threshold, -t THRESHOLD
+                        Only report distances below specified threshold. [default: inf]
+  --output, -o OUTPUT   Fast match result output tsv file. [default: output.tsv]
+
+>>> # Example programs
+>>> dist-mat match -q src/dist_mat/tests/data/R1KC1K.head.tsv -r src/dist_mat/tests/data/R1KC1K.tail.tsv -sc --verbose
+>>> dist-mat match -q src/dist_mat/tests/data/R1KC1K.head.tsv -r src/dist_mat/tests/data/R1KC1K.tail.tsv -t 101 -m average -o output.tsv -n 1
 ```
 
 ### Data Input
 
 The inputs for this program must be tabular, any delimiter is supported as long is it is a single character. The first column of the file must contain no duplicates or missing values. The columns are not inspected to verify unique values only, so duplicate column names will be name mangled and treated as another unique column. The characters "?", " ", "", "-", "\_", and "0" are treated as missing values by the program unless the `-c` option is added to the program. All other values are treated as a valid alleles. Example inputs can be found in the `tests` folder. Thresholds are always converted to float values, however you can specify either integers not just decimals.
 
+When running `match`, the query and reference profiles will be merged by the program. If duplicate ID's are detected an error will be raised by the program.
+
 ### Data Output
+
+#### Cluster Outputs
 
 The program outputs a Newick-Format file containing the tree generated by whichever linkage metric is selected, the sample IDs and their addresses are put out in a separate file specified by the user in TSV format. Addresses are delimited by an '.'.
 
@@ -204,6 +262,18 @@ Example of cluster outputs:
 | ----------- | ---------- | --------- | -------------- |
 | CoolSample  | 1          | 2         | 1.2            |
 | CoolSample2 | 2          | 1         | 2.1            |
+
+#### Match Outputs
+
+The output of `match` is a single file showing the query sample, the reference sample and distance.
+
+The general structure of the `match` output:
+
+| query_id | ref_id | dist\_{hamming,scaled} |
+| -------- | ------ | ---------------------- |
+| 1        | 2      | 4                      |
+| 1        | 3      | 8                      |
+| 1        | 4      | 10                     |
 
 ## Using C++ Binary
 

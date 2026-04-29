@@ -1,9 +1,5 @@
 """Re-implementation of mcluster."""
 
-import logging
-import math
-import sys
-import typing as t
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from pathlib import Path
@@ -14,14 +10,15 @@ import scipy
 from numpy import typing as npt
 
 import dist_mat as dm
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    stream=sys.stderr,
-    level=logging.DEBUG,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+from dist_mat.log import init_logger
+from dist_mat.transform_data import (
+    prep_data,
+    read_input_profiles,
+    subset_columns,
+    transform_data_categorical_encoding,
 )
+
+logger = init_logger(__name__)
 
 
 class ValueLeavesError(Exception):
@@ -30,14 +27,6 @@ class ValueLeavesError(Exception):
     def __init__(self, n_leaves: int, n_objects: int) -> None:
         """ValueError for unequal numbers of leaves and sample names."""
         super().__init__(f"Expected {n_objects} leaf names, got {n_leaves}.")
-
-
-class AllColumnsFilteredError(Exception):
-    """Exception raised if all rows are filtered."""
-
-    def __init__(self, threshold: float) -> None:
-        """Error raised if all column values removed."""
-        super().__init__(f"All data removed after filtering at: {threshold}.")
 
 
 class LinkageMetric(StrEnum):
@@ -100,17 +89,6 @@ class LinkageMatrixFields(Enum):
     )
 
 
-MISSING_VALUE = np.uint32(0)
-REPLACE_CHARS = {
-    "?": MISSING_VALUE,
-    " ": MISSING_VALUE,
-    "-": MISSING_VALUE,
-    "": MISSING_VALUE,
-    "_": MISSING_VALUE,
-    "0": MISSING_VALUE,
-}  # mappings to replace fields with zeroes
-
-
 def linkage_matrix_to_nwk(linkage_matrix: npt.NDArray, sample_ids: list[str]) -> str:
     """Code is taken from an old Scipy PR.
 
@@ -142,182 +120,6 @@ def linkage_matrix_to_nwk(linkage_matrix: npt.NDArray, sample_ids: list[str]) ->
     return newick_intermediates[linkage_matrix.shape[0] - 1 + n_objects] + ";"
 
 
-def subset_columns(profiles: pl.DataFrame, columns_path: Path) -> pl.DataFrame:
-    """Subset only the required columns to use for distance matrix calculation."""
-    columns: set[str] | None = None
-    with columns_path.open("r") as columns_file:
-        columns = {line.strip() for line in columns_file.readlines()}
-
-    sample_col = profiles.columns[0]
-    profile_cols = set(profiles.columns[1:])  # keep all columns but first
-    columns_keep = list(profile_cols & columns)
-    return profiles.select(sample_col, *columns_keep)
-
-
-def read_input_profiles(
-    input_file: Path, columns_keep_path: Path | None, delimiter: str, threads: int
-) -> pl.DataFrame:
-    """Read the allelic profiles and perform any filtering and conversions required.
-
-    Check for nulls in sample id column and enforces uniqueness
-
-
-    Polars mangles columns with potential duplicate names on loading, potential bug*
-    """
-    profiles = pl.read_csv(
-        input_file,
-        separator=delimiter,
-        n_threads=threads,
-        has_header=True,
-        raise_if_empty=True,
-        missing_utf8_is_empty_string=True,
-        infer_schema=False,
-    )
-    if profiles.shape[1] <= 1:
-        err_string = (
-            f"Only {profiles.shape[1]} in allele profiles, you need atleast two loci columns."
-        )
-
-        logger.critical(err_string)
-        raise pl.exceptions.ShapeError(err_string)
-
-    if profiles.shape[0] <= 1:
-        err_string = (
-            f"Only {profiles.shape[0]} in allele profiles were loaded, but atleast two "
-            f"profiles must be provided."
-        )
-        logger.critical(err_string)
-        raise pl.exceptions.RowsError(err_string)
-
-    # Cannot use null_count in polars for this, as we convert all null values into empty strings
-    if profiles.select((pl.nth(0) == "").sum())[0, 0] >= 1:
-        err_string = (
-            "Missing values identified in left most column (ID column), left most column "
-            "can have no missing values."
-        )
-        logger.critical(err_string)
-        raise pl.exceptions.RowsError(err_string)
-
-    if not profiles.select(pl.nth(0)).is_unique().all():
-        err_string = (
-            "Duplicate values identified in left most column (ID column), leftmost column"
-            " can have no missing values."
-        )
-        logger.critical(err_string)
-        raise pl.exceptions.DuplicateError(err_string)
-
-    if columns_keep_path:
-        profiles = subset_columns(profiles, columns_keep_path)
-
-    return profiles
-
-
-def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
-    """Remove rows missing a certain percentage of data.
-
-    Remove rows from the dataframe that have are missing more than the thresholds set limit for
-    missing data.
-    """
-    hundred_percent: float = 1.0
-    if threshold == hundred_percent:
-        return profiles
-
-    number_of_columns = profiles.width - 1  # -1 to ignore the labels column
-    threshold_columns = math.floor(number_of_columns * threshold)
-    logger.info(
-        "Setting filter threshold to excluded columns missing % or more loci.",
-        threshold_columns,
-    )
-    rows_before_filtering = profiles.height
-    profiles = profiles.filter(
-        pl.sum_horizontal(
-            pl.all().exclude(profiles.columns[0]) == MISSING_VALUE
-        )  # select all columns but first id col
-        <= threshold_columns
-    )
-    if profiles.is_empty():
-        raise AllColumnsFilteredError(threshold)
-
-    logger.info("Removed %s rows after filtering.", rows_before_filtering - profiles.height)
-
-    return profiles
-
-
-def transform_data_hashes(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
-    """Return data prepared for calc_dists.
-
-    Transform the dataframe of profiles by hashing the entries, converting missing allele
-    charactars to zeroes and filtering rows.
-    """
-    data_columns = profiles.columns[1:]  # only apply functions to loci columns
-    profiles = profiles.with_columns(
-        pl.all()
-        .exclude(profiles.columns[0])  # skip id column
-        .replace(REPLACE_CHARS)
-    )
-
-    profiles = profiles.with_columns(
-        [
-            pl.when(pl.col(i) != str(MISSING_VALUE))
-            .then(pl.col(i).hash(42, 42, 42, 42))
-            .otherwise(pl.lit(0))
-            for i in data_columns
-        ]
-    )
-
-    profiles = filter_rows(profiles, threshold)
-    return profiles
-
-
-def transform_data(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
-    """Return data prepared for calc_dists.
-
-    Transform the dataframe of profiles by creating a look up table to cast values to integers,
-    converting missing allele charactars to zeroes and filtering rows.
-    """
-    # Create mapping instead of using hashes
-    values_columns = 1
-    unique_values = (
-        profiles.with_columns(pl.all().exclude(profiles.columns[0]))
-        .unpivot()
-        .to_series(values_columns)
-        .unique()
-        .to_list()
-    )
-
-    char_mapping = (
-        {  # start mapping at 1, as 0 is used for missing values and add one to not miss values
-            value: idx
-            for value, idx in zip(
-                unique_values, np.arange(1, len(unique_values) + 1, dtype=np.uint32)
-            )
-        }
-        | REPLACE_CHARS
-    )  # Create new dictionary, REPLACE_CHARS keys overwrite those in new dictionary
-
-    profiles = profiles.with_columns(
-        pl.all()
-        .exclude(profiles.columns[0])  # skip id column
-        .replace(char_mapping)
-        .cast(pl.UInt32)  # strict cast will throw an error if any overflow occurs
-    )
-
-    profiles = filter_rows(profiles, threshold)
-    return profiles
-
-
-def prep_data(
-    profiles: pl.DataFrame,
-    threshold: float,
-    transformation_func: t.Callable[[pl.DataFrame, float], pl.DataFrame],
-) -> npt.NDArray:
-    """Prepare profiles for computation by the the calc_dists function of dist_mat."""
-    data_columns = profiles.columns[1:]  # only apply functions to loci columns
-    profiles = transformation_func(profiles, threshold)
-    profiles_numpy = profiles.select([pl.col(i) for i in data_columns]).to_numpy().astype(np.uint32)
-    return profiles_numpy
-
-
 def compute_dists(
     profiles: pl.DataFrame,
     count_missing: bool,
@@ -326,8 +128,10 @@ def compute_dists(
     filter_threshold: float = 1.0,
 ) -> npt.NDArray:
     """Compute the 1D array required by scipy for generation of the linkage matrix."""
-    prepared_profiles = prep_data(profiles, filter_threshold, transform_data)
+    prepared_profiles = prep_data(profiles, filter_threshold, transform_data_categorical_encoding)
+    logger.debug("Tranformed data for computation in C++ sub-routine.")
     distances = dm.calc_dists(prepared_profiles, threads, scaled, count_missing)
+    logger.debug("Finished C++ sub-routine.")
     return distances
 
 
@@ -337,6 +141,7 @@ def compute_linkage_matrix(profiles_computed: npt.NDArray, linkage_method: str) 
     profiles_computed refers to a 1D condensed array generated by calc_dists
     """
     linkage = scipy.cluster.hierarchy.linkage(profiles_computed, method=linkage_method)  # type: ignore[arg-type]
+    logger.debug(f"Calculated {linkage_method} linkage.")
     return linkage
 
 
@@ -359,8 +164,8 @@ def assign_clusters(
                 dtype=pl.UInt32,
             )
         )
-
         cols_concat.append(col_name)
+        logger.debug(f"Calculated flat clusters for threshold: {threshold}")
 
     outputs = pl.DataFrame(data_to_populate, orient="col")
     outputs = outputs.with_columns(
@@ -377,6 +182,7 @@ def convert_branch_lengths(
     if branch_length_type == BranchLengthType.PATRISTIC:
         for row in linkage_matrix:
             row[LinkageMatrixFields.DISTANCE.value] *= 0.5
+            logger.info("Converted branch lengths to patristic distances.")
     return linkage_matrix
 
 
@@ -384,11 +190,16 @@ def cluster(cluster_args: ClusterArguments) -> None:
     """Runner function of cluster."""
     profiles = read_input_profiles(
         cluster_args.input_file,
-        cluster_args.columns_path,
         cluster_args.delimiter,
         cluster_args.cores,
     )
     logger.info("Loaded profiles")
+
+    if cluster_args.columns_path:
+        logger.info("Subsetting columns.")
+        profiles = subset_columns(profiles, cluster_args.columns_path, None)
+        logger.debug("Finished subsetting columns.")
+
     distances = compute_dists(
         profiles,
         cluster_args.count_missing,
@@ -396,16 +207,16 @@ def cluster(cluster_args: ClusterArguments) -> None:
         cluster_args.cores,
         cluster_args.filter_threshold,
     )
-    logger.info("Computed distances")
+    logger.info("Computed distances.")
     linkages = compute_linkage_matrix(distances, cluster_args.method)
-    logger.info("Computed linkage matrix")
+    logger.info("Computed linkage matrix.")
     cluster_args.thresholds.sort(reverse=True)
     logger.info("Thresholds being used for generating linkages: %s", cluster_args.thresholds)
 
     sample_names = profiles.select(pl.nth(0)).to_series().to_list()
     # write out the tree
     cluster_memberships = assign_clusters(linkages, cluster_args.thresholds, sample_names)
-    logger.info("assigned clusters")
+    logger.info("Assigned clusters.")
 
     linkages = convert_branch_lengths(
         linkages, cluster_args.branch_length_type

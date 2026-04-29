@@ -23,9 +23,9 @@ elseif(TARGET_GROUP STREQUAL test)
     TARGET tests-catch2
     PRE_LINK
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_SOURCE_DIR}/tests"
+    "${CMAKE_SOURCE_DIR}/src/dist_mat/tests/data"
     "$<TARGET_FILE_DIR:tests-catch2>/data"
-    COMMENT "Copying ${CMAKE_SOURCE_DIR}/tests \
+    COMMENT "Copying ${CMAKE_SOURCE_DIR}/src/dist-mat/tests/data \
     to $<TARGET_FILE_DIR:tests-catch2>"
   )
 
@@ -59,19 +59,13 @@ elseif(TARGET_GROUP STREQUAL test)
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
   COMMAND ${CMAKE_COMMAND} -E compare_files --ignore-eol data/R1KC1K.out.4.threads.count-missing.scaled.tab data/R1KC1K.threaded.scaled.test.out)
 
-
-  set_property(
-    TEST E2E-FASTMATCH-1-THREADS-FAILS
-    PROPERTY WILL_FAIL TRUE
-  )
-
   add_custom_command(
     TARGET tests-exe
     PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_SOURCE_DIR}/tests"
+    "${CMAKE_SOURCE_DIR}/src/dist_mat/tests/data"
     "$<TARGET_FILE_DIR:tests-exe>/data"
-    COMMENT "Copying ${CMAKE_SOURCE_DIR}/tests \
+    COMMENT "Copying ${CMAKE_SOURCE_DIR}/src/dist-mat/tests/data \
     to $<TARGET_FILE_DIR:tests-exe>"
   )
 
@@ -96,7 +90,7 @@ elseif(TARGET_GROUP STREQUAL python)
   target_compile_options(dist_mat_ext PRIVATE
       -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive
     -ffast-math -ftree-vectorize -funroll-loops -flto
-    -std=c++23 -DPYTHON_BUILD -mavx2) # Benchmark adding -mavx2
+    -std=c++23 -DPYTHON_BUILD -mavx2)
 
 
   install(TARGETS dist_mat_ext LIBRARY DESTINATION dist_mat)

@@ -4,6 +4,7 @@ import pytest  # noqa: I001
 
 import dist_mat
 from dist_mat import cluster
+from dist_mat import transform_data as transform
 
 import hashlib
 from pathlib import Path
@@ -17,7 +18,6 @@ from hypothesis import given, settings, HealthCheck, strategies as st
 from hypothesis.extra import numpy as nps
 
 
-# @pytest.fixture(scope="session")
 @pytest.fixture(scope="function")
 def test_df() -> pl.DataFrame:
     """Example dataframe for the benchmark function."""
@@ -31,22 +31,15 @@ def test_df() -> pl.DataFrame:
 
 def test_benchmark_data_transformation_hashes(benchmark, test_df):
     """Benchmarks for different data transformation methods."""
-    benchmark(cluster.transform_data_hashes, test_df, 1.00)
-    assert True
-
-
-def test_benchmark_data_transformation_map(benchmark, test_df):
-    """Benchmarks for different data transformation methods."""
-    benchmark(cluster.transform_data, test_df, 1.00)
+    benchmark(transform.transform_data_hashes, test_df, 1.00)
     assert True
 
 
 @pytest.mark.parametrize(
-    "input,columns_keep,delimiter,threads,expected",
+    "input,delimiter,threads,expected",
     [
         (
             Path("src/dist_mat/tests/data/simple_test_profiles.csv"),
-            None,
             ",",
             1,
             pl.DataFrame(
@@ -60,14 +53,13 @@ def test_benchmark_data_transformation_map(benchmark, test_df):
         ),
         (
             Path("src/dist_mat/tests/data/simple_test_profiles.tsv"),
-            None,
             "\t",
             1,
             pl.DataFrame(
                 {
                     "SampleID": ["1", "2", "3"],
                     "A": [str(1), str(4), str(7)],
-                    "B": ["", str(5), str(8)],
+                    "B": [None, str(5), str(8)],
                     "C": [str(3), str(6), str(9)],
                 },
                 strict=False,
@@ -75,9 +67,9 @@ def test_benchmark_data_transformation_map(benchmark, test_df):
         ),
     ],
 )
-def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) -> None:
+def test_read_input_profiles(input, delimiter, threads, expected) -> None:
     """Tests for loading of the input profiles."""
-    input_profiles = cluster.read_input_profiles(input, columns_keep, delimiter, threads)
+    input_profiles = transform.read_input_profiles(input, delimiter, threads)
     assert input_profiles.equals(expected)
 
 
@@ -286,18 +278,18 @@ def test_read_input_profiles(input, columns_keep, delimiter, threads, expected) 
                     "d": [],
                 }
             ),
-            cluster.AllColumnsFilteredError,
+            transform.AllColumnsFilteredError,
         ),
     ],
 )
 def test_filter_rows(dataframe, threshold, expected, error) -> None:
     """Test that filtering of rows is correct."""
     if error is None:
-        filtered_data = cluster.filter_rows(dataframe, threshold)
+        filtered_data = transform.filter_rows(dataframe, threshold)
         assert filtered_data.equals(expected)
     else:
         with pytest.raises(error):
-            filtered_data = cluster.filter_rows(dataframe, threshold)
+            filtered_data = transform.filter_rows(dataframe, threshold)
 
 
 @given(
@@ -325,7 +317,7 @@ def test_subset_columns(df: pl.DataFrame, tmp_path) -> None:
     """Tests for subsetting of columns."""
     output_path = tmp_path / "cols_keep.txt"
     output_path.write_text("SampleID\nSubset1\nSubset2\n")
-    subset = cluster.subset_columns(df, output_path)
+    subset = transform.subset_columns(df, output_path, None)
     assert subset.columns[0] == "col0"  # Leftmost column should always be first
     assert set(subset.columns) == set(
         ["col0", "Subset1", "Subset2"]
@@ -339,17 +331,17 @@ def test_subset_columns(df: pl.DataFrame, tmp_path) -> None:
             column(
                 "SampleID",
                 dtype=pl.String,
-                strategy=st.sampled_from(list(cluster.REPLACE_CHARS.keys())),
+                strategy=st.sampled_from(list(transform.REPLACE_CHARS.keys())),
             ),
             column(
                 "QMarks2",
                 dtype=pl.String,
-                strategy=st.sampled_from(list(cluster.REPLACE_CHARS.keys())),
+                strategy=st.sampled_from(list(transform.REPLACE_CHARS.keys())),
             ),
             column(
                 "QMarks3",
                 dtype=pl.String,
-                strategy=st.sampled_from(list(cluster.REPLACE_CHARS.keys())),
+                strategy=st.sampled_from(list(transform.REPLACE_CHARS.keys())),
             ),
             column(
                 "Hashed",
@@ -369,8 +361,8 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
     array = np.zeros((profiles.height, 3), dtype=np.uint32)  # array should all be zeros
     for i in array:
         i[2] = np.uint32(2683474508)  # last value should be the hashed version of "A"
-    output = cluster.prep_data(profiles, 1.00, cluster.transform_data_hashes)
-    assert np.array_equal(output, array)
+    output = cluster.prep_data(profiles, 1.00, transform.transform_data_hashes)
+    np.testing.assert_equal(output, array)
 
 
 @pytest.mark.parametrize(
@@ -381,12 +373,22 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
                 {
                     "SampleID": ["a", "b", "c", "d"],
                     "A": ["2", "2", "2", "2"],
-                    "b": ["2", "2", "?", "2"],
-                    "c": ["2", "2", "", "2"],
-                    "d": ["2", "2", " ", "2"],
-                    "e": ["2", "2", "_", "2"],
-                    "f": ["2", "2", "-", "2"],
-                    "g": ["2", "2", "0", "2"],
+                    "b": ["2", "2", None, "2"],
+                    "c": ["2", "2", None, "2"],
+                    "d": ["2", "2", None, "2"],
+                    "e": ["2", "2", None, "2"],
+                    "f": ["2", "2", None, "2"],
+                    "g": ["2", "2", None, "2"],
+                },
+                schema={
+                    "SampleID": pl.String,
+                    "A": pl.Categorical,
+                    "b": pl.Categorical,
+                    "c": pl.Categorical,
+                    "d": pl.Categorical,
+                    "e": pl.Categorical,
+                    "f": pl.Categorical,
+                    "g": pl.Categorical,
                 },
             ),
             1.00,
@@ -443,12 +445,22 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
                 {
                     "SampleID": ["a", "b", "c", "d"],
                     "A": ["2", "2", "2", "2"],
-                    "b": ["2", "2", "?", "2"],
-                    "c": ["2", "2", "", "2"],
-                    "d": ["2", "2", " ", "2"],
-                    "e": ["2", "2", "_", "2"],
-                    "f": ["2", "2", "-", "2"],
-                    "g": ["2", "2", "0", "2"],
+                    "b": ["2", "2", None, "2"],
+                    "c": ["2", "2", None, "2"],
+                    "d": ["2", "2", None, "2"],
+                    "e": ["2", "2", None, "2"],
+                    "f": ["2", "2", None, "2"],
+                    "g": ["2", "2", None, "2"],
+                },
+                schema={
+                    "SampleID": pl.String,
+                    "A": pl.Categorical,
+                    "b": pl.Categorical,
+                    "c": pl.Categorical,
+                    "d": pl.Categorical,
+                    "e": pl.Categorical,
+                    "f": pl.Categorical,
+                    "g": pl.Categorical,
                 },
             ),
             0.00,
@@ -498,12 +510,22 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
                 {
                     "SampleID": ["a", "b", "c", "d"],
                     "A": ["2", "2", "2", "2"],
-                    "b": ["2", "2", "?", "2"],
-                    "c": ["2", "2", "", "2"],
-                    "d": ["2", "2", " ", "2"],
-                    "e": ["2", "2", "_", "2"],
-                    "f": ["2", "2", "-", "2"],
-                    "g": ["2", "2", "0", "2"],
+                    "b": ["2", "2", None, "2"],
+                    "c": ["2", "2", None, "2"],
+                    "d": ["2", "2", None, "2"],
+                    "e": ["2", "2", None, "2"],
+                    "f": ["2", "2", None, "2"],
+                    "g": ["2", "2", None, "2"],
+                },
+                schema={
+                    "SampleID": pl.String,
+                    "A": pl.Categorical,
+                    "b": pl.Categorical,
+                    "c": pl.Categorical,
+                    "d": pl.Categorical,
+                    "e": pl.Categorical,
+                    "f": pl.Categorical,
+                    "g": pl.Categorical,
                 },
             ),
             0.25,
@@ -552,7 +574,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
 )
 def test_transform_data(data, threshold, expected):
     """Tests for mapping tranformation and filtering of data."""
-    out = cluster.transform_data(data, threshold)
+    out = transform.transform_data_categorical_encoding(data, threshold)
     assert out.shape == expected.shape  # verify shape as map values will change on each run
 
 
@@ -735,7 +757,7 @@ def test_transform_data(data, threshold, expected):
 )
 def test_transform_data_hashes(data, threshold, expected):
     """Tests for hashing of data."""
-    out = cluster.transform_data_hashes(data, threshold)
+    out = transform.transform_data_hashes(data, threshold)
     assert out.equals(expected)
 
 
@@ -760,7 +782,7 @@ def test_compute_linkage_matrix(method, expected):
     """Tests from scipy for computing linkage matrix."""
     input_array = np.array([1.41421356, 2.82842712, 1.41421356])
     output = cluster.compute_linkage_matrix(input_array, method)
-    assert np.allclose(output, expected)
+    np.testing.assert_allclose(output, expected)
 
 
 @pytest.mark.parametrize(
@@ -784,7 +806,7 @@ def test_compute_linkage_matrix_integers(method, expected):
     """
     input_array = np.array([1, 3, 8, 4, 7, 5])
     output = cluster.compute_linkage_matrix(input_array, method)
-    assert np.array_equal(expected, output)
+    np.testing.assert_equal(expected, output)
 
 
 @pytest.mark.parametrize(
@@ -897,8 +919,8 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
         (
             np.array(
                 [
-                    [np.uint32(1), cluster.MISSING_VALUE],
-                    [cluster.MISSING_VALUE, np.uint32(1)],
+                    [np.uint32(1), transform.MISSING_VALUE],
+                    [transform.MISSING_VALUE, np.uint32(1)],
                 ]
             ),
             False,
@@ -908,8 +930,8 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
         (
             np.array(
                 [
-                    [np.uint32(1), cluster.MISSING_VALUE],
-                    [cluster.MISSING_VALUE, np.uint32(1)],
+                    [np.uint32(1), transform.MISSING_VALUE],
+                    [transform.MISSING_VALUE, np.uint32(1)],
                 ]
             ),
             True,
@@ -919,8 +941,8 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
         (
             np.array(
                 [
-                    [cluster.MISSING_VALUE, cluster.MISSING_VALUE],
-                    [cluster.MISSING_VALUE, cluster.MISSING_VALUE],
+                    [transform.MISSING_VALUE, transform.MISSING_VALUE],
+                    [transform.MISSING_VALUE, transform.MISSING_VALUE],
                 ]
             ),
             False,
@@ -932,7 +954,7 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
 def test_calc_dists(profiles, count_missing, scaled, expected):
     """Test distance calculation output is correct."""
     output = dist_mat.calc_dists(profiles, 1, scaled, count_missing)
-    assert np.array_equal(output, expected)
+    np.testing.assert_equal(output, expected)
 
 
 @given(
@@ -950,14 +972,14 @@ def test_calc_dists_fuzzing_hypothesis_no_infinites(arr):
 @pytest.mark.parametrize(
     "input,scaled,count_missing",
     [
-        (Path("tests/R1KC1K.tsv"), True, True),
-        (Path("tests/R1KC1K.tsv"), False, True),
-        (Path("tests/R1KC1K.tsv"), False, True),
+        (Path("src/dist_mat/tests/data/R1KC1K.tsv"), True, True),
+        (Path("src/dist_mat/tests/data/R1KC1K.tsv"), False, True),
+        (Path("src/dist_mat/tests/data/R1KC1K.tsv"), False, True),
     ],
 )
 def test_calc_dists_file_inputs(input, scaled, count_missing):
     """Test inputs of calc dists is correct with known input."""
-    profiles: pl.DataFrame = cluster.read_input_profiles(input, None, "\t", 1)
+    profiles: pl.DataFrame = cluster.read_input_profiles(input, "\t", 1)
     dists: npt.NDArray = cluster.compute_dists(profiles, count_missing, scaled, 1)
     matrix: npt.NDArray = scipy.spatial.distance.squareform(
         dists
@@ -1005,3 +1027,9 @@ def test_linkage_matrix_to_nwk(linkage, sample_ids, expected):
     https://github.com/scipy/scipy/pull/17329/changes
     """
     assert cluster.linkage_matrix_to_nwk(linkage, sample_ids) == expected
+
+
+def test_get_subset_columns():
+    """Test for get_subset_columns."""
+    cols = transform.get_subset_columns(Path("src/dist_mat/tests/data/test_columns.txt"))
+    assert cols == {"sample", "col1", "col2", "col3"}
