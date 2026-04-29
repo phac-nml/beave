@@ -80,8 +80,8 @@ def verify_dataframe_integrity(profiles: pl.DataFrame) -> None:
     """Perform sanity checks on dataframes shape."""
     if profiles.shape[1] <= 1:
         err_string = (
-            f"Sorry, {profiles.shape[1]} allele loci column(s) provied as input, but atleast two loci"
-            f" columns are needed."
+            f"Sorry, {profiles.shape[1]} allele loci column(s) provied as input, but atleast two "
+            f"loci columns are needed."
         )
 
         logger.critical(err_string)
