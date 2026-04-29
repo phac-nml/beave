@@ -30,7 +30,7 @@
       should_exist: false
   stderr:
     contains:
-      - "Scaled distance specified, but values greater than 100.0 are specified."
+      - "Sorry, scaled distance specified, but values greater than 100.0 are specified."
 
 - name: Run fast-matching subset columns
   tags:
@@ -50,4 +50,4 @@
       should_exist: false
   stderr:
     contains:
-      - "The loci in your reference set do not match those in your query. Too many differences to list: 1003"
+      - "Sorry, the loci in your reference set do not match those in your query. Too many differences to list: 1003"
