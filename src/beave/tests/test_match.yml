@@ -30,7 +30,7 @@
       should_exist: false
   stderr:
     contains:
-      - "Sorry, scaled distance specified, but values greater than 100.0 are specified."
+      - "Sorry, scaled distance specified, but values greater than 100.0 are provided."
 
 - name: Run fast-matching subset columns
   tags:
