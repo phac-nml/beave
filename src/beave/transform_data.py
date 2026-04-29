@@ -55,7 +55,10 @@ def subset_columns(
     columns: set[str]
 
     if columns_path is None and columns_keep is None:
-        error_msg = "Sorry, subset columns is being called with two None options."
+        error_msg = (
+            "Sorry, subset columns is being called with two None options. e.g. Neither a path to a"
+            " file of columns or list of columns to keep has been provided to the function."
+        )
         raise ValueError(error_msg)
 
     if columns_path:
@@ -106,7 +109,7 @@ def verify_dataframe_integrity(profiles: pl.DataFrame) -> None:
     if not profiles.select(pl.nth(0)).is_unique().all():
         err_string = (
             "Sorry, duplicate values identified in the left most column (ID column). The leftmost "
-            "column can have no missing values."
+            "column must have no missing values."
         )
         logger.critical(err_string)
         raise pl.exceptions.DuplicateError(err_string)
@@ -236,7 +239,7 @@ def prep_data(
     threshold: float,
     transformation_func: Callable[[pl.DataFrame, float], pl.DataFrame],
 ) -> npt.NDArray:
-    """Prepare profiles for computation by the the calc_dists function of beave."""
+    """Prepare profiles for computation using the the calc_dists function of beave."""
     data_columns = profiles.columns[1:]  # only apply functions to loci columns
     profiles = transformation_func(profiles, threshold)
     profiles_numpy = (

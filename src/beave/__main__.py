@@ -98,7 +98,7 @@ def verify_scaled_distance(scaled: bool, thresholds: float | list[float]) -> Non
     if test_value == float("inf") or test_value <= MAX_PERCENT:
         return
 
-    err_msg: str = "Sorry, scaled distance specified, but values greater than 100.0 are specified."
+    err_msg: str = "Sorry, scaled distance specified, but values greater than 100.0 are provided."
     logger.critical(err_msg)
     raise CommandError(err_msg)
 

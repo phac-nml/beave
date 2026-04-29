@@ -2,9 +2,9 @@
 
 - [Introduction](#introduction)
   - [Contact](#contact)
+- [Compatibility](#compatibility)
 - [Install](#install)
   - [Get Started](#get-started)
-  - [Compatibility](#compatibility)
   - [Python](#python)
     - [Without Conda](#without-conda)
     - [With Conda](#with-conda)
@@ -43,9 +43,19 @@ This program is under active development and is used for creating distance matri
 
 [Matthew Wells] : <matthew.wells@phac-aspc.gc.ca>
 
+## Compatibility
+
+`beave` has only been tested on Linux, any system that supports G++ can compile the program. As only the C++ 23 standard library is used, the program may be able to be compiled on Windows system.
+
+This program relies heavily on the compiler to optimize the program and add SIMD instructions, it is recommended to compile the program on your local computer to get the full benefit of the potential instruction sets your CPU may offer. Compilation using AVX-512 instruction sets has been tested, however in our testing the programs performance degrades likely due to throttling by the CPU.
+
+To build the `beave` Python package, you will first need to install dependencies listed in the pyproject.toml file. Python version 3.13 or greater is required, along with scikit-build-core and the nanobind Python package.
+
+Python runtime dependencies include numpy >= 2.4.0 and polars >= 1.40.1 and scipy >= 1.17.0.
+
 ## Install
 
-## Get Started
+### Get Started
 
 Start by pulling the repository.
 
@@ -53,19 +63,9 @@ Start by pulling the repository.
 
 `git submodule update --init --recursive`
 
-## Compatibility
+### Python
 
-`beave` has only been tested on Linux, any system that supports G++ can compile the program. As only the C++ 23 standard library is used, the program may be able to be compiled on Windows system.
-
-This program relies heavily on the compiler to optimize the program and add SIMD instructions, it is recommended to compile the program on your local computer to get the full benefit of the potential instruction sets your CPU may offer especially if AVX-512 instructions are available.
-
-In order to build the beave Python package, you will first need to install dependencies listed in the pyproject.toml file. Python version 3.13 or greater is required, along with scikit-build-core and the nanobind Python package.
-
-Runtime dependencies only include numpy >= 2.4.0 and polars >= 1.38.1 and scipy >= 1.17.0. These packages are not required for building the program however.
-
-## Python
-
-### Without Conda
+#### Without Conda
 
 To build and install the Python package you must have the following python packages, `scikit-build-core` and `nanobind` which can be installed with `pip install nanobind scikit-build-core[pyproject]`.
 
@@ -73,7 +73,7 @@ Developers can run `pip install --no-build-isolation -ve .[dev]` or `pip install
 
 To build a wheel that can be distributed instead of installed, simply run `pip wheel .`
 
-### With Conda
+#### With Conda
 
 1. Pull the GitHub repository as described above.
 
@@ -85,9 +85,9 @@ To build a wheel that can be distributed instead of installed, simply run `pip w
 
 5. Python can then be run with `pytest`.
 
-## C++
+### C++
 
-### Building C++ CLI
+#### Building C++ CLI
 
 This program is written entirely in C++ 23. The only dependencies are a G++ compiler and CMake. Catch2 is required for testing. However the library is only required for testing and is managed by CMake. This means an internet connection is required when first building the program.
 
@@ -123,11 +123,11 @@ make -j4
 
 The output binary will be in the debug directory.
 
-# Getting Started
+## Getting Started
 
-## Using Python
+### Using Python
 
-### Usage
+#### Usage
 
 The main help message for the program is shown below:
 
@@ -208,7 +208,7 @@ options:
 >>> beave cluster --input src/beave/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10 9 8
 ```
 
-The match argument may be used to compare the distances between a small group of query samples against a group of reference samples. The parameters for running match are described below:
+The match argument may be used to compute pairwise distances between a group of query samples against a group of reference samples. The parameters for running match are described below:
 
 ```Bash
 >>> beave match --help
@@ -244,15 +244,15 @@ options:
 >>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -t 101 -m average -o output.tsv -n 1
 ```
 
-### Data Input
+#### Data Input
 
 The inputs for this program must be tabular, any delimiter is supported as long is it is a single character. The first column of the file must contain no duplicates or missing values. The columns are not inspected to verify unique values only, so duplicate column names will be name mangled and treated as another unique column. The characters "?", " ", "", "-", "\_", and "0" are treated as missing values by the program unless the `-c` option is added to the program. All other values are treated as a valid alleles. Example inputs can be found in the `tests` folder. Thresholds are always converted to float values, however you can specify either integers not just decimals.
 
 When running `match`, the query and reference profiles will be merged by the program. If duplicate ID's are detected an error will be raised by the program.
 
-### Data Output
+#### Data Output
 
-#### Cluster Outputs
+##### Cluster Outputs
 
 The program outputs a Newick-Format file containing the tree generated by whichever linkage metric is selected, the sample IDs and their addresses are put out in a separate file specified by the user in TSV format. Addresses are delimited by an '.'.
 
@@ -263,7 +263,7 @@ Example of cluster outputs:
 | CoolSample  | 1          | 2         | 1.2            |
 | CoolSample2 | 2          | 1         | 2.1            |
 
-#### Match Outputs
+##### Match Outputs
 
 The output of `match` is a single file showing the query sample, the reference sample and distance.
 
