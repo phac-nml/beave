@@ -4,17 +4,17 @@ requires = ["scikit-build-core >=0.4.3", "nanobind >=1.3.2"]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "dist-mat"
-description = "A small utility for fast clustering."
+name = "beave"
+description = "A very Canadian utility for genomic clustering and distance querying."
 readme = "README.md"
 requires-python = ">=3.13"
 authors = [{ name = "Matthew Wells", email = "matthew.wells@phac-aspc.gc.ca" }]
 classifiers = ["License :: Apache-2.0"]
-dependencies = ["numpy >= 2.4.0", "polars >=1.38.0", "scipy >= 1.17.0"]
+dependencies = ["numpy >= 2.4.0", "polars >=1.40.1", "scipy >= 1.17.0"]
 version = "0.0.6"
 
 [project.scripts]
-dist-mat = "dist_mat.__main__:main"
+beave = "beave.__main__:main"
 
 [project.optional-dependencies]
 dev = [
@@ -41,14 +41,14 @@ logging.level = "DEBUG"
 
 
 [tool.mypy]
-exclude = ["^test", "src/dist-mat/test\\.py$"]
-files = ["src/dist_mat/*.py"]
+exclude = ["^test", "src/beave/test\\.py$"]
+files = ["src/beave/*.py"]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 
 
 [tool.complexipy]
-paths = ["src/dist_mat"]
+paths = ["src/beave"]
 max-complexity-allowed = 10
 
 

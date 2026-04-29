@@ -1,10 +1,10 @@
-# `dist-mat`
+# `beave`
 
 - [Introduction](#introduction)
   - [Contact](#contact)
+- [Compatibility](#compatibility)
 - [Install](#install)
   - [Get Started](#get-started)
-  - [Compatibility](#compatibility)
   - [Python](#python)
     - [Without Conda](#without-conda)
     - [With Conda](#with-conda)
@@ -33,7 +33,7 @@
 
 ## Python CLI
 
-A program for generating genomic nomenclature and newick trees from allelic profiles.
+A very Canadian utility for genomic clustering and distance querying.
 
 ## C++ CLI
 
@@ -43,29 +43,29 @@ This program is under active development and is used for creating distance matri
 
 [Matthew Wells] : <matthew.wells@phac-aspc.gc.ca>
 
+## Compatibility
+
+`beave` has only been tested on Linux, any system that supports G++ can compile the program. As only the C++ 23 standard library is used, the program may be able to be compiled on Windows system.
+
+This program relies heavily on the compiler to optimize the program and add SIMD instructions, it is recommended to compile the program on your local computer to get the full benefit of the potential instruction sets your CPU may offer. Compilation using AVX-512 instruction sets has been tested, however in our testing the programs performance degrades likely due to throttling by the CPU.
+
+To build the `beave` Python package, you will first need to install dependencies listed in the pyproject.toml file. Python version 3.13 or greater is required, along with scikit-build-core and the nanobind Python package.
+
+Python runtime dependencies include numpy >= 2.4.0 and polars >= 1.40.1 and scipy >= 1.17.0.
+
 ## Install
 
-## Get Started
+### Get Started
 
 Start by pulling the repository.
 
-`git clone https://github.com/phac-nml/dist-mat`
+`git clone https://github.com/phac-nml/beave`
 
 `git submodule update --init --recursive`
 
-## Compatibility
+### Python
 
-`dist-mat` has only been tested on Linux, any system that supports G++ can compile the program. As only the C++ 23 standard library is used, the program may be able to be compiled on Windows system.
-
-This program relies heavily on the compiler to optimize the program and add SIMD instructions, it is recommended to compile the program on your local computer to get the full benefit of the potential instruction sets your CPU may offer especially if AVX-512 instructions are available.
-
-In order to build the dist-mat Python package, you will first need to install dependencies listed in the pyproject.toml file. Python version 3.13 or greater is required, along with scikit-build-core and the nanobind Python package.
-
-Runtime dependencies only include numpy >= 2.4.0 and polars >= 1.38.1 and scipy >= 1.17.0. These packages are not required for building the program however.
-
-## Python
-
-### Without Conda
+#### Without Conda
 
 To build and install the Python package you must have the following python packages, `scikit-build-core` and `nanobind` which can be installed with `pip install nanobind scikit-build-core[pyproject]`.
 
@@ -73,28 +73,28 @@ Developers can run `pip install --no-build-isolation -ve .[dev]` or `pip install
 
 To build a wheel that can be distributed instead of installed, simply run `pip wheel .`
 
-### With Conda
+#### With Conda
 
 1. Pull the GitHub repository as described above.
 
 2. Create the Conda environment by running `conda env create -f environment.yml`
 
-3. Activate the environment with: `conda activate dist-mat`
+3. Activate the environment with: `conda activate beave`
 
 4. `pip install .` to install for development `pip install --no-build-isolation -ve .[dev]`
 
 5. Python can then be run with `pytest`.
 
-## C++
+### C++
 
-### Building C++ CLI
+#### Building C++ CLI
 
 This program is written entirely in C++ 23. The only dependencies are a G++ compiler and CMake. Catch2 is required for testing. However the library is only required for testing and is managed by CMake. This means an internet connection is required when first building the program.
 
 To build the program pull the latest branch and follow the proceeding instructions:
 
 ```
-cd ./dist-mat
+cd ./beave
 mkdir build && cd build
 cmake .. -DTARGET_GROUP=release
 make -j4
@@ -123,23 +123,26 @@ make -j4
 
 The output binary will be in the debug directory.
 
-# Getting Started
+## Getting Started
 
-## Using Python
+### Using Python
 
-### Usage
+#### Usage
 
 The main help message for the program is shown below:
 
-```
->>> dist-mat -h
-usage: dist-mat [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--version] {mcluster} ...
+```Bash
+>>> beave -h
+usage: beave [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing] [--scaled]
+                [--filter-threshold FILTER_THRESHOLD] [--verbose] [--version]
+                {cluster,match} ...
 
 A quick proof of concept of generic utilities for nomenclature assignment.
 
 positional arguments:
-  {mcluster}            Select a program to run.
-    mcluster            Run denovo clustering.
+  {cluster,match}       Select a program to run.
+    cluster             Run denovo clustering.
+    match               Run fast matching.
 
 options:
   -h, --help            show this help message and exit
@@ -147,18 +150,30 @@ options:
                         Specify the number of threads to be used. [default 12]
   --delimiter, -d DELIMITER
                         Input alleles delimiter. [default \t] (default: )
-  --version, -v         Print version and exit. (default: False)
+  --columns, -k COLUMNS
+                        A file containing a single column of the column names to subset from the passed allele
+                        profiles. (default: None)
+  --count-missing, -c   Count missing values in allele profiles differences. (default: False)
+  --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between
+                        0.0-100.0 (default: False)
+  --filter-threshold, -f FILTER_THRESHOLD
+                        Excluded samples from analysis if it is missing more than the specified percentage of data.
+                        Must be between 0.0 and 100.0. [default 100.0]
+  --verbose             Display logger debug messages. (default: False)
+  --version, -v         show program's version number and exit
 
 ```
 
-Currently only on program is available: `mcluster` the options for the program are shown below:
+To run _de-novo_ clustering use the `cluster` option. The long form options for cluster are shown below:
 
-```
->>> dist-mat mcluster --help
-usage: dist-mat mcluster [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] --input INPUT [--tree-output TREE_OUTPUT]
-                         [--cluster-output CLUSTER_OUTPUT] --thresholds THRESHOLDS [THRESHOLDS ...]
-                         [--method {ward,single,average,centroid,median,complete}] [--columns COLUMNS] [--count-missing] [--scaled]
-                         [--tree-distances {patristic,cophenetic}]
+```Bash
+>>> beave cluster --help
+
+usage: beave cluster [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing]
+                        [--scaled] [--filter-threshold FILTER_THRESHOLD] [--verbose] --input INPUT
+                        [--tree-output TREE_OUTPUT] [--cluster-output CLUSTER_OUTPUT]
+                        --thresholds THRESHOLDS [THRESHOLDS ...] [--method {single,average,complete}]
+                        [--tree-distances {patristic,cophenetic}]
 
 options:
   -h, --help            show this help message and exit
@@ -166,35 +181,78 @@ options:
                         Specify the number of threads to be used. [default 12]
   --delimiter, -d DELIMITER
                         Input alleles delimiter. [default \t]
+  --columns, -k COLUMNS
+                        A file containing a single column of the column names to subset from the passed allele
+                        profiles.
+  --count-missing, -c   Count missing values as differences.
+  --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between
+                        [0.0-100.0]
+  --filter-threshold, -f FILTER_THRESHOLD
+                        Excluded samples from analysis if it is missing more than the specified percentage of data.
+                        Must be between [0.0-100.0]. [default 100.0]
+  --verbose             Display logger debug messages.
   --input, -i INPUT     Input alleles.
   --tree-output, -t TREE_OUTPUT
-                        Output tree name. [default clusters.nwk]
+                        File path to write generated tree. [default clusters.nwk]
   --cluster-output, -l CLUSTER_OUTPUT
-                        Output clusters file. [default clusters.tsv]
+                        File path to write generated clusters. [default clusters.tsv]
   --thresholds, -p THRESHOLDS [THRESHOLDS ...]
                         List of threshold values to use.
-  --method, -m {single,average,centroid,median,complete}
-                        Linkage method to use. [default: average]
-  --columns, -k COLUMNS
-                        A file containing a list of columns to subset from the allele profiles.
-  --count-missing, -c   Count missing values as differences.
-  --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between 0.0-100.0
+  --method, -m {single,average,complete}
+                        Hierarchical clustering linkage to use. [default: average]
   --tree-distances, -b {patristic,cophenetic}
                         Determine how to display tree lenghts in the newick file. [default cophenetic]
- --filter-threshold, -f FILTER_THRESHOLD
-                        Excluded samples from clustering missing more than a certain percentage of alleles must be between 0.0 and 100.0. [default 0.0]
-
 
 >>> # Example programs
->>> dist-mat mcluster --input data/R1KC1K.2-zeroes.does-not-exist.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
->>> dist-mat mcluster --input data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10 9 8
+>>> beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
+>>> beave cluster --input src/beave/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10 9 8
 ```
 
-### Data Input
+The match argument may be used to compute pairwise distances between a group of query samples against a group of reference samples. The parameters for running match are described below:
+
+```Bash
+>>> beave match --help
+usage: beave match [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing]
+                      [--scaled] [--filter-threshold FILTER_THRESHOLD] [--verbose] --reference REFERENCE --query QUERY
+                      [--threshold THRESHOLD] [--output OUTPUT]
+
+options:
+  -h, --help            show this help message and exit
+  --n-threads, -n N_THREADS
+                        Specify the number of threads to be used. [default 12]
+  --delimiter, -d DELIMITER
+                        Input alleles delimiter. [default \t]
+  --columns, -k COLUMNS
+                        A file containing a single column of the column names to subset from the passed allele
+                        profiles.
+  --count-missing, -c   Count missing values as differences.
+  --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between
+                        [0.0-100.0]
+  --filter-threshold, -f FILTER_THRESHOLD
+                        Excluded samples from analysis if it is missing more than the specified percentage of data.
+                        Must be between [0.0-100.0]. [default 100.0]
+  --verbose             Display logger debug messages.
+  --reference, -r REFERENCE
+                        Profiles to compare against.
+  --query, -q QUERY     Profiles containing new-samples for comparisons.
+  --threshold, -t THRESHOLD
+                        Only report distances below specified threshold. [default: inf]
+  --output, -o OUTPUT   Fast match result output tsv file. [default: output.tsv]
+
+>>> # Example programs
+>>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -sc --verbose
+>>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -t 101 -m average -o output.tsv -n 1
+```
+
+#### Data Input
 
 The inputs for this program must be tabular, any delimiter is supported as long is it is a single character. The first column of the file must contain no duplicates or missing values. The columns are not inspected to verify unique values only, so duplicate column names will be name mangled and treated as another unique column. The characters "?", " ", "", "-", "\_", and "0" are treated as missing values by the program unless the `-c` option is added to the program. All other values are treated as a valid alleles. Example inputs can be found in the `tests` folder. Thresholds are always converted to float values, however you can specify either integers not just decimals.
 
-### Data Output
+When running `match`, the query and reference profiles will be merged by the program. If duplicate ID's are detected an error will be raised by the program.
+
+#### Data Output
+
+##### Cluster Outputs
 
 The program outputs a Newick-Format file containing the tree generated by whichever linkage metric is selected, the sample IDs and their addresses are put out in a separate file specified by the user in TSV format. Addresses are delimited by an '.'.
 
@@ -205,6 +263,18 @@ Example of cluster outputs:
 | CoolSample  | 1          | 2         | 1.2            |
 | CoolSample2 | 2          | 1         | 2.1            |
 
+##### Match Outputs
+
+The output of `match` is a single file showing the query sample, the reference sample and distance.
+
+The general structure of the `match` output:
+
+| query_id | ref_id | dist\_{hamming,scaled} |
+| -------- | ------ | ---------------------- |
+| 1        | 2      | 4                      |
+| 1        | 3      | 8                      |
+| 1        | 4      | 10                     |
+
 ## Using C++ Binary
 
 ### Usage
@@ -212,15 +282,15 @@ Example of cluster outputs:
 The help message for the program can be brought up by executing as shown below, (-h|--help) can be used to print the help message at any time as well:
 
 ```
-$ dist-mat
+$ beave
 No args passed
 Subcommands:
  matrix - Create distance matrix with an input profile.
  fast-match - Compare a set of profiles to a set of query profiles.
 
 Examples:
-dist-mat matrix -i profiles.tsv -t 4 -sc > output.tsv
-dist-mat fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
+beave matrix -i profiles.tsv -t 4 -sc > output.tsv
+beave fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
 ```
 
 The program will display the top-level help messages with the example commands, and warn the user that no arguments have been passed.
@@ -232,15 +302,15 @@ Note - The program supports multi-threading but is intended for use on a single 
 The help message for commands is displayed below along with default settings. Flag options can be specified in a sequence as a single letter string e.g. "-sc" or sperately "-s -c". When passing characters such as delimiters you may have to specify ANSI C quoted strings in bash (e.g to specify a tab delimiter $'\t'). The default values are specified in the help message.
 
 ```
-$ dist-mat matrix
+$ beave matrix
 
 Subcommands:
  matrix - Create distance matrix with an input profile.
  fast-match - Compare a set of profiles to a set of query profiles.
 
 Examples:
-dist-mat matrix -i profiles.tsv -t 4 -sc > output.tsv
-dist-mat fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
+beave matrix -i profiles.tsv -t 4 -sc > output.tsv
+beave fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
 
 Command Options
 
@@ -268,8 +338,8 @@ Subcommands:
  fast-match - Compare a set of profiles to a set of query profiles.
 
 Examples:
-dist-mat matrix -i profiles.tsv -t 4 -sc > output.tsv
-dist-mat fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
+beave matrix -i profiles.tsv -t 4 -sc > output.tsv
+beave fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
 
 Command Options
 
