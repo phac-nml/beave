@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import hashlib
 from pathlib import Path
 
-from dist_mat import match
+from beave import match
 
 import numpy as np
 import polars as pl
@@ -292,8 +292,8 @@ def test_run_fast_matching(profiles, query_size, match_args, expected):
     [
         (
             match.MatchArguments(
-                Path("src/dist_mat/tests/data/R1KC1K.head.tsv"),
-                Path("src/dist_mat/tests/data/R1KC1K.tail.tsv"),
+                Path("src/beave/tests/data/R1KC1K.head.tsv"),
+                Path("src/beave/tests/data/R1KC1K.tail.tsv"),
                 float("inf"),
                 0,
                 None,
@@ -308,8 +308,8 @@ def test_run_fast_matching(profiles, query_size, match_args, expected):
         ),
         (
             match.MatchArguments(
-                Path("src/dist_mat/tests/data/R1KC1K.head.tsv"),
-                Path("src/dist_mat/tests/data/R1KC1K.tail.tsv"),
+                Path("src/beave/tests/data/R1KC1K.head.tsv"),
+                Path("src/beave/tests/data/R1KC1K.tail.tsv"),
                 float("inf"),
                 2,
                 None,
@@ -324,8 +324,8 @@ def test_run_fast_matching(profiles, query_size, match_args, expected):
         ),
         (
             match.MatchArguments(
-                Path("src/dist_mat/tests/data/R1KC1K.head.tsv"),
-                Path("src/dist_mat/tests/data/R1KC1K.tail.tsv"),
+                Path("src/beave/tests/data/R1KC1K.head.tsv"),
+                Path("src/beave/tests/data/R1KC1K.tail.tsv"),
                 80.0,
                 3,
                 None,
@@ -340,8 +340,8 @@ def test_run_fast_matching(profiles, query_size, match_args, expected):
         ),
         (
             match.MatchArguments(
-                Path("src/dist_mat/tests/data/R1KC1K.head.tsv"),
-                Path("src/dist_mat/tests/data/R1KC1K.tail.tsv"),
+                Path("src/beave/tests/data/R1KC1K.head.tsv"),
+                Path("src/beave/tests/data/R1KC1K.tail.tsv"),
                 float("inf"),
                 3,
                 None,
@@ -405,8 +405,8 @@ def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
     "input",
     [
         match.MatchArguments(
-            Path("src/dist_mat/tests/data/HashesOnlyQuery.csv"),
-            Path("src/dist_mat/tests/data/HashesOnlyReference.csv"),
+            Path("src/beave/tests/data/HashesOnlyQuery.csv"),
+            Path("src/beave/tests/data/HashesOnlyReference.csv"),
             float("inf"),
             0,
             None,
@@ -442,7 +442,7 @@ def test_fast_match_run_outputs(workflow_dir):
     assert output_file.exists()
     data = output_file.read_text().split("\n")
     assert data[0] == "query_id\tref_id\tdist_hamming"
-    query_sample_ids = Path(workflow_dir, "src", "dist_mat", "tests", "data", "R1KC1K.tail.tsv")
+    query_sample_ids = Path(workflow_dir, "src", "beave", "tests", "data", "R1KC1K.tail.tsv")
     query_ids = {
         int(i.split("\t")[0]) for i in query_sample_ids.read_text().split("\n")[1:] if i != ""
     }
@@ -466,11 +466,9 @@ def test_fast_match_run_outputs_scaled(workflow_dir):
     assert output_file.exists()
     data = [i for i in output_file.read_text().split("\n") if i != ""]
     assert data[0] == "query_id\tref_id\tdist_scaled"
-    query_sample_ids = Path(
-        workflow_dir, "src", "dist_mat", "tests", "data", "R1KC1K.sorted.head.tsv"
-    )
+    query_sample_ids = Path(workflow_dir, "src", "beave", "tests", "data", "R1KC1K.sorted.head.tsv")
     reference_sample_ids = Path(
-        workflow_dir, "src", "dist_mat", "tests", "data", "R1KC1K.sorted.tail.tsv"
+        workflow_dir, "src", "beave", "tests", "data", "R1KC1K.sorted.tail.tsv"
     )
     query_ids = {
         int(i.split("\t")[0]) for i in query_sample_ids.read_text().split("\n")[1:] if i != ""

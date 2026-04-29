@@ -5,6 +5,7 @@ This module contains the main cli for dist-mat.
 
 import importlib.metadata
 
+__description__ = importlib.metadata.metadata(__package__ or __name__)["Summary"]
 __version__ = importlib.metadata.version(__package__ or __name__)
 
 import argparse
@@ -14,14 +15,14 @@ import sys
 from enum import StrEnum
 from pathlib import Path
 
-from dist_mat.cluster import (
+from beave.cluster import (
     BranchLengthType,
     ClusterArguments,
     LinkageMetric,
     cluster,
 )
-from dist_mat.log import init_logger
-from dist_mat.match import MatchArguments, match
+from beave.log import init_logger
+from beave.match import MatchArguments, match
 
 logger = init_logger(__name__)
 
@@ -48,7 +49,7 @@ def path_exists(file_path: str) -> Path:
     fp = Path(file_path)
     if fp.is_file():
         return fp
-    error_message = f"Input file does not exist. {file_path}"
+    error_message = f"Sorry, input file does not exist. {file_path}"
     logger.critical(error_message)
     raise FileNotFoundError(error_message)
 
@@ -58,7 +59,7 @@ def check_if_float(float_input: str) -> float:
     try:
         converted_float: float = float(float_input)
     except ValueError:
-        error_message = f"Value  {float_input} cannot be converted to a float."
+        error_message = f"Sorry, value  {float_input} cannot be converted to a float."
         logger.critical(error_message)
         raise ValueError(error_message)
     return converted_float
@@ -69,7 +70,7 @@ def percentage_range(float_input: str) -> float:
     converted_float: float = check_if_float(float_input)
     if converted_float < 0.00 or converted_float > MAX_PERCENT:
         error_message = (
-            f"Filter threshold must be between 0.00 and 100.0. You passed: {float_input}"
+            f"Sorry, Filter threshold must be between 0.00 and 100.0. You passed: {float_input}"
         )
         logger.critical(error_message)
         raise ValueError(error_message)
@@ -81,7 +82,7 @@ def cluster_threshold(float_input: str) -> float:
     converted_input: float = float(float_input)
     if converted_input < 0.00 or converted_input == float("inf"):
         error_message = (
-            f"Threshold values must be positive and not infinity. You passed: {float_input}"
+            f"Sorry, threshold values must be positive and not infinity. You passed: {float_input}"
         )
         logger.critical(error_message)
         raise ValueError(error_message)
@@ -97,7 +98,7 @@ def verify_scaled_distance(scaled: bool, thresholds: float | list[float]) -> Non
     if test_value == float("inf") or test_value <= MAX_PERCENT:
         return
 
-    err_msg: str = "Scaled distance specified, but values greater than 100.0 are specified."
+    err_msg: str = "Sorry, scaled distance specified, but values greater than 100.0 are specified."
     logger.critical(err_msg)
     raise CommandError(err_msg)
 
@@ -182,7 +183,7 @@ def main() -> None:
     )
 
     parser = argparse.ArgumentParser(
-        description="A quick proof of concept of generic utilities for nomenclature assignment.",
+        description=__description__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=[parent_parser],
     )
