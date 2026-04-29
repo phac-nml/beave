@@ -1,4 +1,4 @@
-# `dist-mat`
+# `beave`
 
 - [Introduction](#introduction)
   - [Contact](#contact)
@@ -33,7 +33,7 @@
 
 ## Python CLI
 
-A program for generating genomic nomenclature and newick trees from allelic profiles.
+A very Canadian utility for genomic clustering and distance querying.
 
 ## C++ CLI
 
@@ -49,17 +49,17 @@ This program is under active development and is used for creating distance matri
 
 Start by pulling the repository.
 
-`git clone https://github.com/phac-nml/dist-mat`
+`git clone https://github.com/phac-nml/beave`
 
 `git submodule update --init --recursive`
 
 ## Compatibility
 
-`dist-mat` has only been tested on Linux, any system that supports G++ can compile the program. As only the C++ 23 standard library is used, the program may be able to be compiled on Windows system.
+`beave` has only been tested on Linux, any system that supports G++ can compile the program. As only the C++ 23 standard library is used, the program may be able to be compiled on Windows system.
 
 This program relies heavily on the compiler to optimize the program and add SIMD instructions, it is recommended to compile the program on your local computer to get the full benefit of the potential instruction sets your CPU may offer especially if AVX-512 instructions are available.
 
-In order to build the dist-mat Python package, you will first need to install dependencies listed in the pyproject.toml file. Python version 3.13 or greater is required, along with scikit-build-core and the nanobind Python package.
+In order to build the beave Python package, you will first need to install dependencies listed in the pyproject.toml file. Python version 3.13 or greater is required, along with scikit-build-core and the nanobind Python package.
 
 Runtime dependencies only include numpy >= 2.4.0 and polars >= 1.38.1 and scipy >= 1.17.0. These packages are not required for building the program however.
 
@@ -79,7 +79,7 @@ To build a wheel that can be distributed instead of installed, simply run `pip w
 
 2. Create the Conda environment by running `conda env create -f environment.yml`
 
-3. Activate the environment with: `conda activate dist-mat`
+3. Activate the environment with: `conda activate beave`
 
 4. `pip install .` to install for development `pip install --no-build-isolation -ve .[dev]`
 
@@ -94,7 +94,7 @@ This program is written entirely in C++ 23. The only dependencies are a G++ comp
 To build the program pull the latest branch and follow the proceeding instructions:
 
 ```
-cd ./dist-mat
+cd ./beave
 mkdir build && cd build
 cmake .. -DTARGET_GROUP=release
 make -j4
@@ -132,8 +132,8 @@ The output binary will be in the debug directory.
 The main help message for the program is shown below:
 
 ```Bash
->>> dist-mat -h
-usage: dist-mat [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing] [--scaled]
+>>> beave -h
+usage: beave [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing] [--scaled]
                 [--filter-threshold FILTER_THRESHOLD] [--verbose] [--version]
                 {cluster,match} ...
 
@@ -167,9 +167,9 @@ options:
 To run _de-novo_ clustering use the `cluster` option. The long form options for cluster are shown below:
 
 ```Bash
->>> dist-mat cluster --help
+>>> beave cluster --help
 
-usage: dist-mat cluster [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing]
+usage: beave cluster [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing]
                         [--scaled] [--filter-threshold FILTER_THRESHOLD] [--verbose] --input INPUT
                         [--tree-output TREE_OUTPUT] [--cluster-output CLUSTER_OUTPUT]
                         --thresholds THRESHOLDS [THRESHOLDS ...] [--method {single,average,complete}]
@@ -204,15 +204,15 @@ options:
                         Determine how to display tree lenghts in the newick file. [default cophenetic]
 
 >>> # Example programs
->>> dist-mat cluster --input src/dist_mat/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
->>> dist-mat cluster --input src/dist_mat/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10 9 8
+>>> beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
+>>> beave cluster --input src/beave/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10 9 8
 ```
 
 The match argument may be used to compare the distances between a small group of query samples against a group of reference samples. The parameters for running match are described below:
 
 ```Bash
->>> dist-mat match --help
-usage: dist-mat match [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing]
+>>> beave match --help
+usage: beave match [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing]
                       [--scaled] [--filter-threshold FILTER_THRESHOLD] [--verbose] --reference REFERENCE --query QUERY
                       [--threshold THRESHOLD] [--output OUTPUT]
 
@@ -240,8 +240,8 @@ options:
   --output, -o OUTPUT   Fast match result output tsv file. [default: output.tsv]
 
 >>> # Example programs
->>> dist-mat match -q src/dist_mat/tests/data/R1KC1K.head.tsv -r src/dist_mat/tests/data/R1KC1K.tail.tsv -sc --verbose
->>> dist-mat match -q src/dist_mat/tests/data/R1KC1K.head.tsv -r src/dist_mat/tests/data/R1KC1K.tail.tsv -t 101 -m average -o output.tsv -n 1
+>>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -sc --verbose
+>>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -t 101 -m average -o output.tsv -n 1
 ```
 
 ### Data Input
@@ -282,15 +282,15 @@ The general structure of the `match` output:
 The help message for the program can be brought up by executing as shown below, (-h|--help) can be used to print the help message at any time as well:
 
 ```
-$ dist-mat
+$ beave
 No args passed
 Subcommands:
  matrix - Create distance matrix with an input profile.
  fast-match - Compare a set of profiles to a set of query profiles.
 
 Examples:
-dist-mat matrix -i profiles.tsv -t 4 -sc > output.tsv
-dist-mat fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
+beave matrix -i profiles.tsv -t 4 -sc > output.tsv
+beave fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
 ```
 
 The program will display the top-level help messages with the example commands, and warn the user that no arguments have been passed.
@@ -302,15 +302,15 @@ Note - The program supports multi-threading but is intended for use on a single 
 The help message for commands is displayed below along with default settings. Flag options can be specified in a sequence as a single letter string e.g. "-sc" or sperately "-s -c". When passing characters such as delimiters you may have to specify ANSI C quoted strings in bash (e.g to specify a tab delimiter $'\t'). The default values are specified in the help message.
 
 ```
-$ dist-mat matrix
+$ beave matrix
 
 Subcommands:
  matrix - Create distance matrix with an input profile.
  fast-match - Compare a set of profiles to a set of query profiles.
 
 Examples:
-dist-mat matrix -i profiles.tsv -t 4 -sc > output.tsv
-dist-mat fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
+beave matrix -i profiles.tsv -t 4 -sc > output.tsv
+beave fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
 
 Command Options
 
@@ -338,8 +338,8 @@ Subcommands:
  fast-match - Compare a set of profiles to a set of query profiles.
 
 Examples:
-dist-mat matrix -i profiles.tsv -t 4 -sc > output.tsv
-dist-mat fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
+beave matrix -i profiles.tsv -t 4 -sc > output.tsv
+beave fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
 
 Command Options
 
