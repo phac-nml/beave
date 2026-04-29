@@ -231,7 +231,7 @@ array_fast_match fast_match(array np_in, size_t threads, bool scaled,
   return array_fast_match(output, {rows, records_per_row}, owner);
 }
 
-NB_MODULE(dist_mat_ext, m) {
+NB_MODULE(beave_ext, m) {
 
   m.doc() = "Fast distance matrix computation exploiting simd intrinsics and "
             "C++ parallelism."; // module docstring

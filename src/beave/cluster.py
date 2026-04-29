@@ -9,9 +9,9 @@ import polars as pl
 import scipy
 from numpy import typing as npt
 
-import dist_mat as dm
-from dist_mat.log import init_logger
-from dist_mat.transform_data import (
+import beave
+from beave.log import init_logger
+from beave.transform_data import (
     prep_data,
     read_input_profiles,
     subset_columns,
@@ -26,7 +26,7 @@ class ValueLeavesError(Exception):
 
     def __init__(self, n_leaves: int, n_objects: int) -> None:
         """ValueError for unequal numbers of leaves and sample names."""
-        super().__init__(f"Expected {n_objects} leaf names, got {n_leaves}.")
+        super().__init__(f"Sorry, expected {n_objects} leaf names, got {n_leaves}.")
 
 
 class LinkageMetric(StrEnum):
@@ -130,7 +130,7 @@ def compute_dists(
     """Compute the 1D array required by scipy for generation of the linkage matrix."""
     prepared_profiles = prep_data(profiles, filter_threshold, transform_data_categorical_encoding)
     logger.debug("Tranformed data for computation in C++ sub-routine.")
-    distances = dm.calc_dists(prepared_profiles, threads, scaled, count_missing)
+    distances = beave.calc_dists(prepared_profiles, threads, scaled, count_missing)
     logger.debug("Finished C++ sub-routine.")
     return distances
 

@@ -2,9 +2,9 @@
 
 import pytest  # noqa: I001
 
-import dist_mat
-from dist_mat import cluster
-from dist_mat import transform_data as transform
+import beave
+from beave import cluster
+from beave import transform_data as transform
 
 import hashlib
 from pathlib import Path
@@ -39,7 +39,7 @@ def test_benchmark_data_transformation_hashes(benchmark, test_df):
     "input,delimiter,threads,expected",
     [
         (
-            Path("src/dist_mat/tests/data/simple_test_profiles.csv"),
+            Path("src/beave/tests/data/simple_test_profiles.csv"),
             ",",
             1,
             pl.DataFrame(
@@ -52,7 +52,7 @@ def test_benchmark_data_transformation_hashes(benchmark, test_df):
             ),
         ),
         (
-            Path("src/dist_mat/tests/data/simple_test_profiles.tsv"),
+            Path("src/beave/tests/data/simple_test_profiles.tsv"),
             "\t",
             1,
             pl.DataFrame(
@@ -953,7 +953,7 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
 )
 def test_calc_dists(profiles, count_missing, scaled, expected):
     """Test distance calculation output is correct."""
-    output = dist_mat.calc_dists(profiles, 1, scaled, count_missing)
+    output = beave.calc_dists(profiles, 1, scaled, count_missing)
     np.testing.assert_equal(output, expected)
 
 
@@ -965,16 +965,16 @@ def test_calc_dists(profiles, count_missing, scaled, expected):
 )
 def test_calc_dists_fuzzing_hypothesis_no_infinites(arr):
     """Tests to make sure calc_dists always returns a finite answer."""
-    output = np.isfinite(dist_mat.calc_dists(arr, 1, True, False))
+    output = np.isfinite(beave.calc_dists(arr, 1, True, False))
     assert np.all(output)
 
 
 @pytest.mark.parametrize(
     "input,scaled,count_missing",
     [
-        (Path("src/dist_mat/tests/data/R1KC1K.tsv"), True, True),
-        (Path("src/dist_mat/tests/data/R1KC1K.tsv"), False, True),
-        (Path("src/dist_mat/tests/data/R1KC1K.tsv"), False, True),
+        (Path("src/beave/tests/data/R1KC1K.tsv"), True, True),
+        (Path("src/beave/tests/data/R1KC1K.tsv"), False, True),
+        (Path("src/beave/tests/data/R1KC1K.tsv"), False, True),
     ],
 )
 def test_calc_dists_file_inputs(input, scaled, count_missing):
@@ -1031,5 +1031,5 @@ def test_linkage_matrix_to_nwk(linkage, sample_ids, expected):
 
 def test_get_subset_columns():
     """Test for get_subset_columns."""
-    cols = transform.get_subset_columns(Path("src/dist_mat/tests/data/test_columns.txt"))
+    cols = transform.get_subset_columns(Path("src/beave/tests/data/test_columns.txt"))
     assert cols == {"sample", "col1", "col2", "col3"}

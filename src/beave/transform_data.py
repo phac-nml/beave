@@ -9,7 +9,7 @@ import numpy as np
 import numpy.typing as npt
 import polars as pl
 
-from dist_mat.log import init_logger
+from beave.log import init_logger
 
 logger = init_logger(__name__)
 
@@ -26,7 +26,7 @@ class AllColumnsFilteredError(Exception):
 
     def __init__(self, threshold: float) -> None:
         """Error raised if all column values removed."""
-        super().__init__(f"All data removed after filtering at: {threshold}.")
+        super().__init__(f"Sorry, all data removed after filtering at: {threshold}.")
 
 
 class MissingIDValueError(Exception):
@@ -55,7 +55,10 @@ def subset_columns(
     columns: set[str]
 
     if columns_path is None and columns_keep is None:
-        error_msg = "Subset columns is being called with two None options."
+        error_msg = (
+            "Sorry, subset columns is being called with two None options. e.g. Neither a path to a"
+            " file of columns or list of columns to keep has been provided to the function."
+        )
         raise ValueError(error_msg)
 
     if columns_path:
@@ -80,8 +83,8 @@ def verify_dataframe_integrity(profiles: pl.DataFrame) -> None:
     """Perform sanity checks on dataframes shape."""
     if profiles.shape[1] <= 1:
         err_string = (
-            f"{profiles.shape[1]} allele loci column(s) provied as input, but atleast two loci"
-            f" columns are needed."
+            f"Sorry, {profiles.shape[1]} allele loci column(s) provied as input, but atleast two "
+            f"loci columns are needed."
         )
 
         logger.critical(err_string)
@@ -89,7 +92,7 @@ def verify_dataframe_integrity(profiles: pl.DataFrame) -> None:
 
     if profiles.shape[0] <= 1:
         err_string = (
-            f"{profiles.shape[0]} allele loci profile(s) provided as input, but atleast two "
+            f"Sorry, {profiles.shape[0]} allele loci profile(s) provided as input, but atleast two "
             f"loci profiles are needed."
         )
         logger.critical(err_string)
@@ -97,16 +100,16 @@ def verify_dataframe_integrity(profiles: pl.DataFrame) -> None:
 
     if profiles.select(pl.nth(0).null_count())[0, 0] >= 1:
         err_string = (
-            "Missing values identified in left most column (ID column). The left most column "
-            "can have no missing values."
+            "Sorry, missing values identified in left most column (ID column). The left most "
+            "column can have no missing values."
         )
         logger.critical(err_string)
         raise MissingIDValueError(err_string)
 
     if not profiles.select(pl.nth(0)).is_unique().all():
         err_string = (
-            "Duplicate values identified in the left most column (ID column). The leftmost column"
-            " can have no missing values."
+            "Sorry, duplicate values identified in the left most column (ID column). The leftmost "
+            "column must have no missing values."
         )
         logger.critical(err_string)
         raise pl.exceptions.DuplicateError(err_string)
@@ -236,7 +239,7 @@ def prep_data(
     threshold: float,
     transformation_func: Callable[[pl.DataFrame, float], pl.DataFrame],
 ) -> npt.NDArray:
-    """Prepare profiles for computation by the the calc_dists function of dist_mat."""
+    """Prepare profiles for computation using the the calc_dists function of beave."""
     data_columns = profiles.columns[1:]  # only apply functions to loci columns
     profiles = transformation_func(profiles, threshold)
     profiles_numpy = (

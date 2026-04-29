@@ -9,9 +9,9 @@ import numpy as np
 import numpy.typing as npt
 import polars as pl
 
-import dist_mat.transform_data as transform
-from dist_mat import fast_match
-from dist_mat.log import init_logger
+import beave.transform_data as transform
+from beave import fast_match
+from beave.log import init_logger
 
 logger = init_logger(__name__)
 
@@ -57,12 +57,12 @@ class ColumnsDoNotMatchError(ValueError):
         with information that may obscure other useful log messages.
         """
         output_string: str = (
-            f"The loci in your reference set do not match those in your query."
+            f"Sorry, the loci in your reference set do not match those in your query."
             f" Too many differences to list: {len(values)}"
         )
         if len(values) < self.__max_print_value:
             output_string = (
-                f"The loci in your reference set do not match those "
+                f"Sorry, the loci in your reference set do not match those "
                 f"in your query.\n{'\n-'.join(values)}"
             )
         super().__init__(output_string)
