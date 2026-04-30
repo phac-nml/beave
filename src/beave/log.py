@@ -6,6 +6,10 @@ we use a simple filter instead of a complicated configuration setup for the prog
 
 It is worth noting that filters are much slower so if we add log messages in a hot
 loop program performance will suffer.
+
+The file handling logger is added at run time in-order to place the final log
+file in the output directory, rather than in the working directory. This is why
+a filter is used instead of a global configuration.
 """
 
 import logging
@@ -43,7 +47,7 @@ def add_file_logger(output_directory: Path) -> None:
     """Attach a file handle to the root logger."""
     root_logger: logging.Logger = logging.getLogger()
     output_log: Path = output_directory / "beave.log"
-    handler: RotatingFileHandler = RotatingFileHandler(str(output_log), backupCount=10)
+    handler: RotatingFileHandler = RotatingFileHandler(str(output_log), backupCount=10, delay=True)
     if output_log.is_file():
         handler.doRollover()  # make new log file for each new run
     handler.setFormatter(logging.Formatter(LOGGING_FORMAT))

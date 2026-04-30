@@ -298,9 +298,9 @@ def main() -> None:
         """Set the root loggers level to debug if verbose is enabled."""
         log.SHARED_STREAM_HANDLER.addFilter(log.DebugFilter())
 
+    log.add_file_logger(args.output)
     match args.command:
         case Commands.CLUSTER:
-            log.add_file_logger(args.output)
             verify_normalized_distance(args.normalize_distance, args.thresholds)
             cluster_output = args.output / "clusters.tsv"
             tree_output = args.output / "tree.nwk"
@@ -320,7 +320,6 @@ def main() -> None:
             )
             cluster(cluster_args)
         case Commands.MATCH:
-            log.add_file_logger(args.output)
             verify_normalized_distance(args.normalize_distance, args.threshold)
             output_file = args.output / "results.tsv"
             match_args = MatchArguments(
