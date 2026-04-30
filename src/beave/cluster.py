@@ -62,7 +62,7 @@ class ClusterArguments:
     cores: int
     columns_path: Path | None
     count_missing: bool
-    scaled: bool
+    normalize_distance: bool
     tree_output: Path
     cluster_outputs: Path
     branch_length_type: BranchLengthType
@@ -123,14 +123,14 @@ def linkage_matrix_to_nwk(linkage_matrix: npt.NDArray, sample_ids: list[str]) ->
 def compute_dists(
     profiles: pl.DataFrame,
     count_missing: bool,
-    scaled: bool,
+    normalize: bool,
     threads: int,
     filter_threshold: float = 1.0,
 ) -> npt.NDArray:
     """Compute the 1D array required by scipy for generation of the linkage matrix."""
     prepared_profiles = prep_data(profiles, filter_threshold, transform_data_categorical_encoding)
     logger.debug("Tranformed data for computation in C++ sub-routine.")
-    distances = beave.calc_dists(prepared_profiles, threads, scaled, count_missing)
+    distances = beave.calc_dists(prepared_profiles, threads, normalize, count_missing)
     logger.debug("Finished C++ sub-routine.")
     return distances
 
@@ -203,7 +203,7 @@ def cluster(cluster_args: ClusterArguments) -> None:
     distances = compute_dists(
         profiles,
         cluster_args.count_missing,
-        cluster_args.scaled,
+        cluster_args.normalize_distance,
         cluster_args.cores,
         cluster_args.filter_threshold,
     )

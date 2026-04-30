@@ -18,7 +18,7 @@ class DistanceTypes(StrEnum):
     """String storage for the distance types used."""
 
     HAMMING = "hamming"
-    SCALED = "scaled"
+    NORMALIZED = "normalized"
 
 
 class AllColumnsFilteredError(Exception):

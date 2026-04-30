@@ -9,22 +9,21 @@ __description__ = importlib.metadata.metadata(__package__ or __name__)["Summary"
 __version__ = importlib.metadata.version(__package__ or __name__)
 
 import argparse
-import logging
 import os
 import sys
 from enum import StrEnum
 from pathlib import Path
 
+from beave import log
 from beave.cluster import (
     BranchLengthType,
     ClusterArguments,
     LinkageMetric,
     cluster,
 )
-from beave.log import init_logger
 from beave.match import MatchArguments, match
 
-logger = init_logger(__name__)
+logger = log.init_logger(__name__)
 
 MAX_PERCENT: float = 100.0
 
@@ -89,26 +88,41 @@ def cluster_threshold(float_input: str) -> float:
     return converted_input
 
 
-def verify_scaled_distance(scaled: bool, thresholds: float | list[float]) -> None:
-    """Verify scaled distance thresholds."""
-    if not scaled:
+def verify_normalized_distance(normalized: bool, thresholds: float | list[float]) -> None:
+    """Verify normalized distance thresholds."""
+    if not normalized:
         return
 
-    test_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
-    if test_value == float("inf") or test_value <= MAX_PERCENT:
+    max_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
+    min_value: float = min(thresholds) if isinstance(thresholds, list) else thresholds
+    max_value_exceeded: bool = max_value == float("inf") or max_value <= MAX_PERCENT
+    min_value_exceeded: bool = min_value <= 0.0
+    if not max_value_exceeded and not min_value_exceeded:
         return
 
-    err_msg: str = "Sorry, scaled distance specified, but values greater than 100.0 are provided."
-    logger.critical(err_msg)
-    raise CommandError(err_msg)
+    err_msg_max: str = (
+        "Sorry, normalized distance specified, but values greater than 100.0 are provided."
+    )
+    err_msg_min: str = (
+        "Sorry, normalized distance specified, but values less or equal to 0.0 are provided."
+    )
+
+    err_msg = []
+    if max_value_exceeded:
+        err_msg.append(err_msg_max)
+    if min_value_exceeded:
+        err_msg.append(err_msg_min)
+
+    logger.critical("\n".join(err_msg))
+    raise CommandError("\n".join(err_msg))
 
 
-def output_file(output: str) -> Path:
-    """Create directory for output results file if needed."""
+def output_directory(output: str) -> Path:
+    """Create directory for output files."""
     handle: Path = Path(output)
-    if not handle.parent.is_dir():
+    if not handle.is_dir():
         logger.debug("Creating output directory structure.")
-        handle.parent.mkdir(parents=True, exist_ok=True)
+        handle.mkdir(parents=True, exist_ok=True)
     return handle
 
 
@@ -125,23 +139,22 @@ def main() -> None:
         number_of_cores_default = 1
 
     parent_parser.add_argument(
-        "--n-threads",
-        "-n",
+        "--cores",
+        "-c",
         help="Specify the number of threads to be used. [default %(default)d]",
         type=int,
         default=number_of_cores_default,
     )
     parent_parser.add_argument(
         "--delimiter",
-        "-d",
         help="Input alleles delimiter. [default \\t]",
         type=str,
         default="\t",
     )
 
     parent_parser.add_argument(
-        "--columns",
-        "-k",
+        "--columns-subset",
+        "-s",
         help=(
             "A file containing a single column of the column names to subset from the passed "
             "allele profiles."
@@ -152,16 +165,16 @@ def main() -> None:
 
     parent_parser.add_argument(
         "--count-missing",
-        "-c",
+        "-m",
         help="Count missing values as differences.",
         action="store_true",
     )
 
     parent_parser.add_argument(
-        "--scaled",
-        "-s",
+        "--normalize-distance",
+        "-n",
         help=(
-            "Compute the scaled distance. Distance is presented as a percentage, or a value "
+            "Compute the normalized distance. Distance is presented as a percentage, or a value "
             "between [0.0-100.0]"
         ),
         action="store_true",
@@ -205,26 +218,20 @@ def main() -> None:
     )
 
     parser_cluster.add_argument(
-        "--tree-output",
-        "-t",
-        help="File path to write generated tree. [default %(default)s]",
-        type=output_file,
+        "--output",
+        "-o",
+        type=output_directory,
         required=False,
-        default="clusters.nwk",
-    )
-
-    parser_cluster.add_argument(
-        "--cluster-output",
-        "-l",
-        help="File path to write generated clusters. [default %(default)s]",
-        type=output_file,
-        required=False,
-        default="clusters.tsv",
+        help=(
+            "Output directory for generated tree and clusters, directory will be treated if does"
+            " not exist. [default: %(default)s]"
+        ),
+        default=os.getcwd(),
     )
 
     parser_cluster.add_argument(
         "--thresholds",
-        "-p",
+        "-t",
         help="List of threshold values to use.",
         nargs="+",
         required=True,
@@ -233,15 +240,15 @@ def main() -> None:
     )
 
     parser_cluster.add_argument(
-        "--method",
-        "-m",
+        "--linkage-method",
+        "-l",
         default=LinkageMetric.AVERAGE.value,
         help="Hierarchical clustering linkage to use. [default: %(default)s]",
         choices=[i.value for i in LinkageMetric],
     )
 
     parser_cluster.add_argument(
-        "--tree-distances",
+        "--branch-type",
         "-b",
         default=BranchLengthType.COPHENETIC.value,
         choices=[i.value for i in BranchLengthType],
@@ -279,49 +286,54 @@ def main() -> None:
     parser_match.add_argument(
         "--output",
         "-o",
-        type=output_file,
+        type=output_directory,
         required=False,
-        help="Fast match result output tsv file. [default: %(default)s]",
-        default="output.tsv",
+        help=("Output directory for calculated distances. [default: %(default)s]"),
+        default=os.getcwd(),
     )
 
     args = parser.parse_args(sys.argv[1:])
 
-    if args.verbose:
+    if not args.verbose:
         """Set the root loggers level to debug if verbose is enabled."""
-        logging.getLogger().setLevel(logging.DEBUG)
+        log.SHARED_STREAM_HANDLER.addFilter(log.DebugFilter())
 
     match args.command:
         case Commands.CLUSTER:
-            verify_scaled_distance(args.scaled, args.thresholds)
+            log.add_file_logger(args.output)
+            verify_normalized_distance(args.normalize_distance, args.thresholds)
+            cluster_output = args.output / "clusters.tsv"
+            tree_output = args.output / "tree.nwk"
             cluster_args = ClusterArguments(
                 args.input,
                 args.delimiter,
                 args.thresholds,
                 args.method,
-                args.n_threads,
-                args.columns,
+                args.cores,
+                args.columns_subset,
                 args.count_missing,
-                args.scaled,
-                args.tree_output,
-                args.cluster_output,
+                args.normalize_distance,
+                tree_output,
+                cluster_output,
                 args.tree_distances,
                 args.filter_threshold,
             )
             cluster(cluster_args)
         case Commands.MATCH:
-            verify_scaled_distance(args.scaled, args.threshold)
+            log.add_file_logger(args.output)
+            verify_normalized_distance(args.normalize_distance, args.threshold)
+            output_file = args.output / "results.tsv"
             match_args = MatchArguments(
                 args.query,
                 args.reference,
                 args.threshold,
-                args.n_threads,
-                args.columns,
+                args.cores,
+                args.columns_subset,
                 args.delimiter,
                 args.count_missing,
-                args.scaled,
+                args.normalize_distance,
                 args.filter_threshold,
-                args.output,
+                output_file,
             )
             match(match_args)
         case _:

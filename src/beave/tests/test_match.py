@@ -78,13 +78,13 @@ def test_merge_query_and_reference(query, reference, expected):
 
 
 @pytest.mark.parametrize(
-    "input,sample_names,scaled,expected",
+    "input,sample_names,normalized,expected",
     [
         (
             np.array([[0, 1, 3], [0, 2, 6], [0, 3, 9]], dtype=np.float32),
             ["1", "2", "3", "4"],
             True,
-            ["query_id\tref_id\tdist_scaled", "1\t2\t3.0", "1\t3\t6.0", "1\t4\t9.0", ""],
+            ["query_id\tref_id\tdist_normalized", "1\t2\t3.0", "1\t3\t6.0", "1\t4\t9.0", ""],
         ),
         (
             np.array([[0, 1, 3], [0, 2, 6], [0, 3, 9]], dtype=np.float32),
@@ -94,17 +94,17 @@ def test_merge_query_and_reference(query, reference, expected):
         ),
     ],
 )
-def test_prepare_fast_match_outputs(tmp_path, input, sample_names, scaled, expected):
+def test_prepare_fast_match_outputs(tmp_path, input, sample_names, normalized, expected):
     """Write out calculated fast-match outputs."""
     file_out = tmp_path / "output.tsv"
 
     @dataclass
     class MatchArguments:
         output: Path
-        scaled: bool
+        normalized: bool
         delimiter: str
 
-    input_args = MatchArguments(output=file_out, scaled=scaled, delimiter="\t")
+    input_args = MatchArguments(output=file_out, normalized=normalized, delimiter="\t")
     match.prepare_fast_match_outputs(input, sample_names, input_args)  # type: ignore[reportArgumentType]
     text = file_out.read_text().split("\n")
     assert text == expected
@@ -320,7 +320,7 @@ def test_run_fast_matching(profiles, query_size, match_args, expected):
                 Path(""),
             ),
             1000,
-            "query_id\tref_id\tdist_scaled",
+            "query_id\tref_id\tdist_normalized",
         ),
         (
             match.MatchArguments(
@@ -336,7 +336,7 @@ def test_run_fast_matching(profiles, query_size, match_args, expected):
                 Path(""),
             ),
             1000,
-            "query_id\tref_id\tdist_scaled",
+            "query_id\tref_id\tdist_normalized",
         ),
         (
             match.MatchArguments(
@@ -393,7 +393,7 @@ def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
         q = int(q)
         r = int(r)
         dist = float(dist)
-        if input.scaled:
+        if input.normalized:
             expected = (abs(q - r) / profile_width) * 100.0
         else:
             expected = float(dist)
@@ -459,13 +459,13 @@ def test_fast_match_run_outputs(workflow_dir):
     assert query_ids_read == query_ids
 
 
-@pytest.mark.workflow("Run fast-matching scaled")
-def test_fast_match_run_outputs_scaled(workflow_dir):
-    """Verify output of fast matching is correct with scaled outputs."""
+@pytest.mark.workflow("Run fast-matching normalized")
+def test_fast_match_run_outputs_normalized(workflow_dir):
+    """Verify output of fast matching is correct with normalized outputs."""
     output_file = Path(workflow_dir, "output.tsv")
     assert output_file.exists()
     data = [i for i in output_file.read_text().split("\n") if i != ""]
-    assert data[0] == "query_id\tref_id\tdist_scaled"
+    assert data[0] == "query_id\tref_id\tdist_normalized"
     query_sample_ids = Path(workflow_dir, "src", "beave", "tests", "data", "R1KC1K.sorted.head.tsv")
     reference_sample_ids = Path(
         workflow_dir, "src", "beave", "tests", "data", "R1KC1K.sorted.tail.tsv"
@@ -504,7 +504,7 @@ def test_fast_match_run_outputs_scaled(workflow_dir):
 
 @pytest.mark.workflow("Run fast-matching subset columns")
 def test_fast_match_subset_columns(workflow_dir):
-    """Verify output of fast matching is correct with scaled outputs.
+    """Verify output of fast matching is correct with normalized outputs.
 
     I have created a set of columns to pass to the program so that only the first 10 columns
     are saved.

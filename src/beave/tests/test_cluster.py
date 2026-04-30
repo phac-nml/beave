@@ -914,7 +914,7 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
 
 
 @pytest.mark.parametrize(
-    "profiles,count_missing,scaled,expected",
+    "profiles,count_missing,normalized,expected",
     [
         (
             np.array(
@@ -951,9 +951,9 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
         ),
     ],
 )
-def test_calc_dists(profiles, count_missing, scaled, expected):
+def test_calc_dists(profiles, count_missing, normalized, expected):
     """Test distance calculation output is correct."""
-    output = beave.calc_dists(profiles, 1, scaled, count_missing)
+    output = beave.calc_dists(profiles, 1, normalized, count_missing)
     np.testing.assert_equal(output, expected)
 
 
@@ -970,17 +970,17 @@ def test_calc_dists_fuzzing_hypothesis_no_infinites(arr):
 
 
 @pytest.mark.parametrize(
-    "input,scaled,count_missing",
+    "input,normalized,count_missing",
     [
         (Path("src/beave/tests/data/R1KC1K.tsv"), True, True),
         (Path("src/beave/tests/data/R1KC1K.tsv"), False, True),
         (Path("src/beave/tests/data/R1KC1K.tsv"), False, True),
     ],
 )
-def test_calc_dists_file_inputs(input, scaled, count_missing):
+def test_calc_dists_file_inputs(input, normalized, count_missing):
     """Test inputs of calc dists is correct with known input."""
     profiles: pl.DataFrame = cluster.read_input_profiles(input, "\t", 1)
-    dists: npt.NDArray = cluster.compute_dists(profiles, count_missing, scaled, 1)
+    dists: npt.NDArray = cluster.compute_dists(profiles, count_missing, normalized, 1)
     matrix: npt.NDArray = scipy.spatial.distance.squareform(
         dists
     )  # conversion to squareform so iteration of the matrix is simpler as we do not need to
@@ -989,7 +989,7 @@ def test_calc_dists_file_inputs(input, scaled, count_missing):
         sample1: int = int(profiles.item(i, "sample"))
         for f in range(0, profiles.height):
             sample2: int = int(profiles.item(f, "sample"))
-            if scaled:
+            if normalized:
                 dist: float = (abs(sample1 - sample2) / float(profiles.height)) * 100.0
                 assert dist == pytest.approx(matrix[i][f], rel=1e-6)
             else:
