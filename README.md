@@ -133,11 +133,11 @@ The main help message for the program is shown below:
 
 ```Bash
 >>> beave -h
-usage: beave [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing] [--scaled]
-                [--filter-threshold FILTER_THRESHOLD] [--verbose] [--version]
-                {cluster,match} ...
+usage: beave [-h] [--cores CORES] [--delimiter DELIMITER] [--columns-subset COLUMNS_SUBSET] [--count-missing] [--normalize-distance]
+             [--filter-threshold FILTER_THRESHOLD] [--verbose] [--version]
+             {cluster,match} ...
 
-A quick proof of concept of generic utilities for nomenclature assignment.
+A very Canadian utility for genomic clustering and distance querying.
 
 positional arguments:
   {cluster,match}       Select a program to run.
@@ -146,22 +146,20 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  --n-threads, -n N_THREADS
-                        Specify the number of threads to be used. [default 12]
-  --delimiter, -d DELIMITER
+  --cores, -c CORES     Specify the number of threads to be used. [default 12]
+  --delimiter DELIMITER
                         Input alleles delimiter. [default \t] (default: )
-  --columns, -k COLUMNS
-                        A file containing a single column of the column names to subset from the passed allele
-                        profiles. (default: None)
-  --count-missing, -c   Count missing values in allele profiles differences. (default: False)
-  --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between
-                        0.0-100.0 (default: False)
+  --columns-subset, -s COLUMNS_SUBSET
+                        A file containing a single column of the column names to subset from the passed allele profiles. (default: None)
+  --count-missing, -m   Count missing values as differences. (default: False)
+  --normalize-distance, -n
+                        Compute the normalized distance. Distance is presented as a percentage, or a value between [0.0-100.0] (default:
+                        False)
   --filter-threshold, -f FILTER_THRESHOLD
-                        Excluded samples from analysis if it is missing more than the specified percentage of data.
-                        Must be between 0.0 and 100.0. [default 100.0]
+                        Exclude samples from analysis if they are missing more than the specified percentage of data. Must be between
+                        [0.0-100.0]. [default 100.0] (default: 1.0)
   --verbose             Display logger debug messages. (default: False)
   --version, -v         show program's version number and exit
-
 ```
 
 To run _de-novo_ clustering use the `cluster` option. The long form options for cluster are shown below:
@@ -169,79 +167,72 @@ To run _de-novo_ clustering use the `cluster` option. The long form options for 
 ```Bash
 >>> beave cluster --help
 
-usage: beave cluster [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing]
-                        [--scaled] [--filter-threshold FILTER_THRESHOLD] [--verbose] --input INPUT
-                        [--tree-output TREE_OUTPUT] [--cluster-output CLUSTER_OUTPUT]
-                        --thresholds THRESHOLDS [THRESHOLDS ...] [--method {single,average,complete}]
-                        [--tree-distances {patristic,cophenetic}]
+usage: beave cluster [-h] [--cores CORES] [--delimiter DELIMITER] [--columns-subset COLUMNS_SUBSET] [--count-missing]
+                     [--normalize-distance] [--filter-threshold FILTER_THRESHOLD] [--verbose] --input INPUT [--output OUTPUT]
+                     --thresholds THRESHOLDS [THRESHOLDS ...] [--linkage-method {single,average,complete}]
+                     [--branch-type {patristic,cophenetic}]
 
 options:
   -h, --help            show this help message and exit
-  --n-threads, -n N_THREADS
-                        Specify the number of threads to be used. [default 12]
-  --delimiter, -d DELIMITER
+  --cores, -c CORES     Specify the number of threads to be used. [default 12]
+  --delimiter DELIMITER
                         Input alleles delimiter. [default \t]
-  --columns, -k COLUMNS
-                        A file containing a single column of the column names to subset from the passed allele
-                        profiles.
-  --count-missing, -c   Count missing values as differences.
-  --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between
-                        [0.0-100.0]
+  --columns-subset, -s COLUMNS_SUBSET
+                        A file containing a single column of the column names to subset from the passed allele profiles.
+  --count-missing, -m   Count missing values as differences.
+  --normalize-distance, -n
+                        Compute the normalized distance. Distance is presented as a percentage, or a value between [0.0-100.0]
   --filter-threshold, -f FILTER_THRESHOLD
-                        Excluded samples from analysis if it is missing more than the specified percentage of data.
-                        Must be between [0.0-100.0]. [default 100.0]
+                        Exclude samples from analysis if they are missing more than the specified percentage of data. Must be between
+                        [0.0-100.0]. [default 100.0]
   --verbose             Display logger debug messages.
   --input, -i INPUT     Input alleles.
-  --tree-output, -t TREE_OUTPUT
-                        File path to write generated tree. [default clusters.nwk]
-  --cluster-output, -l CLUSTER_OUTPUT
-                        File path to write generated clusters. [default clusters.tsv]
-  --thresholds, -p THRESHOLDS [THRESHOLDS ...]
+  --output, -o OUTPUT   Output directory for generated tree and clusters, directory will be treated if does not exist. [default:
+                        /home/CSCScience.ca/mwells/Development/beave]
+  --thresholds, -t THRESHOLDS [THRESHOLDS ...]
                         List of threshold values to use.
-  --method, -m {single,average,complete}
+  --linkage-method, -l {single,average,complete}
                         Hierarchical clustering linkage to use. [default: average]
-  --tree-distances, -b {patristic,cophenetic}
-                        Determine how to display tree lenghts in the newick file. [default cophenetic]
+  --branch-type, -b {patristic,cophenetic}
+                        Determine how to display tree lenghts in the Newick file. [default cophenetic]
 
 >>> # Example programs
->>> beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
->>> beave cluster --input src/beave/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10 9 8
+>>> beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -o out -l average -nm -b cophenetic -c 2 -t 1 0.5 --delimiter ,
+>>> beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -b cophenetic -c 1 --thresholds 10 9 8
 ```
 
 The match argument may be used to compute pairwise distances between a group of query samples against a group of reference samples. The parameters for running match are described below:
 
 ```Bash
 >>> beave match --help
-usage: beave match [-h] [--n-threads N_THREADS] [--delimiter DELIMITER] [--columns COLUMNS] [--count-missing]
-                      [--scaled] [--filter-threshold FILTER_THRESHOLD] [--verbose] --reference REFERENCE --query QUERY
-                      [--threshold THRESHOLD] [--output OUTPUT]
+usage: beave match [-h] [--cores CORES] [--delimiter DELIMITER] [--columns-subset COLUMNS_SUBSET] [--count-missing]
+                   [--normalize-distance] [--filter-threshold FILTER_THRESHOLD] [--verbose] --reference REFERENCE --query QUERY
+                   [--threshold THRESHOLD] [--output OUTPUT]
 
 options:
   -h, --help            show this help message and exit
-  --n-threads, -n N_THREADS
-                        Specify the number of threads to be used. [default 12]
-  --delimiter, -d DELIMITER
+  --cores, -c CORES     Specify the number of threads to be used. [default 12]
+  --delimiter DELIMITER
                         Input alleles delimiter. [default \t]
-  --columns, -k COLUMNS
-                        A file containing a single column of the column names to subset from the passed allele
-                        profiles.
-  --count-missing, -c   Count missing values as differences.
-  --scaled, -s          Compute the scaled distance. Distance is presented as a percentage, or a value between
-                        [0.0-100.0]
+  --columns-subset, -s COLUMNS_SUBSET
+                        A file containing a single column of the column names to subset from the passed allele profiles.
+  --count-missing, -m   Count missing values as differences.
+  --normalize-distance, -n
+                        Compute the normalized distance. Distance is presented as a percentage, or a value between [0.0-100.0]
   --filter-threshold, -f FILTER_THRESHOLD
-                        Excluded samples from analysis if it is missing more than the specified percentage of data.
-                        Must be between [0.0-100.0]. [default 100.0]
+                        Exclude samples from analysis if they are missing more than the specified percentage of data. Must be between
+                        [0.0-100.0]. [default 100.0]
   --verbose             Display logger debug messages.
   --reference, -r REFERENCE
-                        Profiles to compare against.
+                        Profiles to compare against. Query samples will be included in comparisons.
   --query, -q QUERY     Profiles containing new-samples for comparisons.
   --threshold, -t THRESHOLD
                         Only report distances below specified threshold. [default: inf]
-  --output, -o OUTPUT   Fast match result output tsv file. [default: output.tsv]
+  --output, -o OUTPUT   Output directory for calculated distances. [default: /home/CSCScience.ca/mwells/Development/beave]
 
 >>> # Example programs
->>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -sc --verbose
->>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -t 101 -m average -o output.tsv -n 1
+>>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -nm --verbose
+>>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -t 101 -l average -c 8
 ```
 
 #### Data Input
@@ -269,11 +260,11 @@ The output of `match` is a single file showing the query sample, the reference s
 
 The general structure of the `match` output:
 
-| query_id | ref_id | dist\_{hamming,scaled} |
-| -------- | ------ | ---------------------- |
-| 1        | 2      | 4                      |
-| 1        | 3      | 8                      |
-| 1        | 4      | 10                     |
+| query_id | ref_id | dist\_{hamming,normalized} |
+| -------- | ------ | -------------------------- |
+| 1        | 2      | 4                          |
+| 1        | 3      | 8                          |
+| 1        | 4      | 10                         |
 
 ## Using C++ Binary
 
