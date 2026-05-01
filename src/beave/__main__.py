@@ -16,7 +16,7 @@ from pathlib import Path
 
 from beave import log
 from beave.cluster import (
-    BranchLengthType,
+    BranchType,
     ClusterArguments,
     LinkageMetric,
     cluster,
@@ -95,16 +95,18 @@ def verify_normalized_distance(normalized: bool, thresholds: float | list[float]
 
     max_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
     min_value: float = min(thresholds) if isinstance(thresholds, list) else thresholds
-    max_value_exceeded: bool = max_value == float("inf") or max_value <= MAX_PERCENT
+    max_value_exceeded: bool = max_value == float("inf") or max_value >= MAX_PERCENT
     min_value_exceeded: bool = min_value <= 0.0
     if not max_value_exceeded and not min_value_exceeded:
         return
 
     err_msg_max: str = (
-        "Sorry, normalized distance specified, but values greater than 100.0 are provided."
+        f"Sorry, normalized distance specified, but values greater than 100.0"
+        f" are provided. {max_value}"
     )
     err_msg_min: str = (
-        "Sorry, normalized distance specified, but values less or equal to 0.0 are provided."
+        f"Sorry, normalized distance specified, but values less or equal to 0.0"
+        f" are provided. {min_value}"
     )
 
     err_msg = []
@@ -250,8 +252,8 @@ def main() -> None:
     parser_cluster.add_argument(
         "--branch-type",
         "-b",
-        default=BranchLengthType.COPHENETIC.value,
-        choices=[i.value for i in BranchLengthType],
+        default=BranchType.COPHENETIC.value,
+        choices=[i.value for i in BranchType],
         help="Determine how to display tree lenghts in the Newick file. [default %(default)s]",
     )
 
@@ -308,14 +310,14 @@ def main() -> None:
                 args.input,
                 args.delimiter,
                 args.thresholds,
-                args.method,
+                args.linkage_method,
                 args.cores,
                 args.columns_subset,
                 args.count_missing,
                 args.normalize_distance,
                 tree_output,
                 cluster_output,
-                args.tree_distances,
+                args.branch_type,
                 args.filter_threshold,
             )
             cluster(cluster_args)

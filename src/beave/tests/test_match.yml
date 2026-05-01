@@ -1,32 +1,32 @@
 - name: Run fast-matching
   tags: 
     - should_pass
-  command: beave match -n 1 -q src/beave/tests/data/R1KC1K.tail.tsv -r src/beave/tests/data/R1KC1K.head.tsv -o output.tsv -c
+  command: beave match -c 1 -q src/beave/tests/data/R1KC1K.tail.tsv -r src/beave/tests/data/R1KC1K.head.tsv -o results.tsv -m
   files:
-    - path: "output.tsv"
+    - path: "results.tsv"
 
 - name: Run fast-matching output directory created
   tags: 
     - should_pass
-  command: beave match -n 1 -q src/beave/tests/data/R1KC1K.tail.tsv -r src/beave/tests/data/R1KC1K.head.tsv -o out/output.tsv -c
+  command: beave match -c 1 -q src/beave/tests/data/R1KC1K.tail.tsv -r src/beave/tests/data/R1KC1K.head.tsv -o out/results.tsv -m
   files:
-    - path: "out/output.tsv"
+    - path: "out/results.tsv"
       should_exist: true
 
 - name: Run fast-matching normalized
   tags: 
     - should_pass
-  command: beave match -n 2 -r src/beave/tests/data/R1KC1K.sorted.tail.tsv -q src/beave/tests/data/R1KC1K.sorted.head.tsv -o output.tsv -cs
+  command: beave match -c 2 -r src/beave/tests/data/R1KC1K.sorted.tail.tsv -q src/beave/tests/data/R1KC1K.sorted.head.tsv -nm
   files:
-    - path: "output.tsv"
+    - path: "results.tsv"
 
 - name: Run fast-matching normalized with excessive distance cut-off
   tags:
     - should_fail
-  command: beave match -n 2 -r src/beave/tests/data/R1KC1K.tail.tsv -q src/beave/tests/data/R1KC1K.head.tsv -o output.tsv -cs -t 101
+  command: beave match -c 2 -r src/beave/tests/data/R1KC1K.tail.tsv -q src/beave/tests/data/R1KC1K.head.tsv -nm -t 101
   exit_code: 1
   files:
-    - path: "output.tsv"
+    - path: "results.tsv"
       should_exist: false
   stderr:
     contains:
@@ -35,18 +35,18 @@
 - name: Run fast-matching subset columns
   tags:
     - should_fail
-  command: beave match -n 0 -r src/beave/tests/data/R1KC1K.tail.tsv -q src/beave/tests/data/R1KC1K.head.tsv -o output.tsv -c -t 11 -k src/beave/tests/data/header-keep.txt
+  command: beave match -c 0 -r src/beave/tests/data/R1KC1K.tail.tsv -q src/beave/tests/data/R1KC1K.head.tsv -m -t 11 -s src/beave/tests/data/header-keep.txt
   files:
-    - path: "output.tsv"
+    - path: "results.tsv"
       should_exist: True
 
 - name: Run fast-matching columns do not match
   tags:
     - should_fail
-  command: beave match -n 2 -r src/beave/tests/data/R1KC1K.tail.tsv -q src/beave/tests/data/simple_test_profiles.tsv -o output.tsv -c -t 101
+  command: beave match -c 2 -r src/beave/tests/data/R1KC1K.tail.tsv -q src/beave/tests/data/simple_test_profiles.tsv -m -t 101
   exit_code: 1
   files:
-    - path: "output.tsv"
+    - path: "results.tsv"
       should_exist: false
   stderr:
     contains:

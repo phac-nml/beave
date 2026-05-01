@@ -101,10 +101,10 @@ def test_prepare_fast_match_outputs(tmp_path, input, sample_names, normalized, e
     @dataclass
     class MatchArguments:
         output: Path
-        normalized: bool
+        normalized_distance: bool
         delimiter: str
 
-    input_args = MatchArguments(output=file_out, normalized=normalized, delimiter="\t")
+    input_args = MatchArguments(output=file_out, normalized_distance=normalized, delimiter="\t")
     match.prepare_fast_match_outputs(input, sample_names, input_args)  # type: ignore[reportArgumentType]
     text = file_out.read_text().split("\n")
     assert text == expected
@@ -393,7 +393,7 @@ def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
         q = int(q)
         r = int(r)
         dist = float(dist)
-        if input.normalized:
+        if input.normalized_distance:
             expected = (abs(q - r) / profile_width) * 100.0
         else:
             expected = float(dist)

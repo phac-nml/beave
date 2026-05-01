@@ -883,27 +883,27 @@ def test_assign_clusters_(linkage, thresholds, labels, expected):
     [
         (
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
-            cluster.BranchLengthType.COPHENETIC,
+            cluster.BranchType.COPHENETIC,
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
         ),
         (
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
-            cluster.BranchLengthType.PATRISTIC,
+            cluster.BranchType.PATRISTIC,
             np.array([[0, 1, 0.70710678, 2], [2, 3, 0.70710678, 3]], dtype=float),
         ),
         (
             np.array([[0, 1, 3, 2], [2, 3, 3, 3]], dtype=float),
-            cluster.BranchLengthType.PATRISTIC,
+            cluster.BranchType.PATRISTIC,
             np.array([[0, 1, 1.5, 2], [2, 3, 1.5, 3]], dtype=float),
         ),
         (
             np.array([[0, 1, 3, 2], [2, 3, 3, 3]], dtype=float),
-            cluster.BranchLengthType.COPHENETIC,
+            cluster.BranchType.COPHENETIC,
             np.array([[0, 1, 3, 2], [2, 3, 3, 3]], dtype=float),
         ),
         (
             np.array([[0, 1, 0, 2], [2, 3, 3, 3]], dtype=float),
-            cluster.BranchLengthType.PATRISTIC,
+            cluster.BranchType.PATRISTIC,
             np.array([[0, 1, 0, 2], [2, 3, 1.5, 3]], dtype=float),
         ),
     ],
