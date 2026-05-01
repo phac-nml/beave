@@ -32,7 +32,7 @@ logging.basicConfig(
 class DebugFilter(logging.Filter):
     """Do not show debug filters."""
 
-    def filter(self, record) -> bool:
+    def filter(self, record: logging.LogRecord) -> bool:
         """Do not show debug level messages."""
         return record.levelno >= logging.INFO
 
