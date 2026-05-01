@@ -67,7 +67,7 @@ def check_if_float(float_input: str) -> float:
 def percentage_range(float_input: str) -> float:
     """Check if input value is in range for comparisons."""
     converted_float: float = check_if_float(float_input)
-    if converted_float < 0.00 or converted_float > MAX_PERCENT:
+    if converted_float <= 0.00 or converted_float > MAX_PERCENT:
         error_message = (
             f"Sorry, Filter threshold must be between 0.00 and 100.0. You passed: {float_input}"
         )
@@ -95,9 +95,9 @@ def verify_normalized_distance(normalized: bool, thresholds: float | list[float]
 
     max_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
     min_value: float = min(thresholds) if isinstance(thresholds, list) else thresholds
-    max_value_exceeded: bool = max_value == float("inf") or max_value >= MAX_PERCENT
+    max_value_exceeded: bool = max_value == float("inf") or max_value <= MAX_PERCENT
     min_value_exceeded: bool = min_value <= 0.0
-    if not max_value_exceeded and not min_value_exceeded:
+    if max_value_exceeded and not min_value_exceeded:
         return
 
     err_msg_max: str = (
@@ -110,7 +110,7 @@ def verify_normalized_distance(normalized: bool, thresholds: float | list[float]
     )
 
     err_msg = []
-    if max_value_exceeded:
+    if not max_value_exceeded:
         err_msg.append(err_msg_max)
     if min_value_exceeded:
         err_msg.append(err_msg_min)
@@ -201,7 +201,11 @@ def main() -> None:
         description=__description__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=[parent_parser],
+        allow_abbrev=True,
     )
+    # suggest_on_error only exists in nwere python versions, setting it as a @property
+    # will not raise errors as the flag will just be un-used
+    parser.suggest_on_error = True  # pyright: ignore[reportAttributeAccessIssue]
 
     parser.add_argument("--version", "-v", action="version", version=f"%(prog)s {__version__}")
 
@@ -294,7 +298,7 @@ def main() -> None:
         default=os.getcwd(),
     )
 
-    args = parser.parse_args(sys.argv[1:])
+    args = parser.parse_args()
 
     if not args.verbose:
         """Set the root loggers level to debug if verbose is enabled."""

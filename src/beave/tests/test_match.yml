@@ -1,14 +1,14 @@
 - name: Run fast-matching
   tags: 
     - should_pass
-  command: beave match -c 1 -q src/beave/tests/data/R1KC1K.tail.tsv -r src/beave/tests/data/R1KC1K.head.tsv -o results.tsv -m
+  command: beave match -c 1 -q src/beave/tests/data/R1KC1K.tail.tsv -r src/beave/tests/data/R1KC1K.head.tsv -m
   files:
     - path: "results.tsv"
 
 - name: Run fast-matching output directory created
   tags: 
     - should_pass
-  command: beave match -c 1 -q src/beave/tests/data/R1KC1K.tail.tsv -r src/beave/tests/data/R1KC1K.head.tsv -o out/results.tsv -m
+  command: beave match -c 1 -q src/beave/tests/data/R1KC1K.tail.tsv -r src/beave/tests/data/R1KC1K.head.tsv -o out -m
   files:
     - path: "out/results.tsv"
       should_exist: true
@@ -16,7 +16,7 @@
 - name: Run fast-matching normalized
   tags: 
     - should_pass
-  command: beave match -c 2 -r src/beave/tests/data/R1KC1K.sorted.tail.tsv -q src/beave/tests/data/R1KC1K.sorted.head.tsv -nm
+  command: beave match -c 2 -r src/beave/tests/data/R1KC1K.sorted.tail.tsv -q src/beave/tests/data/R1KC1K.sorted.head.tsv -nm 
   files:
     - path: "results.tsv"
 
@@ -30,7 +30,7 @@
       should_exist: false
   stderr:
     contains:
-      - "Sorry, normalized distance specified, but values greater than 100.0 are provided."
+      - "Sorry, normalized distance specified, but values greater than 100.0 are provided. 101.0"
 
 - name: Run fast-matching subset columns
   tags:

@@ -70,6 +70,15 @@
     contains:
       - "beave cluster: error: argument --thresholds/-t: invalid cluster_threshold value: '0.1.0'"
 
+- name: Run cluster cophenetic fail threshold due to positive and negative values
+  tags:
+    - should_fail
+  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -nm -b cophenetic -n 2 --thresholds 101 -1
+  exit_code: 2
+  stderr:
+    contains:
+      - "Sorry, threshold values must be positive and not infinity. You passed: -1"
+
 - name: Run cluster fail threshold missing argument
   tags:
     - should_fail
@@ -113,7 +122,7 @@
 - name: Run cluster, cluster threshold should fail due to negative number being passed.
   tags:
     - should_fail
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -c 2 -t 1 0.5 -1 --delimiter , 
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -c 2 -t 1 0.5 -1 --delimiter, 
   exit_code: 2
   files:
     - path: "tree.nwk"
@@ -155,7 +164,7 @@
 - name: Run cluster threshold should pass
   tags:
     - should_pass
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -c 2 -t 1 0.5 -d , -f 50.0
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -c 2 -t 1 0.5 --delimiter , -f 50.0
   files:
     - path: "tree.nwk"
       should_exist: true
@@ -181,7 +190,7 @@
 - name: Run cluster id contains null value
   tags:
     - should_fail
-  command: beave cluster --input src/beave/tests/data/test_profiles_null_in_id_column.csv --delimiter, -l average -nm -b cophenetic -c 2 -t 1 0.5
+  command: beave cluster --input src/beave/tests/data/test_profiles_null_in_id_column.csv --delimiter , -l average -nm -b cophenetic -c 2 -t 1 0.5
   exit_code: 1
   files:
     - path: "tree.nwk"

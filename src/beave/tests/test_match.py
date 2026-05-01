@@ -438,7 +438,7 @@ def test_match_all_match(tmp_path, input):
 @pytest.mark.workflow("Run fast-matching")
 def test_fast_match_run_outputs(workflow_dir):
     """Verify output of fast matching workflow test."""
-    output_file = Path(workflow_dir, "output.tsv")
+    output_file = Path(workflow_dir, "results.tsv")
     assert output_file.exists()
     data = output_file.read_text().split("\n")
     assert data[0] == "query_id\tref_id\tdist_hamming"
@@ -462,7 +462,7 @@ def test_fast_match_run_outputs(workflow_dir):
 @pytest.mark.workflow("Run fast-matching normalized")
 def test_fast_match_run_outputs_normalized(workflow_dir):
     """Verify output of fast matching is correct with normalized outputs."""
-    output_file = Path(workflow_dir, "output.tsv")
+    output_file = Path(workflow_dir, "results.tsv")
     assert output_file.exists()
     data = [i for i in output_file.read_text().split("\n") if i != ""]
     assert data[0] == "query_id\tref_id\tdist_normalized"
@@ -509,7 +509,7 @@ def test_fast_match_subset_columns(workflow_dir):
     I have created a set of columns to pass to the program so that only the first 10 columns
     are saved.
     """
-    output_file = Path(workflow_dir, "output.tsv")
+    output_file = Path(workflow_dir, "results.tsv")
     assert output_file.exists()
     data = output_file.read_text().split("\n")
     max_dist_possible = 10.0
