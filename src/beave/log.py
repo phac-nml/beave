@@ -1,13 +1,13 @@
 """Generic initializer for the logger utilites.
 
-Python loggers are federates meaning the follow a tree structre, in order
+Python loggers are federates meaning they follow a tree structre, in order
 to make logging simple, while supporting a file log to the output directory
 we use a simple filter instead of a complicated configuration setup for the program.
 
 It is worth noting that filters are much slower so if we add log messages in a hot
 loop program performance will suffer.
 
-The file handling logger is added at run time in-order to place the final log
+The file handling logger is added at run time in order to place the final log
 file in the output directory, rather than in the working directory. This is why
 a filter is used instead of a global configuration.
 """
@@ -21,13 +21,6 @@ LOGGING_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 SHARED_STREAM_HANDLER: logging.StreamHandler = logging.StreamHandler(sys.stderr)
 
-logging.basicConfig(
-    datefmt="%Y-%m-%d %H:%M:%S",
-    format=LOGGING_FORMAT,
-    handlers=[SHARED_STREAM_HANDLER],
-    level=logging.DEBUG,
-)
-
 
 class DebugFilter(logging.Filter):
     """Do not show debug filters."""
@@ -35,6 +28,18 @@ class DebugFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         """Do not show debug level messages."""
         return record.levelno >= logging.INFO
+
+
+DEBUG_FILTER: logging.Filter = DebugFilter()
+
+SHARED_STREAM_HANDLER.addFilter(DEBUG_FILTER)  # Add DebugFilter before initializing root logger
+
+logging.basicConfig(
+    datefmt="%Y-%m-%d %H:%M:%S",
+    format=LOGGING_FORMAT,
+    handlers=[SHARED_STREAM_HANDLER],
+    level=logging.DEBUG,
+)
 
 
 def init_logger(module_name: str) -> logging.Logger:

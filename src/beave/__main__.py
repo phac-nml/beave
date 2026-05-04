@@ -11,8 +11,10 @@ __version__ = importlib.metadata.version(__package__ or __name__)
 import argparse
 import os
 import sys
+from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
+from typing import Any
 
 from beave import log
 from beave.cluster import (
@@ -26,6 +28,40 @@ from beave.match import MatchArguments, match
 logger = log.init_logger(__name__)
 
 MAX_PERCENT: float = 100.0
+
+
+class VerboseLogAction(argparse.Action):
+    """Custom action class that supports changing log verbosity."""
+
+    def __init__(
+        self,
+        option_strings: Sequence[str],
+        dest: str,
+        default: bool = False,
+        required: bool = False,
+        help: str | None = None,
+    ) -> None:
+        """Use parent class intializer."""
+        super().__init__(
+            option_strings=option_strings,
+            dest=dest,
+            nargs=0,
+            const=True,
+            default=default,
+            required=required,
+            help=help,
+        )
+
+    def __call__(  # pyright: ignore[reportUnusedVariable]
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
+    ) -> None:
+        """Override argparse action store_true and drop debug filter from logger stream handler."""
+        log.SHARED_STREAM_HANDLER.removeFilter(log.DEBUG_FILTER)
+        setattr(namespace, self.dest, self.const)
 
 
 class CommandError(ValueError):
@@ -95,9 +131,10 @@ def verify_normalized_distance(normalized: bool, thresholds: float | list[float]
 
     max_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
     min_value: float = min(thresholds) if isinstance(thresholds, list) else thresholds
-    max_value_exceeded: bool = max_value == float("inf") or max_value <= MAX_PERCENT
-    min_value_exceeded: bool = min_value <= 0.0
-    if max_value_exceeded and not min_value_exceeded:
+    max_value_bound_exceeded: bool = max_value != float("inf") and max_value > MAX_PERCENT
+    min_value_bound_exceeded: bool = min_value <= 0.0
+
+    if not max_value_bound_exceeded and not min_value_bound_exceeded:
         return
 
     err_msg_max: str = (
@@ -110,9 +147,9 @@ def verify_normalized_distance(normalized: bool, thresholds: float | list[float]
     )
 
     err_msg = []
-    if not max_value_exceeded:
+    if max_value_bound_exceeded:
         err_msg.append(err_msg_max)
-    if min_value_exceeded:
+    if min_value_bound_exceeded:
         err_msg.append(err_msg_min)
 
     logger.critical("\n".join(err_msg))
@@ -194,7 +231,7 @@ def main() -> None:
     )
 
     parent_parser.add_argument(
-        "--verbose", action="store_true", help="Display logger debug messages."
+        "--verbose", action=VerboseLogAction, help="Display logger debug messages."
     )
 
     parser = argparse.ArgumentParser(
@@ -203,7 +240,7 @@ def main() -> None:
         parents=[parent_parser],
         allow_abbrev=True,
     )
-    # suggest_on_error only exists in nwere python versions, setting it as a @property
+    # suggest_on_error only exists in newer python versions, setting it as a @property
     # will not raise errors as the flag will just be un-used
     parser.suggest_on_error = True  # pyright: ignore[reportAttributeAccessIssue]
 
@@ -299,10 +336,6 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-
-    if not args.verbose:
-        """Set the root loggers level to debug if verbose is enabled."""
-        log.SHARED_STREAM_HANDLER.addFilter(log.DebugFilter())
 
     log.add_file_logger(args.output)
     match args.command:
