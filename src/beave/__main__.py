@@ -131,14 +131,14 @@ def verify_normalized_distance(normalized: bool, thresholds: float | list[float]
 
     max_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
     min_value: float = min(thresholds) if isinstance(thresholds, list) else thresholds
-    max_value_bound_exceeded: bool = max_value != float("inf") and max_value > MAX_PERCENT
+    max_value_bound_exceeded: bool = max_value != float("inf") and max_value >= MAX_PERCENT
     min_value_bound_exceeded: bool = min_value <= 0.0
 
     if not max_value_bound_exceeded and not min_value_bound_exceeded:
         return
 
     err_msg_max: str = (
-        f"Sorry, normalized distance specified, but values greater than 100.0"
+        f"Sorry, normalized distance specified, but values greater than or equal to 100.0"
         f" are provided. {max_value}"
     )
     err_msg_min: str = (

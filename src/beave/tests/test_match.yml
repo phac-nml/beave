@@ -30,7 +30,7 @@
       should_exist: false
   stderr:
     contains:
-      - "Sorry, normalized distance specified, but values greater than 100.0 are provided. 101.0"
+      - "Sorry, normalized distance specified, but values greater than or equal to 100.0 are provided. 101.0"
 
 - name: Run fast-matching subset columns
   tags:
