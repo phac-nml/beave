@@ -124,6 +124,16 @@ def cluster_threshold(float_input: str) -> float:
     return converted_input
 
 
+def fast_match_threshold(float_input: str) -> float:
+    """Verify input types are valid."""
+    converted_input: float = float(float_input)
+    if converted_input < 0.00:
+        error_message = f"Sorry, threshold values must be positive. You passed: {float_input}"
+        logger.critical(error_message)
+        raise ValueError(error_message)
+    return converted_input
+
+
 def verify_normalized_distance(normalized: bool, thresholds: float | list[float]) -> None:
     """Verify normalized distance thresholds."""
     if not normalized:
@@ -138,11 +148,11 @@ def verify_normalized_distance(normalized: bool, thresholds: float | list[float]
         return
 
     err_msg_max: str = (
-        f"Sorry, normalized distance specified, but values greater than or equal to 100.0"
+        f"Sorry, normalized distance specified, but values greater than or equal to {MAX_PERCENT}"
         f" are provided. {max_value}"
     )
     err_msg_min: str = (
-        f"Sorry, normalized distance specified, but values less or equal to 0.0"
+        f"Sorry, normalized distance specified, but values less than or equal to 0.0"
         f" are provided. {min_value}"
     )
 
@@ -321,7 +331,7 @@ def main() -> None:
     parser_match.add_argument(
         "--threshold",
         "-t",
-        type=cluster_threshold,
+        type=fast_match_threshold,
         help="Only report distances below specified threshold. [default: %(default)s]",
         default=float("inf"),
     )

@@ -1,6 +1,6 @@
 """Generic initializer for the logger utilites.
 
-Python loggers are federates meaning they follow a tree structre, in order
+Python loggers are federates meaning they follow a tree structure, in order
 to make logging simple, while supporting a file log to the output directory
 we use a simple filter instead of a complicated configuration setup for the program.
 
