@@ -44,6 +44,16 @@
       should_exist: true
       md5sum: 4000cbea01848c4a651fa22647bec5c7
 
+- name: Run cluster pass filter data
+  tags:
+    - should_pass
+  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -b cophenetic -c 3 --thresholds 10.0 9.0 8.0 -f 20
+  files:
+    - path: "tree.nwk"
+      should_exist: true
+    - path: clusters.tsv
+      should_exist: true
+
 - name: Run cluster pass cophenetic nm flag passing 0 cores passed
   tags:
     - should_pass

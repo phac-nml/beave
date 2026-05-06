@@ -126,13 +126,15 @@ def compute_dists(
     normalize: bool,
     threads: int,
     filter_threshold: float = 1.0,
-) -> npt.NDArray:
+) -> tuple[npt.NDArray, pl.DataFrame]:
     """Compute the 1D array required by scipy for generation of the linkage matrix."""
-    prepared_profiles = prep_data(profiles, filter_threshold, transform_data_categorical_encoding)
+    profiles_array, filtered_profiles = prep_data(
+        profiles, filter_threshold, transform_data_categorical_encoding
+    )
     logger.debug("Tranformed data for computation in C++ sub-routine.")
-    distances = beave.calc_dists(prepared_profiles, threads, normalize, count_missing)
+    distances = beave.calc_dists(profiles_array, threads, normalize, count_missing)
     logger.debug("Finished C++ sub-routine.")
-    return distances
+    return distances, filtered_profiles
 
 
 def compute_linkage_matrix(profiles_computed: npt.NDArray, linkage: str) -> npt.NDArray:
@@ -198,7 +200,7 @@ def cluster(cluster_args: ClusterArguments) -> None:
         profiles = subset_columns(profiles, cluster_args.columns_path, None)
         logger.debug("Finished subsetting columns.")
 
-    distances = compute_dists(
+    distances, profiles = compute_dists(
         profiles,
         cluster_args.count_missing,
         cluster_args.normalize_distance,

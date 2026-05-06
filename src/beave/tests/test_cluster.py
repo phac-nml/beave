@@ -361,7 +361,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
     array = np.zeros((profiles.height, 3), dtype=np.uint32)  # array should all be zeros
     for i in array:
         i[2] = np.uint32(2683474508)  # last value should be the hashed version of "A"
-    output = cluster.prep_data(profiles, 1.00, transform.transform_data_hashes)
+    output, profiles = cluster.prep_data(profiles, 1.00, transform.transform_data_hashes)
     np.testing.assert_equal(output, array)
 
 
@@ -980,7 +980,7 @@ def test_calc_dists_fuzzing_hypothesis_no_infinites(arr):
 def test_calc_dists_file_inputs(input, normalized, count_missing):
     """Test inputs of calc dists is correct with known input."""
     profiles: pl.DataFrame = cluster.read_input_profiles(input, "\t", 1)
-    dists: npt.NDArray = cluster.compute_dists(profiles, count_missing, normalized, 1)
+    dists, profiles = cluster.compute_dists(profiles, count_missing, normalized, 1)
     matrix: npt.NDArray = scipy.spatial.distance.squareform(
         dists
     )  # conversion to squareform so iteration of the matrix is simpler as we do not need to
@@ -1033,3 +1033,18 @@ def test_get_subset_columns():
     """Test for get_subset_columns."""
     cols = transform.get_subset_columns(Path("src/beave/tests/data/test_columns.txt"))
     assert cols == {"sample", "col1", "col2", "col3"}
+
+
+@pytest.mark.workflow("Run cluster pass filter data")
+def test_cluster_pass_filter_data(workflow_dir):
+    """Verify the outputs of the filtered data are correct."""
+    # passed parameter of more than 20% is empty it gets filtered
+    # input 1000 rows and columns means 80% of data get filtered
+    expected_output_lengths = (
+        1000 * 0.2
+    ) + 1  # <= comparison so we should have one extra value present
+    clusters = Path(workflow_dir, "clusters.tsv")
+    values_kept = [int(i.split("\t")[0]) for i in clusters.read_text().split("\n")[1:] if i]
+    assert len(values_kept) == expected_output_lengths
+    for i in values_kept:
+        assert i >= expected_output_lengths

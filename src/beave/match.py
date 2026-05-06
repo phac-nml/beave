@@ -199,7 +199,7 @@ def match(match_args: MatchArguments) -> None:
     transform.verify_dataframe_integrity(merged_profiles)
     logger.debug("Finished verifying merged profiles dataframe.")
 
-    profiles_prepared: npt.NDArray = transform.prep_data(
+    profiles_prepared, merged_profiles = transform.prep_data(
         merged_profiles, match_args.filter_threshold, transform.transform_data_categorical_encoding
     )
     logger.debug("Converted prepared profiles to numpy array.")
