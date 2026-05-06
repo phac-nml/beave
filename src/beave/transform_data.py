@@ -161,7 +161,7 @@ def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     number_of_columns = profiles.width - 1  # -1 to ignore the labels column
     threshold_columns = math.floor(number_of_columns * threshold)
     logger.info(
-        "Setting filter threshold to excluded columns missing %s or more loci.",
+        "Setting filter threshold to excluded rows missing %s or more loci.",
         threshold_columns,
     )
     rows_before_filtering = profiles.height
