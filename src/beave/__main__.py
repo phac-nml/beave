@@ -224,8 +224,91 @@ def output_directory(output: str) -> Path:
     return handle
 
 
-def main() -> None:
-    """Program entry-point."""
+def add_cluster_parser(parser_cluster: argparse.ArgumentParser) -> None:
+    """Add the cluster parsing options to the parent parser."""
+    # cluster args
+
+    parser_cluster.add_argument(
+        "--input", "-i", help="Input alleles.", type=path_exists, required=True
+    )
+
+    parser_cluster.add_argument(
+        "--output",
+        "-o",
+        type=output_directory,
+        required=False,
+        help=(
+            "Output directory for generated tree and clusters, directory will be treated if does"
+            " not exist. (default: %(default)s)"
+        ),
+        default=os.getcwd(),
+    )
+
+    parser_cluster.add_argument(
+        "--thresholds",
+        "-t",
+        help="List of threshold values to use.",
+        nargs="+",
+        required=True,
+        action="extend",
+        type=cluster_threshold,
+    )
+
+    parser_cluster.add_argument(
+        "--linkage-method",
+        "-l",
+        default=LinkageMetric.AVERAGE.value,
+        help="Hierarchical clustering linkage to use. (default: %(default)s)",
+        choices=[i.value for i in LinkageMetric],
+    )
+
+    parser_cluster.add_argument(
+        "--branch-type",
+        "-b",
+        default=BranchType.COPHENETIC.value,
+        choices=[i.value for i in BranchType],
+        help="Determine how to display tree lenghts in the Newick file. (default %(default)s)",
+    )
+
+
+def add_match_parser(parser_match: argparse.ArgumentParser) -> None:
+    """Add arguments to sub-parser for match."""
+    parser_match.add_argument(
+        "--reference",
+        "-r",
+        type=path_exists,
+        required=True,
+        help="Profiles to compare against. Query samples will be included in comparisons.",
+    )
+
+    parser_match.add_argument(
+        "--query",
+        "-q",
+        type=path_exists,
+        required=True,
+        help="Profiles containing new-samples for comparisons.",
+    )
+
+    parser_match.add_argument(
+        "--threshold",
+        "-t",
+        type=fast_match_threshold,
+        help="Only report distances below specified threshold. (default: %(default)s)",
+        default=INFINITY,
+    )
+
+    parser_match.add_argument(
+        "--output",
+        "-o",
+        type=output_directory,
+        required=False,
+        help=("Output directory for calculated distances. (default: %(default)s)"),
+        default=os.getcwd(),
+    )
+
+
+def create_parent_parser() -> argparse.ArgumentParser:
+    """Create the parent parser for program."""
     parent_parser = argparse.ArgumentParser(  # Global command-line arguments:
         add_help=False,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -239,13 +322,13 @@ def main() -> None:
     parent_parser.add_argument(
         "--cores",
         "-c",
-        help="Specify the number of threads to be used. [default %(default)d]",
+        help="Specify the number of threads to be used. (default %(default)d)",
         type=int,
         default=number_of_cores_default,
     )
     parent_parser.add_argument(
         "--delimiter",
-        help="Input alleles delimiter. [default \\t]",
+        help="Input alleles delimiter. (default \\t)",
         type=str,
         default="\t",
     )
@@ -283,7 +366,7 @@ def main() -> None:
         "-f",
         help=(
             "Exclude samples from analysis if they are missing more than the specified percentage "
-            "of data. Must be between [0.0-100.0]. [default 100.0]"
+            "of data. Must be between [0.0-100.0]. (default 100.0)"
         ),
         default=percentage_range("100.00"),
         type=percentage_range,
@@ -295,7 +378,6 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(
         description=__description__,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=[parent_parser],
         allow_abbrev=True,
     )
@@ -310,91 +392,27 @@ def main() -> None:
         dest="command",
     )
 
-    # cluster args
+    parser_match = subparsers.add_parser(
+        Commands.MATCH, help="Run fast matching.", parents=[parent_parser]
+    )
     parser_cluster = subparsers.add_parser(
         Commands.CLUSTER, help="Run denovo clustering.", parents=[parent_parser]
     )
 
-    parser_cluster.add_argument(
-        "--input", "-i", help="Input alleles.", type=path_exists, required=True
-    )
+    add_cluster_parser(parser_cluster)
+    add_match_parser(parser_match)
 
-    parser_cluster.add_argument(
-        "--output",
-        "-o",
-        type=output_directory,
-        required=False,
-        help=(
-            "Output directory for generated tree and clusters, directory will be treated if does"
-            " not exist. [default: %(default)s]"
-        ),
-        default=os.getcwd(),
-    )
+    return parser
 
-    parser_cluster.add_argument(
-        "--thresholds",
-        "-t",
-        help="List of threshold values to use.",
-        nargs="+",
-        required=True,
-        action="extend",
-        type=cluster_threshold,
-    )
 
-    parser_cluster.add_argument(
-        "--linkage-method",
-        "-l",
-        default=LinkageMetric.AVERAGE.value,
-        help="Hierarchical clustering linkage to use. [default: %(default)s]",
-        choices=[i.value for i in LinkageMetric],
-    )
-
-    parser_cluster.add_argument(
-        "--branch-type",
-        "-b",
-        default=BranchType.COPHENETIC.value,
-        choices=[i.value for i in BranchType],
-        help="Determine how to display tree lenghts in the Newick file. [default %(default)s]",
-    )
-
-    parser_match = subparsers.add_parser(
-        Commands.MATCH, help="Run fast matching.", parents=[parent_parser]
-    )
-
-    parser_match.add_argument(
-        "--reference",
-        "-r",
-        type=path_exists,
-        required=True,
-        help="Profiles to compare against. Query samples will be included in comparisons.",
-    )
-
-    parser_match.add_argument(
-        "--query",
-        "-q",
-        type=path_exists,
-        required=True,
-        help="Profiles containing new-samples for comparisons.",
-    )
-
-    parser_match.add_argument(
-        "--threshold",
-        "-t",
-        type=fast_match_threshold,
-        help="Only report distances below specified threshold. [default: %(default)s]",
-        default=INFINITY,
-    )
-
-    parser_match.add_argument(
-        "--output",
-        "-o",
-        type=output_directory,
-        required=False,
-        help=("Output directory for calculated distances. [default: %(default)s]"),
-        default=os.getcwd(),
-    )
-
+def main() -> None:
+    """Program entry-point."""
+    parser = create_parent_parser()
     args = parser.parse_args()
+    if args.command is None:
+        parser.print_help()
+        raise SystemExit()
+
     validate_normalized_distance: ArgValidator = ArgValidator()
     if args.normalize_distance:
         validate_normalized_distance.add_validation_function(verify_normalized_distance)
