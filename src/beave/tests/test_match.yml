@@ -32,6 +32,14 @@
     contains:
       - "Sorry, normalized distance specified, but values greater than or equal to 100.0 are provided. 101.0"
 
+- name: Run fast-matching should pass with high distance threshold
+  tags:
+    - should_fail
+  command: beave match -c 2 -r src/beave/tests/data/R1KC1K.tail.tsv -q src/beave/tests/data/R1KC1K.head.tsv -t 101
+  files:
+    - path: "results.tsv"
+      should_exist: true
+
 - name: Run fast-matching subset columns
   tags:
     - should_fail

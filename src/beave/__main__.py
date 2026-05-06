@@ -11,7 +11,7 @@ __version__ = importlib.metadata.version(__package__ or __name__)
 import argparse
 import os
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -28,6 +28,46 @@ from beave.match import MatchArguments, match
 logger = log.init_logger(__name__)
 
 MAX_PERCENT: float = 100.0
+INFINITY: float = float("inf")
+
+
+class ArgValidator:
+    """Class for validating cli arguments based on passed functions.
+
+    None of the passed arguments in this class peform any type conversion,
+    but should instead raise an error if their passes arguments fail validation.
+    """
+
+    def __init__(self, /, validation_functions: Sequence[Callable[[Any], None]] = ()) -> None:
+        """Intializer function for registered arguments."""
+        self.validation_functions: Sequence[Callable[[Any], None]] = validation_functions
+
+    def add_validation_function(
+        self, new_function: Callable[[Any], None], *, prepend: bool = False
+    ) -> None:
+        """Add new validation function to class."""
+        if not self.validation_functions:
+            self.validation_functions = (new_function,)
+        if prepend:
+            self._prepend_validation_function(new_function)
+        else:
+            self._add_validation_function(new_function)
+
+    def _add_validation_function(self, new_function: Callable[[Any], None]) -> None:
+        """Add an additional validation function to the passed methods."""
+        self.validation_functions = (*self.validation_functions, new_function)
+
+    def _prepend_validation_function(self, new_function: Callable[[Any], None]) -> None:
+        """Add an additional validation function to the front of the passed methods."""
+        self.validation_functions = (new_function, *self.validation_functions)
+
+    def __call__(self, argument: Any) -> None:
+        """Apply validation methods to passed arguments."""
+        if self.validation_functions is None:
+            return
+
+        for func in self.validation_functions:
+            func(argument)
 
 
 class VerboseLogAction(argparse.Action):
@@ -115,7 +155,7 @@ def percentage_range(float_input: str) -> float:
 def cluster_threshold(float_input: str) -> float:
     """Verify input types are valid."""
     converted_input: float = float(float_input)
-    if converted_input < 0.00 or converted_input == float("inf"):
+    if converted_input < 0.00 or converted_input == INFINITY:
         error_message = (
             f"Sorry, threshold values must be positive and not infinity. You passed: {float_input}"
         )
@@ -134,14 +174,23 @@ def fast_match_threshold(float_input: str) -> float:
     return converted_input
 
 
-def verify_normalized_distance(normalized: bool, thresholds: float | list[float]) -> None:
-    """Verify normalized distance thresholds."""
-    if not normalized:
-        return
+def verify_does_not_contain_infinity(thresholds: list[float]) -> None:
+    """Verify input thresholds do not contain inifinity.
 
+    This check is redundant, but adding direct logic check to simplify interface
+    for later validation functions.
+    """
+    if INFINITY in thresholds:
+        err_msg = f"Sorry, {INFINITY} can not be used as a threshold."
+        logger.critical(err_msg)
+        raise CommandError(err_msg)
+
+
+def verify_normalized_distance(thresholds: float | list[float]) -> None:
+    """Verify normalized distance thresholds."""
     max_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
     min_value: float = min(thresholds) if isinstance(thresholds, list) else thresholds
-    max_value_bound_exceeded: bool = max_value != float("inf") and max_value >= MAX_PERCENT
+    max_value_bound_exceeded: bool = max_value != INFINITY and max_value >= MAX_PERCENT
     min_value_bound_exceeded: bool = min_value <= 0.0
 
     if not max_value_bound_exceeded and not min_value_bound_exceeded:
@@ -333,7 +382,7 @@ def main() -> None:
         "-t",
         type=fast_match_threshold,
         help="Only report distances below specified threshold. [default: %(default)s]",
-        default=float("inf"),
+        default=INFINITY,
     )
 
     parser_match.add_argument(
@@ -346,11 +395,18 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+    validate_normalized_distance: ArgValidator = ArgValidator()
+    if args.normalize_distance:
+        validate_normalized_distance.add_validation_function(verify_normalized_distance)
 
     log.add_file_logger(args.output)
     match args.command:
         case Commands.CLUSTER:
-            verify_normalized_distance(args.normalize_distance, args.thresholds)
+            validate_normalized_distance.add_validation_function(
+                verify_does_not_contain_infinity,
+                prepend=True,  # Check can be used on hamming values as infinity is not allowed.
+            )
+            validate_normalized_distance(args.thresholds)
             cluster_output = args.output / "clusters.tsv"
             tree_output = args.output / "tree.nwk"
             cluster_args = ClusterArguments(
@@ -369,7 +425,7 @@ def main() -> None:
             )
             cluster(cluster_args)
         case Commands.MATCH:
-            verify_normalized_distance(args.normalize_distance, args.threshold)
+            validate_normalized_distance(args.threshold)
             output_file = args.output / "results.tsv"
             match_args = MatchArguments(
                 args.query,
