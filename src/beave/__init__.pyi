@@ -6,7 +6,7 @@ from numpy.typing import NDArray
 def calc_dists(
     array: Annotated[NDArray[numpy.uint32], dict(shape=(None, None), order="C", device="cpu")],
     threads: int,
-    scaled: bool,
+    normalized: bool,
     count_missing: bool,
 ) -> Annotated[NDArray[numpy.float32], dict(shape=(None,), order="C", device="cpu")]:
     """Calculate all pairwise distances between all profiles."""
@@ -14,7 +14,7 @@ def calc_dists(
 def fast_match(
     array: Annotated[NDArray[numpy.uint32], dict(shape=(None, None), order="C", device="cpu")],
     threads: int,
-    scaled: bool,
+    normalized: bool,
     count_missing: bool,
     query_length: int,
     threshold: float,

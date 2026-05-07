@@ -361,7 +361,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
     array = np.zeros((profiles.height, 3), dtype=np.uint32)  # array should all be zeros
     for i in array:
         i[2] = np.uint32(2683474508)  # last value should be the hashed version of "A"
-    output = cluster.prep_data(profiles, 1.00, transform.transform_data_hashes)
+    output, profiles = cluster.prep_data(profiles, 1.00, transform.transform_data_hashes)
     np.testing.assert_equal(output, array)
 
 
@@ -883,27 +883,27 @@ def test_assign_clusters_(linkage, thresholds, labels, expected):
     [
         (
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
-            cluster.BranchLengthType.COPHENETIC,
+            cluster.BranchType.COPHENETIC,
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
         ),
         (
             np.array([[0, 1, 1.41421356, 2], [2, 3, 1.41421356, 3]], dtype=float),
-            cluster.BranchLengthType.PATRISTIC,
+            cluster.BranchType.PATRISTIC,
             np.array([[0, 1, 0.70710678, 2], [2, 3, 0.70710678, 3]], dtype=float),
         ),
         (
             np.array([[0, 1, 3, 2], [2, 3, 3, 3]], dtype=float),
-            cluster.BranchLengthType.PATRISTIC,
+            cluster.BranchType.PATRISTIC,
             np.array([[0, 1, 1.5, 2], [2, 3, 1.5, 3]], dtype=float),
         ),
         (
             np.array([[0, 1, 3, 2], [2, 3, 3, 3]], dtype=float),
-            cluster.BranchLengthType.COPHENETIC,
+            cluster.BranchType.COPHENETIC,
             np.array([[0, 1, 3, 2], [2, 3, 3, 3]], dtype=float),
         ),
         (
             np.array([[0, 1, 0, 2], [2, 3, 3, 3]], dtype=float),
-            cluster.BranchLengthType.PATRISTIC,
+            cluster.BranchType.PATRISTIC,
             np.array([[0, 1, 0, 2], [2, 3, 1.5, 3]], dtype=float),
         ),
     ],
@@ -914,7 +914,7 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
 
 
 @pytest.mark.parametrize(
-    "profiles,count_missing,scaled,expected",
+    "profiles,count_missing,normalized,expected",
     [
         (
             np.array(
@@ -951,9 +951,9 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
         ),
     ],
 )
-def test_calc_dists(profiles, count_missing, scaled, expected):
+def test_calc_dists(profiles, count_missing, normalized, expected):
     """Test distance calculation output is correct."""
-    output = beave.calc_dists(profiles, 1, scaled, count_missing)
+    output = beave.calc_dists(profiles, 1, normalized, count_missing)
     np.testing.assert_equal(output, expected)
 
 
@@ -970,17 +970,17 @@ def test_calc_dists_fuzzing_hypothesis_no_infinites(arr):
 
 
 @pytest.mark.parametrize(
-    "input,scaled,count_missing",
+    "input,normalized,count_missing",
     [
         (Path("src/beave/tests/data/R1KC1K.tsv"), True, True),
         (Path("src/beave/tests/data/R1KC1K.tsv"), False, True),
         (Path("src/beave/tests/data/R1KC1K.tsv"), False, True),
     ],
 )
-def test_calc_dists_file_inputs(input, scaled, count_missing):
+def test_calc_dists_file_inputs(input, normalized, count_missing):
     """Test inputs of calc dists is correct with known input."""
     profiles: pl.DataFrame = cluster.read_input_profiles(input, "\t", 1)
-    dists: npt.NDArray = cluster.compute_dists(profiles, count_missing, scaled, 1)
+    dists, profiles = cluster.compute_dists(profiles, count_missing, normalized, 1)
     matrix: npt.NDArray = scipy.spatial.distance.squareform(
         dists
     )  # conversion to squareform so iteration of the matrix is simpler as we do not need to
@@ -989,7 +989,7 @@ def test_calc_dists_file_inputs(input, scaled, count_missing):
         sample1: int = int(profiles.item(i, "sample"))
         for f in range(0, profiles.height):
             sample2: int = int(profiles.item(f, "sample"))
-            if scaled:
+            if normalized:
                 dist: float = (abs(sample1 - sample2) / float(profiles.height)) * 100.0
                 assert dist == pytest.approx(matrix[i][f], rel=1e-6)
             else:
@@ -1033,3 +1033,18 @@ def test_get_subset_columns():
     """Test for get_subset_columns."""
     cols = transform.get_subset_columns(Path("src/beave/tests/data/test_columns.txt"))
     assert cols == {"sample", "col1", "col2", "col3"}
+
+
+@pytest.mark.workflow("Run cluster pass filter data")
+def test_cluster_pass_filter_data(workflow_dir):
+    """Verify the outputs of the filtered data are correct."""
+    # passed parameter of more than 20% is empty it gets filtered
+    # input 1000 rows and columns means 80% of data get filtered
+    expected_output_lengths = (
+        1000 * 0.2
+    ) + 1  # <= comparison so we should have one extra value present
+    clusters = Path(workflow_dir, "clusters.tsv")
+    values_kept = [int(i.split("\t")[0]) for i in clusters.read_text().split("\n")[1:] if i]
+    assert len(values_kept) == expected_output_lengths
+    for i in values_kept:
+        assert i >= expected_output_lengths

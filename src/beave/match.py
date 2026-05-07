@@ -36,7 +36,7 @@ class MatchArguments:
     columns_path: Path | None
     delimiter: str
     count_missing: bool
-    scaled: bool
+    normalized_distance: bool
     filter_threshold: float
     output: Path
 
@@ -82,7 +82,7 @@ def run_fast_matching(
     fast_match_data: npt.NDArray = fast_match(
         profiles,
         match_args.cores,
-        match_args.scaled,
+        match_args.normalized_distance,
         match_args.count_missing,
         query_size,
         match_args.threshold,
@@ -115,8 +115,8 @@ def prepare_fast_match_outputs(
     """Write out fast-match results for each query and reference."""
     dist_type: str = transform.DistanceTypes.HAMMING
     type_conversion: type[pl.UInt32] | type[pl.Float32] = pl.UInt32
-    if match_args.scaled:
-        dist_type = transform.DistanceTypes.SCALED
+    if match_args.normalized_distance:
+        dist_type = transform.DistanceTypes.NORMALIZED
         type_conversion = pl.Float32
 
     find_replace_query: tuple[Sequence[str], Sequence[str]] = (
@@ -199,7 +199,7 @@ def match(match_args: MatchArguments) -> None:
     transform.verify_dataframe_integrity(merged_profiles)
     logger.debug("Finished verifying merged profiles dataframe.")
 
-    profiles_prepared: npt.NDArray = transform.prep_data(
+    profiles_prepared, merged_profiles = transform.prep_data(
         merged_profiles, match_args.filter_threshold, transform.transform_data_categorical_encoding
     )
     logger.debug("Converted prepared profiles to numpy array.")

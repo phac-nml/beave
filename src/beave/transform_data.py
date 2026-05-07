@@ -18,7 +18,7 @@ class DistanceTypes(StrEnum):
     """String storage for the distance types used."""
 
     HAMMING = "hamming"
-    SCALED = "scaled"
+    NORMALIZED = "normalized"
 
 
 class AllColumnsFilteredError(Exception):
@@ -161,7 +161,7 @@ def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
     number_of_columns = profiles.width - 1  # -1 to ignore the labels column
     threshold_columns = math.floor(number_of_columns * threshold)
     logger.info(
-        "Setting filter threshold to excluded columns missing %s or more loci.",
+        "Setting filter threshold to excluded rows missing %s or more loci.",
         threshold_columns,
     )
     rows_before_filtering = profiles.height
@@ -238,11 +238,11 @@ def prep_data(
     profiles: pl.DataFrame,
     threshold: float,
     transformation_func: Callable[[pl.DataFrame, float], pl.DataFrame],
-) -> npt.NDArray:
+) -> tuple[npt.NDArray, pl.DataFrame]:
     """Prepare profiles for computation using the the calc_dists function of beave."""
     data_columns = profiles.columns[1:]  # only apply functions to loci columns
     profiles = transformation_func(profiles, threshold)
     profiles_numpy = (
         profiles.select(pl.col(data_columns)).to_numpy(writable=False, order="c").astype(np.uint32)
     )
-    return profiles_numpy
+    return profiles_numpy, profiles
