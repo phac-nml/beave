@@ -1059,3 +1059,16 @@ def test_cluster_pass_filter_data(workflow_dir):
     assert len(values_kept) == expected_output_lengths
     for i in values_kept:
         assert i >= expected_output_lengths
+    matrix = Path(workflow_dir, "matrix.tsv")
+    lines = [
+        [int(f) if f.isdigit() else f for f in i.split("\t")]
+        for i in matrix.read_text().split("\n")
+        if i
+    ]
+    header = lines[0]
+    for i in range(1, len(lines)):
+        sample1 = header[i]  # sample1 position
+        for f in range(1, len(lines)):
+            sample2 = header[f]
+            dist = float(abs(sample1 - sample2))  # type: ignore
+            assert dist == float(lines[i][f])
