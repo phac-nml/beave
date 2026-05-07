@@ -58,12 +58,12 @@ def threshold_validator():
         (
             [float("inf"), 100.0, -90.0],
             beave_main.CommandError,
-            "Sorry, inf can not be used as a threshold.",
+            "Sorry, infinity can not be used as a threshold.",
         ),  # Too high
         (
             [float("inf"), 150.0],
             beave_main.CommandError,
-            "Sorry, inf can not be used as a threshold.",
+            "Sorry, infinity can not be used as a threshold.",
         ),  # Too high
         (
             [99.0, -90.0],
@@ -74,7 +74,7 @@ def threshold_validator():
             [99.0, 90.0],
             None,
             "",
-        ),  # Too low
+        ),  # No error
     ],
 )
 def test_verify_normalized_distance_thresholds(thresholds_validator, thresholds, expected, match):

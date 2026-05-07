@@ -29,10 +29,11 @@ logger = log.init_logger(__name__)
 
 MAX_PERCENT: float = 100.0
 INFINITY: float = float("inf")
+INFINITY_REPR: str = "infinity"
 
 
 class ArgValidator:
-    """Class for validating cli arguments based on passed functions.
+    """Class for validating CLI arguments based on passed functions.
 
     None of the passed arguments in this class peform any type conversion,
     but should instead raise an error if their passes arguments fail validation.
@@ -181,7 +182,7 @@ def verify_does_not_contain_infinity(thresholds: list[float]) -> None:
     for later validation functions.
     """
     if INFINITY in thresholds:
-        err_msg = f"Sorry, {INFINITY} can not be used as a threshold."
+        err_msg = f"Sorry, {INFINITY_REPR} can not be used as a threshold."
         logger.critical(err_msg)
         raise CommandError(err_msg)
 
