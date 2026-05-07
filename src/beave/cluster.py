@@ -205,7 +205,7 @@ def convert_branch_lengths(linkage_matrix: npt.NDArray, branch_type: BranchType)
     return linkage_matrix
 
 
-async def cluster(cluster_args: ClusterArguments) -> None:
+async def cluster(cluster_args: ClusterArguments, output_extension: str) -> None:
     """Runner function of cluster."""
     profiles = read_input_profiles(
         cluster_args.input_file,
@@ -227,7 +227,7 @@ async def cluster(cluster_args: ClusterArguments) -> None:
     matrix_write: types.CoroutineType | None = None
     if cluster_args.matrix:
         logger.info("Preparing distance matrix for write to file.")
-        matrix_output: Path = cluster_args.output_directory / "matrix.tsv"
+        matrix_output: Path = cluster_args.output_directory / f"matrix.{output_extension}"
         logger.debug("Fromatting matrix.")
         square_matrix: pl.DataFrame = prepare_matrix(distances, profiles)
         logger.debug("Finished preparing distance matrix for output.")
@@ -256,7 +256,7 @@ async def cluster(cluster_args: ClusterArguments) -> None:
         to.write(newick)
     logger.info("Wrote newick tree to: %s", str(tree_output))
 
-    cluster_output: Path = cluster_args.output_directory / "clusters.tsv"
+    cluster_output: Path = cluster_args.output_directory / f"clusters.{output_extension}"
     cluster_memberships.write_csv(
         cluster_output,
         separator=cluster_args.delimiter,

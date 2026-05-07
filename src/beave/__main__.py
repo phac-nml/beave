@@ -144,6 +144,17 @@ def path_exists(file_path: str) -> Path:
     raise FileNotFoundError(error_message)
 
 
+def output_extension(delimiter: str) -> str:
+    """Get correct file extension based on delimiter of input file."""
+    match delimiter:
+        case "\t":
+            return "tsv"
+        case ",":
+            return "csv"
+        case _:
+            return "txt"
+
+
 def check_if_float(float_input: str) -> float:
     """Check if input value is float."""
     try:
@@ -437,6 +448,7 @@ async def main() -> None:
         validate_normalized_distance.add_validation_function(verify_normalized_distance)
 
     log.add_file_logger(args.output)
+    file_extension: str = output_extension(args.delimiter)
     match args.command:
         case Commands.CLUSTER:
             validate_normalized_distance.add_validation_function(
@@ -458,10 +470,10 @@ async def main() -> None:
                 args.matrix,
                 args.output,
             )
-            await cluster(cluster_args)
+            await cluster(cluster_args, file_extension)
         case Commands.MATCH:
             validate_normalized_distance(args.threshold)
-            output_file = args.output / "results.tsv"
+            output_file = args.output / f"results.{file_extension}"
             match_args = MatchArguments(
                 args.query,
                 args.reference,
