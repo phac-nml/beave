@@ -1,5 +1,7 @@
 """Re-implementation of mcluster."""
 
+import asyncio
+import types
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from pathlib import Path
@@ -63,10 +65,10 @@ class ClusterArguments:
     columns_path: Path | None
     count_missing: bool
     normalize_distance: bool
-    tree_output: Path
-    cluster_outputs: Path
     branch_type: BranchType
     filter_threshold: float
+    matrix: bool
+    output_directory: Path
 
 
 class LinkageMatrixFields(Enum):
@@ -120,21 +122,38 @@ def linkage_matrix_to_nwk(linkage_matrix: npt.NDArray, sample_ids: list[str]) ->
     return newick_intermediates[linkage_matrix.shape[0] - 1 + n_objects] + ";"
 
 
+def prepare_matrix(array: npt.NDArray, columns: pl.Series) -> pl.DataFrame:
+    """Prepare the matrix object as a polars array."""
+    square_matrix: npt.NDArray = scipy.spatial.distance.squareform(array)
+    output_df: pl.DataFrame = pl.from_numpy(square_matrix, schema=columns.to_list())
+    output_df = output_df.insert_column(0, columns)
+    return output_df
+
+
 def compute_dists(
     profiles: pl.DataFrame,
-    count_missing: bool,
-    normalize: bool,
-    threads: int,
-    filter_threshold: float = 1.0,
-) -> tuple[npt.NDArray, pl.DataFrame]:
+    cluster_args: ClusterArguments,
+) -> tuple[npt.NDArray, pl.Series]:
     """Compute the 1D array required by scipy for generation of the linkage matrix."""
     profiles_array, filtered_profiles = prep_data(
-        profiles, filter_threshold, transform_data_categorical_encoding
+        profiles, cluster_args.filter_threshold, transform_data_categorical_encoding
     )
     logger.debug("Tranformed data for computation in C++ sub-routine.")
-    distances = beave.calc_dists(profiles_array, threads, normalize, count_missing)
+    distances = beave.calc_dists(
+        profiles_array,
+        cluster_args.cores,
+        cluster_args.normalize_distance,
+        cluster_args.count_missing,
+    )
     logger.debug("Finished C++ sub-routine.")
     return distances, filtered_profiles
+
+
+def dists_to_matrix(square_array: pl.DataFrame, seperator: str, output_file: Path) -> None:
+    """Write square array to file as matrix in a seperate co-routine."""
+    logger.debug(f"Beginning write of matrix to {output_file}.")
+    square_array.write_csv(output_file, separator=seperator, include_header=True)
+    logger.info("Finished writing distance matrix to file.")
 
 
 def compute_linkage_matrix(profiles_computed: npt.NDArray, linkage: str) -> npt.NDArray:
@@ -186,7 +205,7 @@ def convert_branch_lengths(linkage_matrix: npt.NDArray, branch_type: BranchType)
     return linkage_matrix
 
 
-def cluster(cluster_args: ClusterArguments) -> None:
+async def cluster(cluster_args: ClusterArguments) -> None:
     """Runner function of cluster."""
     profiles = read_input_profiles(
         cluster_args.input_file,
@@ -202,18 +221,27 @@ def cluster(cluster_args: ClusterArguments) -> None:
 
     distances, profiles = compute_dists(
         profiles,
-        cluster_args.count_missing,
-        cluster_args.normalize_distance,
-        cluster_args.cores,
-        cluster_args.filter_threshold,
+        cluster_args,
     )
+
+    matrix_write: types.CoroutineType | None = None
+    if cluster_args.matrix:
+        logger.info("Preparing distance matrix for write to file.")
+        matrix_output: Path = cluster_args.output_directory / "matrix.tsv"
+        logger.debug("Fromatting matrix.")
+        square_matrix: pl.DataFrame = prepare_matrix(distances, profiles)
+        logger.debug("Finished preparing distance matrix for output.")
+        matrix_write = asyncio.to_thread(
+            dists_to_matrix, square_matrix, cluster_args.delimiter, matrix_output
+        )
+
     logger.info("Computed distances.")
     linkages = compute_linkage_matrix(distances, cluster_args.linkage_method)
     logger.info("Computed linkage matrix.")
     cluster_args.thresholds.sort(reverse=True)
     logger.info("Thresholds being used for generating linkages: %s", cluster_args.thresholds)
 
-    sample_names = profiles.select(pl.nth(0)).to_series().to_list()
+    sample_names: list[str] = profiles.to_list()
     # write out the tree
     cluster_memberships = assign_clusters(linkages, cluster_args.thresholds, sample_names)
     logger.info("Assigned clusters.")
@@ -223,13 +251,18 @@ def cluster(cluster_args: ClusterArguments) -> None:
     )  # convert branch lengths for tree display if needed
     newick = linkage_matrix_to_nwk(linkages, sample_names)
 
-    with cluster_args.tree_output.open("w") as to:
+    tree_output: Path = cluster_args.output_directory / "tree.nwk"
+    with tree_output.open("w") as to:
         to.write(newick)
-    logger.info("Wrote newick tree to: %s", str(cluster_args.tree_output))
+    logger.info("Wrote newick tree to: %s", str(tree_output))
 
+    cluster_output: Path = cluster_args.output_directory / "clusters.tsv"
     cluster_memberships.write_csv(
-        cluster_args.cluster_outputs,
+        cluster_output,
         separator=cluster_args.delimiter,
         include_header=True,
     )
-    logger.info("Wrote cluster memberships to: %s", str(cluster_args.cluster_outputs))
+    logger.info("Wrote cluster memberships to: %s", str(cluster_output))
+
+    if matrix_write is not None:  # await the matrix to finish writing
+        await matrix_write

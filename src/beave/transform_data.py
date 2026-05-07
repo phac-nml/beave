@@ -238,11 +238,15 @@ def prep_data(
     profiles: pl.DataFrame,
     threshold: float,
     transformation_func: Callable[[pl.DataFrame, float], pl.DataFrame],
-) -> tuple[npt.NDArray, pl.DataFrame]:
-    """Prepare profiles for computation using the the calc_dists function of beave."""
+) -> tuple[npt.NDArray, pl.Series]:
+    """Prepare profiles for computation using the the calc_dists function of beave.
+
+    Only the sample names are returned as we have no need of the profiles anymore, but
+    we need to know which samples were kept after filtering.
+    """
     data_columns = profiles.columns[1:]  # only apply functions to loci columns
     profiles = transformation_func(profiles, threshold)
     profiles_numpy = (
         profiles.select(pl.col(data_columns)).to_numpy(writable=False, order="c").astype(np.uint32)
     )
-    return profiles_numpy, profiles
+    return profiles_numpy, profiles.select(pl.nth(0)).to_series()

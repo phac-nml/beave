@@ -9,6 +9,7 @@ __description__ = importlib.metadata.metadata(__package__ or __name__)["Summary"
 __version__ = importlib.metadata.version(__package__ or __name__)
 
 import argparse
+import asyncio
 import os
 import sys
 from collections.abc import Callable, Sequence
@@ -284,6 +285,10 @@ def add_cluster_parser(parser_cluster: argparse.ArgumentParser) -> None:
         help="Determine how to display tree lenghts in the Newick file. (default %(default)s)",
     )
 
+    parser_cluster.add_argument(
+        "--matrix", action="store_true", help="Write the computed distance matrix to a file."
+    )
+
 
 def add_match_parser(parser_match: argparse.ArgumentParser) -> None:
     """Add arguments to sub-parser for match."""
@@ -419,7 +424,7 @@ def create_parent_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> None:
+async def main() -> None:
     """Program entry-point."""
     parser = create_parent_parser()
     args = parser.parse_args()
@@ -439,8 +444,6 @@ def main() -> None:
                 prepend=True,  # Check can be used on hamming values as infinity is not allowed.
             )
             validate_normalized_distance(args.thresholds)
-            cluster_output = args.output / "clusters.tsv"
-            tree_output = args.output / "tree.nwk"
             cluster_args = ClusterArguments(
                 args.input,
                 args.delimiter,
@@ -450,12 +453,12 @@ def main() -> None:
                 args.columns_subset,
                 args.count_missing,
                 args.normalize_distance,
-                tree_output,
-                cluster_output,
                 args.branch_type,
                 args.filter_threshold,
+                args.matrix,
+                args.output,
             )
-            cluster(cluster_args)
+            await cluster(cluster_args)
         case Commands.MATCH:
             validate_normalized_distance(args.threshold)
             output_file = args.output / "results.tsv"
@@ -475,3 +478,8 @@ def main() -> None:
         case _:
             parser.print_help()
             sys.exit()
+
+
+def async_main():
+    """Async entry point for main python function."""
+    asyncio.run(main())

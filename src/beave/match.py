@@ -199,7 +199,7 @@ def match(match_args: MatchArguments) -> None:
     transform.verify_dataframe_integrity(merged_profiles)
     logger.debug("Finished verifying merged profiles dataframe.")
 
-    profiles_prepared, merged_profiles = transform.prep_data(
+    profiles_prepared, merged_profiles_samples = transform.prep_data(
         merged_profiles, match_args.filter_threshold, transform.transform_data_categorical_encoding
     )
     logger.debug("Converted prepared profiles to numpy array.")
@@ -211,6 +211,6 @@ def match(match_args: MatchArguments) -> None:
     Need to provide an index row to the passed labels or else the look up of each value from
     the list when writing the output is incredibly slow.
     """
-    samples: npt.NDArray = merged_profiles.select(pl.first()).to_series().to_numpy()
+    samples: npt.NDArray = merged_profiles_samples.to_numpy()
     prepare_fast_match_outputs(fast_match_results, samples, match_args)
     logger.info("Finished.")

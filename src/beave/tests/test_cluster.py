@@ -7,6 +7,7 @@ from beave import cluster
 from beave import transform_data as transform
 
 import hashlib
+from dataclasses import dataclass
 from pathlib import Path
 
 import polars as pl
@@ -361,7 +362,7 @@ def test_prep_data(profiles: pl.DataFrame) -> None:
     array = np.zeros((profiles.height, 3), dtype=np.uint32)  # array should all be zeros
     for i in array:
         i[2] = np.uint32(2683474508)  # last value should be the hashed version of "A"
-    output, profiles = cluster.prep_data(profiles, 1.00, transform.transform_data_hashes)
+    output, _ = cluster.prep_data(profiles, 1.00, transform.transform_data_hashes)
     np.testing.assert_equal(output, array)
 
 
@@ -980,7 +981,17 @@ def test_calc_dists_fuzzing_hypothesis_no_infinites(arr):
 def test_calc_dists_file_inputs(input, normalized, count_missing):
     """Test inputs of calc dists is correct with known input."""
     profiles: pl.DataFrame = cluster.read_input_profiles(input, "\t", 1)
-    dists, profiles = cluster.compute_dists(profiles, count_missing, normalized, 1)
+
+    @dataclass
+    class ClusterArguments:
+        cores: int
+        count_missing: bool
+        normalize_distance: bool
+        filter_threshold: float
+
+    input_args = ClusterArguments(1, count_missing, normalized, 1)
+
+    dists, _ = cluster.compute_dists(profiles, input_args)  # type: ignore[reportArgumentType]
     matrix: npt.NDArray = scipy.spatial.distance.squareform(
         dists
     )  # conversion to squareform so iteration of the matrix is simpler as we do not need to
