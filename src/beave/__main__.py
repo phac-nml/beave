@@ -33,7 +33,7 @@ MAX_PERCENT: float = 100.0
 class Infinity(float):
     """Override of the float class to change the __repr__ of inifinity."""
 
-    def __new__(cls):
+    def __new__(cls) -> "Infinity":
         """Override instance creation of float class."""
         return super().__new__(cls, "infinity")
 
