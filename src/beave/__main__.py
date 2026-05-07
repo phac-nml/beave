@@ -28,8 +28,21 @@ from beave.match import MatchArguments, match
 logger = log.init_logger(__name__)
 
 MAX_PERCENT: float = 100.0
-INFINITY: float = float("inf")
-INFINITY_REPR: str = "infinity"
+
+
+class Infinity(float):
+    """Override of the float class to change the __repr__ of inifinity."""
+
+    def __new__(cls):
+        """Override instance creation of float class."""
+        return super().__new__(cls, "infinity")
+
+    def __repr__(self) -> str:
+        """Override of repr for floats, to only return infinity."""
+        return "infinity"
+
+
+INFINITY: Infinity = Infinity()
 
 
 class ArgValidator:
@@ -182,7 +195,7 @@ def verify_does_not_contain_infinity(thresholds: list[float]) -> None:
     for later validation functions.
     """
     if INFINITY in thresholds:
-        err_msg = f"Sorry, {INFINITY_REPR} can not be used as a threshold."
+        err_msg = f"Sorry, {INFINITY} can not be used as a threshold."
         logger.critical(err_msg)
         raise CommandError(err_msg)
 

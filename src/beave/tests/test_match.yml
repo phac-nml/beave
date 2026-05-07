@@ -8,7 +8,7 @@
 - name: Run fast-matching output directory created
   tags: 
     - should_pass
-  command: beave match -c 1 -q src/beave/tests/data/R1KC1K.tail.tsv -r src/beave/tests/data/R1KC1K.head.tsv -o out -m
+  command: beave match -c 1 -q src/beave/tests/data/R1KC1K.tail.tsv -r src/beave/tests/data/R1KC1K.head.tsv -o out -m -t infinity
   files:
     - path: "out/results.tsv"
       should_exist: true
