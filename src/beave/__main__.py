@@ -487,6 +487,6 @@ async def main() -> None:
             sys.exit()
 
 
-def async_main():
+def async_main() -> None:
     """Async entry point for main python function."""
     asyncio.run(main())
