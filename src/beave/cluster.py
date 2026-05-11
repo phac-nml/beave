@@ -197,7 +197,7 @@ async def cluster(cluster_args: ClusterArguments, output_extension: str) -> None
         linkages_task = tg.create_task(
             asyncio.to_thread(compute_linkage_matrix, distances, cluster_args.linkage_method)
         )
-        matrix_task: types.CoroutineType | None = None
+        matrix_task: asyncio.Task[None] | None = None
         if cluster_args.matrix:
             logger.info("Preparing distance matrix for write to file.")
             matrix_output: Path = cluster_args.output_directory / f"matrix.{output_extension}"
