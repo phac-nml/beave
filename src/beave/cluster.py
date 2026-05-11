@@ -2,8 +2,7 @@
 
 import asyncio
 import types
-from dataclasses import dataclass
-from enum import Enum, StrEnum
+from enum import Enum
 from pathlib import Path
 
 import numpy as np
@@ -12,6 +11,7 @@ import scipy
 from numpy import typing as npt
 
 import beave
+from beave.declarations import BranchType, ClusterArguments
 from beave.log import init_logger
 from beave.transform_data import (
     prep_data,
@@ -29,46 +29,6 @@ class ValueLeavesError(Exception):
     def __init__(self, n_leaves: int, n_objects: int) -> None:
         """ValueError for unequal numbers of leaves and sample names."""
         super().__init__(f"Sorry, expected {n_objects} leaf names, got {n_leaves}.")
-
-
-class LinkageMetric(StrEnum):
-    """Linkage options that can be passed to scipy."""
-
-    SINGLE = "single"
-    AVERAGE = "average"
-    COMPLETE = "complete"
-
-
-class BranchType(StrEnum):
-    """Branch length types used for converting tree branch metrics."""
-
-    PATRISTIC = "patristic"
-    COPHENETIC = "cophenetic"
-
-
-@dataclass(slots=True)
-class ClusterArguments:
-    """CLI arguments for clustering program.
-
-    Disabling the pylint warning for too-many-instance-attributes
-    as the number of attributes seems appropriate here for the purpose
-    the class serves.
-    """
-
-    # pylint: disable=too-many-instance-attributes
-
-    input_file: Path
-    delimiter: str
-    thresholds: list[float]
-    linkage_method: str
-    cores: int
-    columns_path: Path | None
-    count_missing: bool
-    normalize_distance: bool
-    branch_type: BranchType
-    filter_threshold: float
-    matrix: bool
-    output_directory: Path
 
 
 class LinkageMatrixFields(Enum):
@@ -136,7 +96,7 @@ def compute_dists(
 ) -> tuple[npt.NDArray, pl.Series]:
     """Compute the 1D array required by scipy for generation of the linkage matrix."""
     profiles_array, filtered_profiles = prep_data(
-        profiles, cluster_args.filter_threshold, transform_data_categorical_encoding
+        profiles, cluster_args.filter_threshold, transform_data_categorical_encoding, cluster_args
     )
     logger.debug("Tranformed data for computation in C++ sub-routine.")
     distances = beave.calc_dists(
@@ -150,7 +110,14 @@ def compute_dists(
 
 
 def dists_to_matrix(square_array: pl.DataFrame, seperator: str, output_file: Path) -> None:
-    """Write square array to file as matrix in a seperate co-routine."""
+    """Write square array to file as matrix in a seperate co-routine.
+
+    While this function will run sequentially with the rest of the program
+    e.g. not truly run in parallel. As GIL'less python becomes the standard
+    with future python releases this function will be able to take advantage
+    of the ability to run in parallel in the near future. This is the current
+    justification for the additional technical overhead that using async offers.
+    """
     logger.debug(f"Beginning write of matrix to {output_file}.")
     square_array.write_csv(output_file, separator=seperator, include_header=True)
     logger.info("Finished writing distance matrix to file.")

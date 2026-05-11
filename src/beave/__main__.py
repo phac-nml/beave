@@ -18,13 +18,9 @@ from pathlib import Path
 from typing import Any
 
 from beave import log
-from beave.cluster import (
-    BranchType,
-    ClusterArguments,
-    LinkageMetric,
-    cluster,
-)
-from beave.match import MatchArguments, match
+from beave.cluster import cluster
+from beave.declarations import BranchType, ClusterArguments, LinkageMetric, MatchArguments
+from beave.match import match
 
 logger = log.init_logger(__name__)
 
@@ -457,36 +453,35 @@ async def main() -> None:
             )
             validate_normalized_distance(args.thresholds)
             cluster_args = ClusterArguments(
-                args.input,
-                args.delimiter,
-                args.thresholds,
-                args.linkage_method,
-                args.cores,
-                args.columns_subset,
-                args.count_missing,
-                args.normalize_distance,
-                args.branch_type,
-                args.filter_threshold,
-                args.matrix,
-                args.output,
+                input_file=args.input,
+                delimiter=args.delimiter,
+                thresholds=args.thresholds,
+                linkage_method=args.linkage_method,
+                cores=args.cores,
+                columns_path=args.columns_subset,
+                count_missing=args.count_missing,
+                normalize_distance=args.normalize_distance,
+                branch_type=args.branch_type,
+                filter_threshold=args.filter_threshold,
+                matrix=args.matrix,
+                output_directory=args.output,
             )
             await cluster(cluster_args, file_extension)
         case Commands.MATCH:
             validate_normalized_distance(args.threshold)
-            output_file = args.output / f"results.{file_extension}"
             match_args = MatchArguments(
-                args.query,
-                args.reference,
-                args.threshold,
-                args.cores,
-                args.columns_subset,
-                args.delimiter,
-                args.count_missing,
-                args.normalize_distance,
-                args.filter_threshold,
-                output_file,
+                query=args.query,
+                reference=args.reference,
+                threshold=args.threshold,
+                cores=args.cores,
+                columns_path=args.columns_subset,
+                delimiter=args.delimiter,
+                count_missing=args.count_missing,
+                normalize_distance=args.normalize_distance,
+                filter_threshold=args.filter_threshold,
+                output_directory=args.output,
             )
-            match(match_args)
+            match(match_args, file_extension)
         case _:
             parser.print_help()
             sys.exit()
