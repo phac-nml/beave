@@ -114,8 +114,12 @@ def dists_to_matrix(square_array: pl.DataFrame, seperator: str, output_file: Pat
     While this function will run sequentially with the rest of the program
     e.g. not truly run in parallel. As GIL'less python becomes the standard
     with future python releases this function will be able to take advantage
-    of the ability to run in parallel in the near future. This is the current
-    justification for the additional technical overhead that using async offers.
+    of the ability to run in parallel in the near future.
+
+    This process and computation of the linkage files currently do run in seperate threads,
+    however how context switching happens is not quite clear yet. Running the two functions
+    in seperate threads has not added significant overhead to the program in benchmarking
+    however.
     """
     logger.debug(f"Beginning write of matrix to {output_file}.")
     square_array.write_csv(output_file, separator=seperator, include_header=True)
