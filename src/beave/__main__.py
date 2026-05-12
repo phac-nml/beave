@@ -328,7 +328,10 @@ def add_match_parser(parser_match: argparse.ArgumentParser) -> None:
         "-o",
         type=output_directory,
         required=False,
-        help=("Output directory for calculated distances. (default: %(default)s)"),
+        help=(
+            "Output directory for calculated distances, directory will be treated if does"
+            " not exist. (default: %(default)s)"
+        ),
         default=os.getcwd(),
     )
 
