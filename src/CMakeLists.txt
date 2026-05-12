@@ -88,7 +88,7 @@ elseif(TARGET_GROUP STREQUAL python)
 
 
   target_compile_options(beave_ext PRIVATE
-      -Wall -Wextra -g -O3 -mfpmath=sse -fPIC -fpermissive
+      -Wall -Wextra -O3 -mfpmath=sse -fPIC -fpermissive
     -ffast-math -ftree-vectorize -funroll-loops -flto
     -std=c++23 -DPYTHON_BUILD -mavx2)
 

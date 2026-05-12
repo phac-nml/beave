@@ -14,7 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(TARGET_GROUP STREQUAL release)
 
   set(CMAKE_CXX_FLAGS
-  "-Wall -Wextra -g -O3 -mfpmath=sse -flto \
+  "-Wall -Wextra -O3 -mfpmath=sse -flto \
   -ffast-math -ftree-vectorize -funroll-loops \
   -fopt-info-vec-optimized -std=c++23 -mavx2")
   add_subdirectory(src)
