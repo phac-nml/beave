@@ -493,3 +493,4 @@ async def main() -> None:
 def async_main() -> None:
     """Async entry point for main python function."""
     asyncio.run(main())
+    logger.info("Finished.")
