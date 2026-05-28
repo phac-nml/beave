@@ -24,7 +24,8 @@ from beave.match import match
 
 logger = log.init_logger(__name__)
 
-MAX_PERCENT: float = 100.0
+MAX_NORMALIZED: float = 1.0
+MAX_PERCENTAGE: float = 100.0
 
 
 class Infinity(float):
@@ -165,13 +166,13 @@ def check_if_float(float_input: str) -> float:
 def percentage_range(float_input: str) -> float:
     """Check if input value is in range for comparisons."""
     converted_float: float = check_if_float(float_input)
-    if converted_float <= 0.00 or converted_float > MAX_PERCENT:
+    if converted_float <= 0.00 or converted_float > MAX_PERCENTAGE:
         error_message = (
             f"Sorry, Filter threshold must be between 0.00 and 100.0. You passed: {float_input}"
         )
         logger.critical(error_message)
         raise ValueError(error_message)
-    return converted_float / MAX_PERCENT  # convert percentage to decimal fraction
+    return converted_float / MAX_PERCENTAGE  # convert percentage to decimal fraction
 
 
 def cluster_threshold(float_input: str) -> float:
@@ -212,15 +213,15 @@ def verify_normalized_distance(thresholds: float | list[float]) -> None:
     """Verify normalized distance thresholds."""
     max_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
     min_value: float = min(thresholds) if isinstance(thresholds, list) else thresholds
-    max_value_bound_exceeded: bool = max_value != INFINITY and max_value >= MAX_PERCENT
+    max_value_bound_exceeded: bool = max_value != INFINITY and max_value >= MAX_NORMALIZED
     min_value_bound_exceeded: bool = min_value <= 0.0
 
     if not max_value_bound_exceeded and not min_value_bound_exceeded:
         return
 
     err_msg_max: str = (
-        f"Sorry, normalized distance specified, but values greater than or equal to {MAX_PERCENT}"
-        f" are provided. {max_value}"
+        f"Sorry, normalized distance specified, but values greater than or equal"
+        f" to {MAX_NORMALIZED} are provided. {max_value}"
     )
     err_msg_min: str = (
         f"Sorry, normalized distance specified, but values less than or equal to 0.0"
@@ -390,7 +391,7 @@ def create_parent_parser() -> argparse.ArgumentParser:
         "-n",
         help=(
             "Compute the normalized distance. Distance is presented as a percentage, or a value "
-            "between [0.0-100.0]"
+            "between [0.0-1.0]"
         ),
         action="store_true",
     )

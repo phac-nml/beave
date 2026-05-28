@@ -26,52 +26,52 @@ def threshold_validator():
     "thresholds,expected,match",
     [
         (
-            [100.0, 90.0],
+            [1.0, 0.90],
             beave_main.CommandError,
-            "but values greater than or equal to 100.0 are provided. 100.0",
+            "but values greater than or equal to 1.0 are provided. 1.0",
         ),  # Too high
         (
-            [100.0, -90.0],
+            [1.0, -0.90],
             beave_main.CommandError,
-            "but values greater than or equal to 100.0 are provided. 100.0",
+            "but values greater than or equal to 1.0 are provided. 1.0",
         ),  # Too high and too low
         (
-            [101.0, -90.0],
+            [1.1, -0.90],
             beave_main.CommandError,
-            "but values greater than or equal to 100.0 are provided. 101.0",
+            "but values greater than or equal to 1.0 are provided. 1.1",
         ),  # Too high and too low
         (
-            [101.0, -90.0],
+            [1.1, -9.0],
             beave_main.CommandError,
-            "but values less than or equal to 0.0 are provided. -90.0",
+            "but values less than or equal to 0.0 are provided. -0.9",
         ),  # Too high and too low
         (
-            [101.0, 90.0],
+            [1.1, 0.9],
             beave_main.CommandError,
-            "but values greater than or equal to 100.0 are provided. 101.0",
+            "but values greater than or equal to 1.0 are provided. 1.1",
         ),  # Too high
         (
-            [100.0, -90.0],
+            [1.0, -0.9],
             beave_main.CommandError,
-            "but values less than or equal to 0.0 are provided. -90.0",
+            "but values less than or equal to 0.0 are provided. -0.9",
         ),  # Too high
         (
-            [float("inf"), 100.0, -90.0],
+            [float("inf"), 1.0, -0.90],
             beave_main.CommandError,
             "Sorry, infinity can not be used as a threshold.",
         ),  # Too high
         (
-            [float("inf"), 150.0],
+            [float("inf"), 1.50],
             beave_main.CommandError,
             "Sorry, infinity can not be used as a threshold.",
         ),  # Too high
         (
-            [99.0, -90.0],
+            [0.99, -0.9],
             beave_main.CommandError,
-            "but values less than or equal to 0.0 are provided. -90.0",
+            "but values less than or equal to 0.0 are provided. -0.90",
         ),  # Too low
         (
-            [99.0, 90.0],
+            [0.99, 0.90],
             None,
             "",
         ),  # No error

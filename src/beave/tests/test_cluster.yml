@@ -1,5 +1,5 @@
 - name: Run cluster pass
-  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -o out -nm -b patristic -c 2 --thresholds 10.0 9.0 8.0
+  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -o out -nm -b patristic -c 2 --thresholds 0.10 0.9 0.8
   files:
     - path: "out/tree.nwk"
       should_exist: true
@@ -11,7 +11,7 @@
 - name: Run cluster pass cophenetic
   tags:
     - should_pass
-  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -o tree -l average -nm -b cophenetic -c 2 --thresholds 10.0 9.0 8.0
+  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -o tree -l average -nm -b cophenetic -c 2 --thresholds 0.10 0.9 0.8
   files:
     - path: "tree/tree.nwk"
       should_exist: true
@@ -106,7 +106,7 @@
 - name: Run cluster csv
   tags:
     - should_pass
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -c 2 -t 1 0.5 --delimiter ,
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -c 2 -t 0.999 0.5 --delimiter ,
   files:
     - path: "tree.nwk"
       should_exist: true
@@ -118,7 +118,7 @@
 - name: Run cluster threshold should fail due to negative number being passed
   tags:
     - should_fail
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -sc -b cophenetic -c 2 -t 1 0.5 --delimiter , -f -1
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nc -b cophenetic -c 2 -t 0.99 0.5 --delimiter , -f -1
   exit_code: 2
   files:
     - path: "tree.nwk"
@@ -132,7 +132,7 @@
 - name: Run cluster, cluster threshold should fail due to negative number being passed.
   tags:
     - should_fail
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -c 2 -t 1 0.5 -1 --delimiter, 
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -c 2 -t 0.99 0.5 -1 --delimiter, 
   exit_code: 2
   files:
     - path: "tree.nwk"
@@ -146,7 +146,7 @@
 - name: Run cluster, cluster threshold should fail due to infinity being passed.
   tags:
     - should_fail
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -n 2 --thresholds 1 0.5 inf --delimiter , 
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -m -b cophenetic -n 2 --thresholds 1 0.5 inf --delimiter , 
   exit_code: 2
   files:
     - path: "tree.nwk"
@@ -200,7 +200,7 @@
 - name: Run cluster id contains null value
   tags:
     - should_fail
-  command: beave cluster --input src/beave/tests/data/test_profiles_null_in_id_column.csv --delimiter , -l average -nm -b cophenetic -c 2 -t 1 0.5
+  command: beave cluster --input src/beave/tests/data/test_profiles_null_in_id_column.csv --delimiter , -l average -nm -b cophenetic -c 2 -t 0.99 0.5
   exit_code: 1
   files:
     - path: "tree.nwk"

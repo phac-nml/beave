@@ -932,7 +932,7 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
             ),
             False,
             True,
-            np.array([np.float32(100.0)]),
+            np.array([np.float32(1.0)]),
         ),
         (
             np.array(
@@ -943,7 +943,7 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
             ),
             True,
             True,
-            np.array([np.float32(100.0)]),
+            np.array([np.float32(1.0)]),
         ),
         (
             np.array(
@@ -954,7 +954,7 @@ def test_convert_branch_lengths(linkage, branchlength_type, expected):
             ),
             False,
             True,
-            np.array([np.float32(100.0)]),
+            np.array([np.float32(1.0)]),
         ),
     ],
 )
@@ -1007,7 +1007,7 @@ def test_calc_dists_file_inputs(input, normalized, count_missing):
         for f in range(0, profiles.height):
             sample2: int = int(profiles.item(f, "sample"))
             if normalized:
-                dist: float = (abs(sample1 - sample2) / float(profiles.height)) * 100.0
+                dist: float = abs(sample1 - sample2) / float(profiles.height)
                 assert dist == pytest.approx(matrix[i][f], rel=1e-6)
             else:
                 assert float(abs(sample1 - sample2)) == pytest.approx(matrix[i][f], rel=1e-6)

@@ -444,7 +444,7 @@ def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
         r = int(r)
         dist = float(dist)
         if input.normalize_distance:
-            expected = (abs(q - r) / profile_width) * 100.0
+            expected = abs(q - r) / profile_width
         else:
             expected = float(dist)
         assert dist <= input.threshold
@@ -546,7 +546,7 @@ def test_fast_match_run_outputs_normalized(workflow_dir):
         r = int(r)
         query_ids_read.add(q)
         values.add((q, r))
-        expected = float(abs(q - r) / 1000) * 100.0
+        expected = float(abs(q - r) / 1000)
         assert expected == pytest.approx(float(dist), rel=1e-6)
     assert query_ids_read == query_ids
     assert values == expected_labels  # verify the two sets are the same
