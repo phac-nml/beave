@@ -111,7 +111,7 @@ def compute_dists(
 def dists_to_matrix(square_array: pl.DataFrame, seperator: str, output_file: Path) -> None:
     """Write square array to file as matrix in a seperate co-routine.
 
-    While this function will run sequentially with the rest of the program
+    This function will run sequentially with the rest of the program
     e.g. not truly run in parallel. As GIL'less python becomes the standard
     with future python releases this function will be able to take advantage
     of the ability to run in parallel in the near future.

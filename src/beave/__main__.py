@@ -260,7 +260,7 @@ def add_cluster_parser(parser_cluster: argparse.ArgumentParser) -> None:
         type=output_directory,
         required=False,
         help=(
-            "Output directory for generated tree and clusters, directory will be treated if does"
+            "Output directory for generated tree and clusters, directory will be created if does"
             " not exist. (default: %(default)s)"
         ),
         default=os.getcwd(),
@@ -293,7 +293,12 @@ def add_cluster_parser(parser_cluster: argparse.ArgumentParser) -> None:
     )
 
     parser_cluster.add_argument(
-        "--matrix", action="store_true", help="Write the computed distance matrix to a file."
+        "--matrix",
+        action="store_true",
+        help=(
+            "Write the computed distance matrix to a file in "
+            "the output directory called 'matrix.tsv'."
+        ),
     )
 
 
@@ -329,7 +334,7 @@ def add_match_parser(parser_match: argparse.ArgumentParser) -> None:
         type=output_directory,
         required=False,
         help=(
-            "Output directory for calculated distances, directory will be treated if does"
+            "Output directory for calculated distances, directory will be created if does"
             " not exist. (default: %(default)s)"
         ),
         default=os.getcwd(),
