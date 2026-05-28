@@ -9,6 +9,7 @@ import numpy as np
 import numpy.typing as npt
 import polars as pl
 
+from beave.declarations import DefaultArguments
 from beave.log import init_logger
 
 logger = init_logger(__name__)
@@ -98,7 +99,7 @@ def verify_dataframe_integrity(profiles: pl.DataFrame) -> None:
         logger.critical(err_string)
         raise pl.exceptions.RowsError(err_string)
 
-    if profiles.select(pl.nth(0).null_count())[0, 0] >= 1:
+    if profiles.select(pl.first().null_count())[0, 0] >= 1:
         err_string = (
             "Sorry, missing values identified in left most column (ID column). The left most "
             "column can have no missing values."
@@ -106,7 +107,7 @@ def verify_dataframe_integrity(profiles: pl.DataFrame) -> None:
         logger.critical(err_string)
         raise MissingIDValueError(err_string)
 
-    if not profiles.select(pl.nth(0)).is_unique().all():
+    if not profiles.select(pl.first()).is_unique().all():
         err_string = (
             "Sorry, duplicate values identified in the left most column (ID column). The leftmost "
             "column must have no missing values."
@@ -148,7 +149,9 @@ def read_input_profiles(input_file: Path, delimiter: str, threads: int) -> pl.Da
     return profiles
 
 
-def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
+def filter_rows(
+    profiles: pl.DataFrame, threshold: float, arguments: DefaultArguments
+) -> pl.DataFrame:
     """Remove rows missing a certain percentage of data.
 
     Remove rows from the dataframe that have are missing more than the thresholds set limit for
@@ -165,21 +168,35 @@ def filter_rows(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
         threshold_columns,
     )
     rows_before_filtering = profiles.height
-    profiles = profiles.filter(
+    filtered_profiles = profiles.filter(
         pl.sum_horizontal(
             pl.all().exclude(profiles.columns[0]) == MISSING_VALUE
         )  # select all columns but first id col
         <= threshold_columns
     )
-    if profiles.is_empty():
-        raise AllColumnsFilteredError(threshold)
+    profiles = profiles.select(pl.first())  # get labels for diff only
 
-    logger.info("Removed %s rows after filtering.", rows_before_filtering - profiles.height)
+    if filtered_profiles.is_empty():
+        exception_raised: Exception = AllColumnsFilteredError(threshold)
+        logger.exception(exception_raised)
+        raise exception_raised
 
-    return profiles
+    rows_removed: int = rows_before_filtering - filtered_profiles.height
+    logger.info("Removed %s rows after filtering.", rows_removed)
+    if rows_removed:
+        output_file: Path = arguments.output_directory / "FilteredProfiles.txt"
+        # Get the diff of the profiles to determine what was filtered
+        diff = profiles.with_columns(pl.first()).join(
+            filtered_profiles, on=profiles.columns[0], how="anti"
+        )
+        diff.write_csv(output_file)
+
+    return filtered_profiles
 
 
-def transform_data_hashes(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
+def transform_data_hashes(
+    profiles: pl.DataFrame, threshold: float, arguments: DefaultArguments
+) -> pl.DataFrame:
     """Return data prepared for calc_dists.
 
     Transform the dataframe of profiles by hashing the entries, converting missing allele
@@ -205,11 +222,13 @@ def transform_data_hashes(profiles: pl.DataFrame, threshold: float) -> pl.DataFr
         ]
     )
 
-    profiles = filter_rows(profiles, threshold)
+    profiles = filter_rows(profiles, threshold, arguments)
     return profiles
 
 
-def transform_data_categorical_encoding(profiles: pl.DataFrame, threshold: float) -> pl.DataFrame:
+def transform_data_categorical_encoding(
+    profiles: pl.DataFrame, threshold: float, arguments: DefaultArguments
+) -> pl.DataFrame:
     """Return data prepared for calc_dists.
 
     Transform the DataFrame of profiles by creating a look up table to cast values to integers,
@@ -230,19 +249,24 @@ def transform_data_categorical_encoding(profiles: pl.DataFrame, threshold: float
         pl.all().exclude(profiles.columns[0]).replace(0, pl.UInt32.max())
     )
     profiles = profiles.fill_null(0)
-    profiles = filter_rows(profiles, threshold)
+    profiles = filter_rows(profiles, threshold, arguments)
     return profiles
 
 
 def prep_data(
     profiles: pl.DataFrame,
     threshold: float,
-    transformation_func: Callable[[pl.DataFrame, float], pl.DataFrame],
-) -> tuple[npt.NDArray, pl.DataFrame]:
-    """Prepare profiles for computation using the the calc_dists function of beave."""
+    transformation_func: Callable[[pl.DataFrame, float, DefaultArguments], pl.DataFrame],
+    program_arguments: DefaultArguments,
+) -> tuple[npt.NDArray, pl.Series]:
+    """Prepare profiles for computation using the the calc_dists function of beave.
+
+    Only the sample names are returned as we have no need of the profiles anymore, but
+    we need to know which samples were kept after filtering.
+    """
     data_columns = profiles.columns[1:]  # only apply functions to loci columns
-    profiles = transformation_func(profiles, threshold)
+    profiles = transformation_func(profiles, threshold, program_arguments)
     profiles_numpy = (
         profiles.select(pl.col(data_columns)).to_numpy(writable=False, order="c").astype(np.uint32)
     )
-    return profiles_numpy, profiles
+    return profiles_numpy, profiles.select(pl.first()).to_series()

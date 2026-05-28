@@ -7,6 +7,7 @@ import hashlib
 from pathlib import Path
 
 from beave import match
+from beave.declarations import MatchArguments
 
 import numpy as np
 import polars as pl
@@ -100,12 +101,14 @@ def test_prepare_fast_match_outputs(tmp_path, input, sample_names, normalized, e
 
     @dataclass
     class MatchArguments:
-        output: Path
-        normalized_distance: bool
+        output_directory: Path
+        normalize_distance: bool
         delimiter: str
 
-    input_args = MatchArguments(output=file_out, normalized_distance=normalized, delimiter="\t")
-    match.prepare_fast_match_outputs(input, sample_names, input_args)  # type: ignore[reportArgumentType]
+    input_args = MatchArguments(
+        output_directory=file_out, normalize_distance=normalized, delimiter="\t"
+    )
+    match.prepare_fast_match_outputs(input, sample_names, input_args, file_out)  # type: ignore[reportArgumentType]
     text = file_out.read_text().split("\n")
     assert text == expected
 
@@ -116,7 +119,18 @@ def test_prepare_fast_match_outputs(tmp_path, input, sample_names, normalized, e
         (
             np.array([[0, 1, 0], [0, 1, 0], [0, 1, 0]], dtype=np.float32),
             1,
-            match.MatchArguments(Path(""), Path(""), 1.0, 1, None, "\t", True, True, 0.0, Path("")),
+            MatchArguments(
+                query=Path(""),
+                reference=Path(""),
+                threshold=1.0,
+                cores=1,
+                columns_path=None,
+                delimiter="\t",
+                count_missing=True,
+                normalize_distance=True,
+                filter_threshold=0.0,
+                output_directory=Path(""),
+            ),
             np.array([[0, 1, 0.0], [0, 2, 0.0]], dtype=np.float32),
         ),
         (
@@ -137,8 +151,17 @@ def test_prepare_fast_match_outputs(tmp_path, input, sample_names, normalized, e
                 dtype=np.float32,
             ),
             1,
-            match.MatchArguments(
-                Path(""), Path(""), 100.0, 1, None, "\t", True, True, 0.0, Path("")
+            MatchArguments(
+                query=Path(""),
+                reference=Path(""),
+                threshold=100.0,
+                cores=1,
+                columns_path=None,
+                delimiter="\t",
+                count_missing=True,
+                normalize_distance=True,
+                filter_threshold=0.0,
+                output_directory=Path(""),
             ),
             np.array(
                 [
@@ -174,8 +197,17 @@ def test_prepare_fast_match_outputs(tmp_path, input, sample_names, normalized, e
                 dtype=np.float32,
             ),
             2,
-            match.MatchArguments(
-                Path(""), Path(""), 100.0, 1, None, "\t", True, True, 0.0, Path("")
+            MatchArguments(
+                query=Path(""),
+                reference=Path(""),
+                threshold=100.0,
+                cores=1,
+                columns_path=None,
+                delimiter="\t",
+                count_missing=True,
+                normalize_distance=True,
+                filter_threshold=0.0,
+                output_directory=Path(""),
             ),
             np.array(
                 [
@@ -220,8 +252,17 @@ def test_prepare_fast_match_outputs(tmp_path, input, sample_names, normalized, e
                 dtype=np.float32,
             ),
             1,
-            match.MatchArguments(
-                Path(""), Path(""), 100.0, 1, None, "\t", True, False, 0.0, Path("")
+            MatchArguments(
+                query=Path(""),
+                reference=Path(""),
+                threshold=100.0,
+                cores=1,
+                columns_path=None,
+                delimiter="\t",
+                count_missing=True,
+                normalize_distance=False,
+                filter_threshold=0.0,
+                output_directory=Path(""),
             ),
             np.array(
                 [
@@ -257,8 +298,17 @@ def test_prepare_fast_match_outputs(tmp_path, input, sample_names, normalized, e
                 dtype=np.float32,
             ),
             1,
-            match.MatchArguments(
-                Path(""), Path(""), 100.0, 1, None, "\t", False, False, 0.0, Path("")
+            MatchArguments(
+                query=Path(""),
+                reference=Path(""),
+                threshold=100.0,
+                cores=1,
+                columns_path=None,
+                delimiter="\t",
+                count_missing=False,
+                normalize_distance=False,
+                filter_threshold=0.0,
+                output_directory=Path(""),
             ),
             np.array(
                 [
@@ -291,65 +341,65 @@ def test_run_fast_matching(profiles, query_size, match_args, expected):
     "input,profile_width,expected_header",
     [
         (
-            match.MatchArguments(
-                Path("src/beave/tests/data/R1KC1K.head.tsv"),
-                Path("src/beave/tests/data/R1KC1K.tail.tsv"),
-                float("inf"),
-                0,
-                None,
-                "\t",
-                True,
-                False,
-                100.0,
-                Path(""),
+            MatchArguments(
+                query=Path("src/beave/tests/data/R1KC1K.head.tsv"),
+                reference=Path("src/beave/tests/data/R1KC1K.tail.tsv"),
+                threshold=float("inf"),
+                cores=0,
+                columns_path=None,
+                delimiter="\t",
+                count_missing=True,
+                normalize_distance=False,
+                filter_threshold=100.0,
+                output_directory=Path(""),
             ),
             1000,
             "query_id\tref_id\tdist_hamming",
         ),
         (
-            match.MatchArguments(
-                Path("src/beave/tests/data/R1KC1K.head.tsv"),
-                Path("src/beave/tests/data/R1KC1K.tail.tsv"),
-                float("inf"),
-                2,
-                None,
-                "\t",
-                True,
-                True,
-                100.0,
-                Path(""),
+            MatchArguments(
+                query=Path("src/beave/tests/data/R1KC1K.head.tsv"),
+                reference=Path("src/beave/tests/data/R1KC1K.tail.tsv"),
+                threshold=float("inf"),
+                cores=2,
+                columns_path=None,
+                delimiter="\t",
+                count_missing=True,
+                normalize_distance=True,
+                filter_threshold=100.0,
+                output_directory=Path(""),
             ),
             1000,
             "query_id\tref_id\tdist_normalized",
         ),
         (
-            match.MatchArguments(
-                Path("src/beave/tests/data/R1KC1K.head.tsv"),
-                Path("src/beave/tests/data/R1KC1K.tail.tsv"),
-                80.0,
-                3,
-                None,
-                "\t",
-                True,
-                True,
-                100.0,
-                Path(""),
+            MatchArguments(
+                query=Path("src/beave/tests/data/R1KC1K.head.tsv"),
+                reference=Path("src/beave/tests/data/R1KC1K.tail.tsv"),
+                threshold=80.0,
+                cores=3,
+                columns_path=None,
+                delimiter="\t",
+                count_missing=True,
+                normalize_distance=True,
+                filter_threshold=100.0,
+                output_directory=Path(""),
             ),
             1000,
             "query_id\tref_id\tdist_normalized",
         ),
         (
-            match.MatchArguments(
-                Path("src/beave/tests/data/R1KC1K.head.tsv"),
-                Path("src/beave/tests/data/R1KC1K.tail.tsv"),
-                float("inf"),
-                3,
-                None,
-                "\t",
-                True,
-                False,
-                200.0,
-                Path(""),
+            MatchArguments(
+                query=Path("src/beave/tests/data/R1KC1K.head.tsv"),
+                reference=Path("src/beave/tests/data/R1KC1K.tail.tsv"),
+                threshold=float("inf"),
+                cores=3,
+                columns_path=None,
+                delimiter="\t",
+                count_missing=True,
+                normalize_distance=False,
+                filter_threshold=200.0,
+                output_directory=Path(""),
             ),
             1000,
             "query_id\tref_id\tdist_hamming",
@@ -358,11 +408,11 @@ def test_run_fast_matching(profiles, query_size, match_args, expected):
 )
 def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
     """Test of main match function."""
-    output = tmp_path / "output.tsv"
+    output = tmp_path / "results.tsv"
 
-    input.output = output
+    input.output_directory = tmp_path
     monkeypatch.setattr(match, "MAX_ROWS_WRITE_BATCH", 10_000)
-    match.match(input)
+    match.match(input, "tsv")
     data = [i for i in output.read_text().split("\n") if i != ""]
     if input.threshold is float("inf"):
         expected_output_size_no_filtering = 374250
@@ -393,7 +443,7 @@ def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
         q = int(q)
         r = int(r)
         dist = float(dist)
-        if input.normalized_distance:
+        if input.normalize_distance:
             expected = (abs(q - r) / profile_width) * 100.0
         else:
             expected = float(dist)
@@ -404,25 +454,25 @@ def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
 @pytest.mark.parametrize(
     "input",
     [
-        match.MatchArguments(
-            Path("src/beave/tests/data/HashesOnlyQuery.csv"),
-            Path("src/beave/tests/data/HashesOnlyReference.csv"),
-            float("inf"),
-            0,
-            None,
-            ",",
-            True,
-            False,
-            100.0,
-            Path(""),
+        MatchArguments(
+            query=Path("src/beave/tests/data/HashesOnlyQuery.csv"),
+            reference=Path("src/beave/tests/data/HashesOnlyReference.csv"),
+            threshold=float("inf"),
+            cores=0,
+            columns_path=None,
+            delimiter=",",
+            count_missing=True,
+            normalize_distance=False,
+            filter_threshold=100.0,
+            output_directory=Path(""),
         ),
     ],
 )
 def test_match_all_match(tmp_path, input):
     """Verify the outputs match is correct with non-uniform inputs."""
-    output = tmp_path / "output.tsv"
-    input.output = output
-    match.match(input)
+    output = tmp_path / "results.tsv"
+    input.output_directory = tmp_path
+    match.match(input, "tsv")
     data = [i for i in output.read_text().split("\n") if i != ""]
     outputs_column_width = 299
     for row in data[1:]:

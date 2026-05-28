@@ -195,9 +195,10 @@ options:
                         Hierarchical clustering linkage to use. [default: average]
   --branch-type, -b {patristic,cophenetic}
                         Determine how to display tree lenghts in the Newick file. [default cophenetic]
+  --matrix,
 
 >>> # Example programs
->>> beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -o out -l average -nm -b cophenetic -c 2 -t 1 0.5 --delimiter ,
+>>> beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -o out -l average -nm -b cophenetic -c 2 -t 1 0.5 --delimiter , --matrix
 >>> beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -b cophenetic -c 1 --thresholds 10 9 8
 ```
 
@@ -205,30 +206,27 @@ The match argument may be used to compute pairwise distances between a group of 
 
 ```Bash
 >>> beave match --help
-usage: beave match [-h] [--cores CORES] [--delimiter DELIMITER] [--columns-subset COLUMNS_SUBSET] [--count-missing]
-                   [--normalize-distance] [--filter-threshold FILTER_THRESHOLD] [--verbose] --reference REFERENCE --query QUERY
-                   [--threshold THRESHOLD] [--output OUTPUT]
+usage: beave match [-h] [--cores CORES] [--delimiter DELIMITER] [--columns-subset COLUMNS_SUBSET] [--count-missing] [--normalize-distance] [--filter-threshold FILTER_THRESHOLD] [--verbose] --reference REFERENCE --query QUERY [--threshold THRESHOLD] [--output OUTPUT]
 
 options:
   -h, --help            show this help message and exit
-  --cores, -c CORES     Specify the number of threads to be used. [default 12]
+  --cores, -c CORES     Specify the number of threads to be used. (default 12)
   --delimiter DELIMITER
-                        Input alleles delimiter. [default \t]
+                        Input alleles delimiter. (default \t)
   --columns-subset, -s COLUMNS_SUBSET
                         A file containing a single column of the column names to subset from the passed allele profiles.
   --count-missing, -m   Count missing values as differences.
   --normalize-distance, -n
                         Compute the normalized distance. Distance is presented as a percentage, or a value between [0.0-100.0]
   --filter-threshold, -f FILTER_THRESHOLD
-                        Exclude samples from analysis if they are missing more than the specified percentage of data. Must be between
-                        [0.0-100.0]. [default 100.0]
+                        Exclude samples from analysis if they are missing more than the specified percentage of data. Must be between [0.0-100.0]. (default 100.0)
   --verbose             Display logger debug messages.
   --reference, -r REFERENCE
                         Profiles to compare against. Query samples will be included in comparisons.
   --query, -q QUERY     Profiles containing new-samples for comparisons.
   --threshold, -t THRESHOLD
-                        Only report distances below specified threshold. [default: inf]
-  --output, -o OUTPUT   Output directory for calculated distances. [default: /home/CSCScience.ca/mwells/Development/beave]
+                        Only report distances below specified threshold. (default: infinity)
+  --output, -o OUTPUT   Output directory for calculated distances. (default: beave)
 
 >>> # Example programs
 >>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -nm --verbose

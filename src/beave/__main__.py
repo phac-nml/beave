@@ -9,6 +9,7 @@ __description__ = importlib.metadata.metadata(__package__ or __name__)["Summary"
 __version__ = importlib.metadata.version(__package__ or __name__)
 
 import argparse
+import asyncio
 import os
 import sys
 from collections.abc import Callable, Sequence
@@ -17,13 +18,9 @@ from pathlib import Path
 from typing import Any
 
 from beave import log
-from beave.cluster import (
-    BranchType,
-    ClusterArguments,
-    LinkageMetric,
-    cluster,
-)
-from beave.match import MatchArguments, match
+from beave.cluster import cluster
+from beave.declarations import BranchType, ClusterArguments, LinkageMetric, MatchArguments
+from beave.match import match
 
 logger = log.init_logger(__name__)
 
@@ -143,6 +140,17 @@ def path_exists(file_path: str) -> Path:
     raise FileNotFoundError(error_message)
 
 
+def output_extension(delimiter: str) -> str:
+    """Get correct file extension based on delimiter of input file."""
+    match delimiter:
+        case "\t":
+            return "tsv"
+        case ",":
+            return "csv"
+        case _:
+            return "txt"
+
+
 def check_if_float(float_input: str) -> float:
     """Check if input value is float."""
     try:
@@ -252,7 +260,7 @@ def add_cluster_parser(parser_cluster: argparse.ArgumentParser) -> None:
         type=output_directory,
         required=False,
         help=(
-            "Output directory for generated tree and clusters, directory will be treated if does"
+            "Output directory for generated tree and clusters, directory will be created if does"
             " not exist. (default: %(default)s)"
         ),
         default=os.getcwd(),
@@ -282,6 +290,15 @@ def add_cluster_parser(parser_cluster: argparse.ArgumentParser) -> None:
         default=BranchType.COPHENETIC.value,
         choices=[i.value for i in BranchType],
         help="Determine how to display tree lenghts in the Newick file. (default %(default)s)",
+    )
+
+    parser_cluster.add_argument(
+        "--matrix",
+        action="store_true",
+        help=(
+            "Write the computed distance matrix to a file in "
+            "the output directory called 'matrix.tsv'."
+        ),
     )
 
 
@@ -316,7 +333,10 @@ def add_match_parser(parser_match: argparse.ArgumentParser) -> None:
         "-o",
         type=output_directory,
         required=False,
-        help=("Output directory for calculated distances. (default: %(default)s)"),
+        help=(
+            "Output directory for calculated distances, directory will be created if does"
+            " not exist. (default: %(default)s)"
+        ),
         default=os.getcwd(),
     )
 
@@ -419,7 +439,7 @@ def create_parent_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> None:
+async def main() -> None:
     """Program entry-point."""
     parser = create_parent_parser()
     args = parser.parse_args()
@@ -432,6 +452,7 @@ def main() -> None:
         validate_normalized_distance.add_validation_function(verify_normalized_distance)
 
     log.add_file_logger(args.output)
+    file_extension: str = output_extension(args.delimiter)
     match args.command:
         case Commands.CLUSTER:
             validate_normalized_distance.add_validation_function(
@@ -439,39 +460,42 @@ def main() -> None:
                 prepend=True,  # Check can be used on hamming values as infinity is not allowed.
             )
             validate_normalized_distance(args.thresholds)
-            cluster_output = args.output / "clusters.tsv"
-            tree_output = args.output / "tree.nwk"
             cluster_args = ClusterArguments(
-                args.input,
-                args.delimiter,
-                args.thresholds,
-                args.linkage_method,
-                args.cores,
-                args.columns_subset,
-                args.count_missing,
-                args.normalize_distance,
-                tree_output,
-                cluster_output,
-                args.branch_type,
-                args.filter_threshold,
+                input_file=args.input,
+                delimiter=args.delimiter,
+                thresholds=args.thresholds,
+                linkage_method=args.linkage_method,
+                cores=args.cores,
+                columns_path=args.columns_subset,
+                count_missing=args.count_missing,
+                normalize_distance=args.normalize_distance,
+                branch_type=args.branch_type,
+                filter_threshold=args.filter_threshold,
+                matrix=args.matrix,
+                output_directory=args.output,
             )
-            cluster(cluster_args)
+            await cluster(cluster_args, file_extension)
         case Commands.MATCH:
             validate_normalized_distance(args.threshold)
-            output_file = args.output / "results.tsv"
             match_args = MatchArguments(
-                args.query,
-                args.reference,
-                args.threshold,
-                args.cores,
-                args.columns_subset,
-                args.delimiter,
-                args.count_missing,
-                args.normalize_distance,
-                args.filter_threshold,
-                output_file,
+                query=args.query,
+                reference=args.reference,
+                threshold=args.threshold,
+                cores=args.cores,
+                columns_path=args.columns_subset,
+                delimiter=args.delimiter,
+                count_missing=args.count_missing,
+                normalize_distance=args.normalize_distance,
+                filter_threshold=args.filter_threshold,
+                output_directory=args.output,
             )
-            match(match_args)
+            match(match_args, file_extension)
         case _:
             parser.print_help()
             sys.exit()
+
+
+def async_main() -> None:
+    """Async entry point for main python function."""
+    asyncio.run(main())
+    logger.info("Finished.")

@@ -14,7 +14,7 @@ dependencies = ["numpy >= 2.4.0", "polars >=1.40.1", "scipy >= 1.17.0"]
 version = "0.0.6"
 
 [project.scripts]
-beave = "beave.__main__:main"
+beave = "beave.__main__:async_main"
 
 [project.optional-dependencies]
 dev = [

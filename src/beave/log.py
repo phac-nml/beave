@@ -17,7 +17,7 @@ import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-LOGGING_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+LOGGING_FORMAT: str = "%(asctime)s - %(name)s - %(threadName)s - %(levelname)s - %(message)s"
 
 SHARED_STREAM_HANDLER: logging.StreamHandler = logging.StreamHandler(sys.stderr)
 
