@@ -209,6 +209,37 @@ def verify_does_not_contain_infinity(thresholds: list[float]) -> None:
         raise CommandError(err_msg)
 
 
+def check_is_valid_integer_threshold(value: float) -> str | None:
+    """Check if a value is an integer."""
+    error: str | None = None
+    if not (value.is_integer() or value == INFINITY):
+        error = (
+            f"Sorry, hamming distance is specified, but non-integer values"
+            f" used in threshold. {value}"
+        )
+    if value < 0.0:  # Should zero be allowed?
+        error = f"Sorry, hamming distance is specified but a negative value passed. {value}"
+    return error
+
+
+def verify_threshold_is_int(thresholds: float | list[float]) -> None:
+    """Verify the thresholds passed are round numbers if using non-normalized distance."""
+    errors = []
+    if isinstance(thresholds, list):
+        for value in thresholds:
+            error = check_is_valid_integer_threshold(value)
+            if error is not None:
+                errors.append(error)
+    else:
+        error = check_is_valid_integer_threshold(thresholds)
+        if error is not None:
+            errors.append(error)
+
+    if errors:
+        errors_joined = "\n".join(errors)
+        raise CommandError(errors_joined)
+
+
 def verify_normalized_distance(thresholds: float | list[float]) -> None:
     """Verify normalized distance thresholds."""
     max_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
@@ -449,8 +480,11 @@ async def main() -> None:
         raise SystemExit()
 
     validate_normalized_distance: ArgValidator = ArgValidator()
+    validate_hamming_distance: ArgValidator = ArgValidator()
     if args.normalize_distance:
         validate_normalized_distance.add_validation_function(verify_normalized_distance)
+    else:
+        validate_hamming_distance.add_validation_function(verify_threshold_is_int)
 
     log.add_file_logger(args.output)
     file_extension: str = output_extension(args.delimiter)
@@ -460,6 +494,7 @@ async def main() -> None:
                 verify_does_not_contain_infinity,
                 prepend=True,  # Check can be used on hamming values as infinity is not allowed.
             )
+            validate_hamming_distance(args.thresholds)
             validate_normalized_distance(args.thresholds)
             cluster_args = ClusterArguments(
                 input_file=args.input,
@@ -477,6 +512,7 @@ async def main() -> None:
             )
             await cluster(cluster_args, file_extension)
         case Commands.MATCH:
+            validate_hamming_distance(args.threshold)
             validate_normalized_distance(args.threshold)
             match_args = MatchArguments(
                 query=args.query,
