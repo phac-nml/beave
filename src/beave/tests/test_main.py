@@ -41,7 +41,7 @@ def threshold_validator():
             "but values greater than or equal to 1.0 are provided. 1.1",
         ),  # Too high and too low
         (
-            [1.1, -9.0],
+            [1.1, -0.9],
             beave_main.CommandError,
             "but values less than or equal to 0.0 are provided. -0.9",
         ),  # Too high and too low
@@ -68,7 +68,7 @@ def threshold_validator():
         (
             [0.99, -0.9],
             beave_main.CommandError,
-            "but values less than or equal to 0.0 are provided. -0.90",
+            "but values less than or equal to 0.0 are provided. -0.9",
         ),  # Too low
         (
             [0.99, 0.90],
@@ -97,7 +97,7 @@ def test_verify_normalized_distance_thresholds(thresholds_validator, thresholds,
         (
             100.0,
             beave_main.CommandError,
-            "but values greater than or equal to 100.0 are provided. 100.0",
+            "but values greater than or equal to 1.0 are provided. 100.0",
         ),
     ],
 )

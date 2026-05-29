@@ -3,10 +3,10 @@
   files:
     - path: "out/tree.nwk"
       should_exist: true
-      md5sum: 245de895468635ba78925d0e05b11c6d
+      md5sum: 5d03f341ecb2cd156e8601efce29a74c
     - path: out/clusters.tsv
       should_exist: true
-      md5sum: 34d06f485579d92e97da2dd26ce50ae2 
+      md5sum: 0835ba33a75095034170a72fe93b9951
 
 - name: Run cluster pass cophenetic
   tags:
@@ -15,10 +15,10 @@
   files:
     - path: "tree/tree.nwk"
       should_exist: true
-      md5sum: 0a90b6371ef7c044447281bee283684c
+      md5sum: c5b6d9f4be42bf3c0326e104e8e8c6e1
     - path: tree/clusters.tsv
       should_exist: true
-      md5sum: 34d06f485579d92e97da2dd26ce50ae2
+      md5sum: 0835ba33a75095034170a72fe93b9951
 
 - name: Run cluster pass cophenetic no normalized metric
   tags:
@@ -110,15 +110,15 @@
   files:
     - path: "tree.nwk"
       should_exist: true
-      md5sum: 0a90b6371ef7c044447281bee283684c
+      md5sum: c5b6d9f4be42bf3c0326e104e8e8c6e1
     - path: clusters.csv
       should_exist: true
-      md5sum: 0da547890daef8144b1b36191c0166a4
+      md5sum: b409d053ec5951c90b42e36fb5fc08b4
 
 - name: Run cluster threshold should fail due to negative number being passed
   tags:
     - should_fail
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nc -b cophenetic -c 2 -t 0.99 0.5 --delimiter , -f -1
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -n -b cophenetic -c 2 -t 0.99 0.5 --delimiter , -f -1
   exit_code: 2
   files:
     - path: "tree.nwk"
@@ -174,14 +174,14 @@
 - name: Run cluster threshold should pass
   tags:
     - should_pass
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -c 2 -t 1 0.5 --delimiter , -f 50.0
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -c 2 -t 0.9 0.5 --delimiter , -f 50.0
   files:
     - path: "tree.nwk"
       should_exist: true
-      md5sum: 0a90b6371ef7c044447281bee283684c
+      md5sum: c5b6d9f4be42bf3c0326e104e8e8c6e1
     - path: clusters.csv
       should_exist: true
-      md5sum: 0da547890daef8144b1b36191c0166a4
+      md5sum: a5395127251806230a9faf0f3c17d53d
 
 - name: Run cluster file does not exist
   tags:

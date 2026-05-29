@@ -4,7 +4,7 @@ import pytest  # noqa: I001
 
 import beave
 from beave import cluster
-from beave.declarations import DefaultArguments, LinkageMetric
+from beave.declarations import BranchType, ClusterArguments, DefaultArguments, LinkageMetric
 from beave import transform_data as transform
 
 import hashlib
@@ -20,7 +20,7 @@ from hypothesis import given, settings, HealthCheck, strategies as st
 from hypothesis.extra import numpy as nps
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def test_df() -> pl.DataFrame:
     """Example dataframe for the benchmark function."""
     return pl.DataFrame(
@@ -35,6 +35,91 @@ def test_benchmark_data_transformation_hashes(benchmark, test_df):
     """Benchmarks for different data transformation methods."""
     output_args = DefaultArguments("\t", True, True, None, 0.0, 1, Path(""))
     benchmark(transform.transform_data_hashes, test_df, 1.00, output_args)
+    assert True
+
+
+def test_benchmark_read_input_profiles(benchmark, test_df, tmp_path):
+    """Benchmarks for different data transformation methods."""
+    tmp_file = tmp_path / "output_data.tsv"
+    test_df.write_csv(tmp_file, separator="\t")
+
+    def runtime_test():
+        result = transform.read_input_profiles(tmp_file, "\t", 2)
+        cluster_args = ClusterArguments(
+            delimiter="\t",
+            cores=2,
+            normalize_distance=True,
+            count_missing=True,
+            filter_threshold=1,
+            columns_path=None,
+            input_file=tmp_file,
+            output_directory=tmp_path / "test",
+            linkage_method=LinkageMetric.AVERAGE,
+            thresholds=[0.99],
+            branch_type=BranchType.COPHENETIC,
+            matrix=False,
+        )
+        cluster.compute_dists(result, cluster_args)
+
+    benchmark(runtime_test)
+
+    assert True
+
+
+def test_benchmark_read_input_profiles_simple_method(benchmark, test_df, tmp_path):
+    """Benchmarks old read_input_profiles implementation from polars.
+
+    This method is faster however it will cap the number of uniqure profiles to uint32 max
+    across the whole dataframe, while the other method allows for uint32 max unique alleles per
+    a column. I do not know if we would ever hit that limit in regular use but it is worth
+    considering the limitation.
+    """
+    tmp_file = tmp_path / "output_data.tsv"
+    test_df.write_csv(tmp_file, separator="\t")
+
+    def read_input_profiles(input_file: Path, delimiter: str, threads: int) -> pl.DataFrame:
+        profiles = pl.read_csv(
+            input_file,
+            separator=delimiter,
+            n_threads=threads,
+            has_header=True,
+            raise_if_empty=True,
+            infer_schema=False,
+        )
+        profiles = profiles.with_columns(
+            pl.all()
+            .exclude(profiles.columns[0])
+            .replace(old=list(transform.REPLACE_CHARS.keys()), new=None)
+        )
+        # Remove rows which are all empty e.g. caused by new lines at the end of files
+        profiles = profiles.filter(~pl.all_horizontal(pl.all().is_null()))
+        profiles = profiles.with_columns(
+            pl.all()
+            .exclude(profiles.columns[0])
+            .cast(pl.Categorical, strict=False)  # strict is false otherwise null is an error
+        )
+        transform.verify_dataframe_integrity(profiles)
+        return profiles
+
+    def runtime_test():
+        result = read_input_profiles(tmp_file, "\t", 2)
+        cluster_args = ClusterArguments(
+            delimiter="\t",
+            cores=2,
+            normalize_distance=True,
+            count_missing=True,
+            filter_threshold=1,
+            columns_path=None,
+            input_file=tmp_file,
+            output_directory=tmp_path / "test",
+            linkage_method=LinkageMetric.AVERAGE,
+            thresholds=[0.99],
+            branch_type=BranchType.COPHENETIC,
+            matrix=False,
+        )
+        cluster.compute_dists(result, cluster_args)
+
+    benchmark(runtime_test)
     assert True
 
 

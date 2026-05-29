@@ -149,15 +149,13 @@ def prepare_fast_match_outputs(
 def match(match_args: MatchArguments, file_extension: str) -> None:
     """Driver function for fast-matching."""
     logger.debug("Launching fast-matching.")
-    with pl.StringCache():
-        query = transform.read_input_profiles(
-            match_args.query, match_args.delimiter, match_args.cores
-        )
-        logger.debug("Finished reading query profiles.")
-        reference = transform.read_input_profiles(
-            match_args.reference, match_args.delimiter, match_args.cores
-        )
-        logger.debug("Finished reading reference profiles.")
+
+    query = transform.read_input_profiles(match_args.query, match_args.delimiter, match_args.cores)
+    logger.debug("Finished reading query profiles.")
+    reference = transform.read_input_profiles(
+        match_args.reference, match_args.delimiter, match_args.cores
+    )
+    logger.debug("Finished reading reference profiles.")
 
     logger.info("Finished reading reference and query profiles.")
     if match_args.columns_path:

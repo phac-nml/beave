@@ -137,11 +137,18 @@ def read_input_profiles(input_file: Path, delimiter: str, threads: int) -> pl.Da
     )
     # Remove rows which are all empty e.g. caused by new lines at the end of files
     profiles = profiles.filter(~pl.all_horizontal(pl.all().is_null()))
+    """
+    This expression creates a categorical mapping for each loci in the input file. Polars
+    has deprecated the StringCache feature (1.41.0) in order to improve performance.
+    They have also added namespaces and the ability to set the physical underlying data type
+    of the categories used.
 
+    Categories are global, meaning if a category has the same name, namespace
+    and physical type they are the same.
+    """
     profiles = profiles.with_columns(
-        pl.all()
-        .exclude(profiles.columns[0])
-        .cast(pl.Categorical, strict=False)  # strict is false otherwise null is an error
+        pl.col(col).cast(pl.Categorical(pl.Categories(physical=pl.UInt32, name=col)))
+        for col in profiles.columns[1:]  # create categories dynamically
     )
 
     verify_dataframe_integrity(profiles)
@@ -238,7 +245,9 @@ def transform_data_categorical_encoding(
     segmentation faults.
     """
     profiles = profiles.with_columns(
-        pl.all().exclude(profiles.columns[0]).to_physical().cast(pl.UInt32)
+        pl.all()
+        .exclude(profiles.columns[0])
+        .to_physical()  # Dropping cast to pl.UInt32 as the underlying type is now a 23bit integer
     )
 
     """
