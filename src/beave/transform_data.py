@@ -123,6 +123,7 @@ def read_input_profiles(input_file: Path, delimiter: str, threads: int) -> pl.Da
 
     Polars mangles columns with potential duplicate names on loading, potential bug*
     """
+    category = pl.Categories(physical=pl.UInt32, name="loci")
     profiles = pl.read_csv(
         input_file,
         separator=delimiter,
@@ -147,8 +148,7 @@ def read_input_profiles(input_file: Path, delimiter: str, threads: int) -> pl.Da
     and physical type they are the same.
     """
     profiles = profiles.with_columns(
-        pl.col(col).cast(pl.Categorical(pl.Categories(physical=pl.UInt32, name=col)))
-        for col in profiles.columns[1:]  # create categories dynamically
+        pl.all().exclude(profiles.columns[0]).cast(pl.Categorical(category))
     )
 
     verify_dataframe_integrity(profiles)
