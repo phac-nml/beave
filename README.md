@@ -195,8 +195,7 @@ options:
                         Hierarchical clustering linkage to use. [default: average]
   --branch-type, -b {patristic,cophenetic}
                         Determine how to display tree lenghts in the Newick file. [default cophenetic]
-  --matrix,
-
+  --matrix              Write the computed distance matrix to a file in the output directory called 'matrix.tsv'.
 >>> # Example programs
 >>> beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -o out -l average -nm -b cophenetic -c 2 -t 0.9 0.5 --delimiter , --matrix
 >>> beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -b cophenetic -c 1 --thresholds 10 9 8
