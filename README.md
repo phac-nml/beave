@@ -37,7 +37,7 @@ A very Canadian utility for genomic clustering and distance querying.
 
 ## C++ CLI
 
-This program is under active development and is used for creating distance matrices from allelic profiles, or for comparing groups of isolates against multiple. This program is similar to [cgmlst-dists](https://github.com/tseemann/cgmlst-dists) from Torstein Tseeman.
+This program is under active development and is used for creating distance matrices from allelic profiles, or for comparing groups of isolates against multiple. This program is similar to [cgmlst-dists](https://github.com/tseemann/cgmlst-dists) from Torstein Tseeman and [gas](https://github.com/phac-nml/genomic_address_service) from the Public Health Agency of Canada.
 
 ## Contact
 
