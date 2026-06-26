@@ -24,7 +24,8 @@ from beave.match import match
 
 logger = log.init_logger(__name__)
 
-MAX_PERCENT: float = 100.0
+MAX_NORMALIZED: float = 1.0
+MAX_PERCENTAGE: float = 100.0
 
 
 class Infinity(float):
@@ -165,13 +166,13 @@ def check_if_float(float_input: str) -> float:
 def percentage_range(float_input: str) -> float:
     """Check if input value is in range for comparisons."""
     converted_float: float = check_if_float(float_input)
-    if converted_float <= 0.00 or converted_float > MAX_PERCENT:
+    if converted_float <= 0.00 or converted_float > MAX_PERCENTAGE:
         error_message = (
             f"Sorry, Filter threshold must be between 0.00 and 100.0. You passed: {float_input}"
         )
         logger.critical(error_message)
         raise ValueError(error_message)
-    return converted_float / MAX_PERCENT  # convert percentage to decimal fraction
+    return converted_float / MAX_PERCENTAGE  # convert percentage to decimal fraction
 
 
 def cluster_threshold(float_input: str) -> float:
@@ -208,19 +209,50 @@ def verify_does_not_contain_infinity(thresholds: list[float]) -> None:
         raise CommandError(err_msg)
 
 
+def check_is_valid_integer_threshold(value: float) -> str | None:
+    """Check if a value is an integer."""
+    error: str | None = None
+    if not (value.is_integer() or value == INFINITY):
+        error = (
+            f"Sorry, hamming distance is specified, but non-integer values"
+            f" used in threshold. {value}"
+        )
+    if value < 0.0:  # Should zero be allowed?
+        error = f"Sorry, hamming distance is specified but a negative value passed. {value}"
+    return error
+
+
+def verify_threshold_is_int(thresholds: float | list[float]) -> None:
+    """Verify the thresholds passed are round numbers if using non-normalized distance."""
+    errors = []
+    if isinstance(thresholds, list):
+        for value in thresholds:
+            error = check_is_valid_integer_threshold(value)
+            if error is not None:
+                errors.append(error)
+    else:
+        error = check_is_valid_integer_threshold(thresholds)
+        if error is not None:
+            errors.append(error)
+
+    if errors:
+        errors_joined = "\n".join(errors)
+        raise CommandError(errors_joined)
+
+
 def verify_normalized_distance(thresholds: float | list[float]) -> None:
     """Verify normalized distance thresholds."""
     max_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
     min_value: float = min(thresholds) if isinstance(thresholds, list) else thresholds
-    max_value_bound_exceeded: bool = max_value != INFINITY and max_value >= MAX_PERCENT
+    max_value_bound_exceeded: bool = max_value != INFINITY and max_value >= MAX_NORMALIZED
     min_value_bound_exceeded: bool = min_value <= 0.0
 
     if not max_value_bound_exceeded and not min_value_bound_exceeded:
         return
 
     err_msg_max: str = (
-        f"Sorry, normalized distance specified, but values greater than or equal to {MAX_PERCENT}"
-        f" are provided. {max_value}"
+        f"Sorry, normalized distance specified, but values greater than or equal"
+        f" to {MAX_NORMALIZED} are provided. {max_value}"
     )
     err_msg_min: str = (
         f"Sorry, normalized distance specified, but values less than or equal to 0.0"
@@ -390,7 +422,7 @@ def create_parent_parser() -> argparse.ArgumentParser:
         "-n",
         help=(
             "Compute the normalized distance. Distance is presented as a percentage, or a value "
-            "between [0.0-100.0]"
+            "between [0.0-1.0]"
         ),
         action="store_true",
     )
@@ -448,8 +480,11 @@ async def main() -> None:
         raise SystemExit()
 
     validate_normalized_distance: ArgValidator = ArgValidator()
+    validate_hamming_distance: ArgValidator = ArgValidator()
     if args.normalize_distance:
         validate_normalized_distance.add_validation_function(verify_normalized_distance)
+    else:
+        validate_hamming_distance.add_validation_function(verify_threshold_is_int)
 
     log.add_file_logger(args.output)
     file_extension: str = output_extension(args.delimiter)
@@ -459,6 +494,7 @@ async def main() -> None:
                 verify_does_not_contain_infinity,
                 prepend=True,  # Check can be used on hamming values as infinity is not allowed.
             )
+            validate_hamming_distance(args.thresholds)
             validate_normalized_distance(args.thresholds)
             cluster_args = ClusterArguments(
                 input_file=args.input,
@@ -476,6 +512,7 @@ async def main() -> None:
             )
             await cluster(cluster_args, file_extension)
         case Commands.MATCH:
+            validate_hamming_distance(args.threshold)
             validate_normalized_distance(args.threshold)
             match_args = MatchArguments(
                 query=args.query,

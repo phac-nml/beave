@@ -172,7 +172,7 @@ def convert_branch_lengths(linkage_matrix: npt.NDArray, branch_type: BranchType)
     if branch_type == BranchType.PATRISTIC:
         for row in linkage_matrix:
             row[LinkageMatrixFields.DISTANCE.value] *= 0.5
-            logger.info("Converted branch lengths to patristic distances.")
+        logger.info("Converted branch lengths to patristic distances.")
     return linkage_matrix
 
 

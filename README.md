@@ -37,7 +37,7 @@ A very Canadian utility for genomic clustering and distance querying.
 
 ## C++ CLI
 
-This program is under active development and is used for creating distance matrices from allelic profiles, or for comparing groups of isolates against multiple. This program is similar to [cgmlst-dists](https://github.com/tseemann/cgmlst-dists) from Torstein Tseeman, and uses test data from his original program.
+This program is under active development and is used for creating distance matrices from allelic profiles, or for comparing groups of isolates against multiple. This program is similar to [cgmlst-dists](https://github.com/tseemann/cgmlst-dists) from Torstein Tseeman and [gas](https://github.com/phac-nml/genomic_address_service) from the Public Health Agency of Canada.
 
 ## Contact
 
@@ -153,7 +153,7 @@ options:
                         A file containing a single column of the column names to subset from the passed allele profiles. (default: None)
   --count-missing, -m   Count missing values as differences. (default: False)
   --normalize-distance, -n
-                        Compute the normalized distance. Distance is presented as a percentage, or a value between [0.0-100.0] (default:
+                        Compute the normalized distance. Distance is presented as a percentage, or a value between [0.0-1.0] (default:
                         False)
   --filter-threshold, -f FILTER_THRESHOLD
                         Exclude samples from analysis if they are missing more than the specified percentage of data. Must be between
@@ -181,7 +181,7 @@ options:
                         A file containing a single column of the column names to subset from the passed allele profiles.
   --count-missing, -m   Count missing values as differences.
   --normalize-distance, -n
-                        Compute the normalized distance. Distance is presented as a percentage, or a value between [0.0-100.0]
+                        Compute the normalized distance. Distance is presented as a percentage, or a value between [0.0-1.0]
   --filter-threshold, -f FILTER_THRESHOLD
                         Exclude samples from analysis if they are missing more than the specified percentage of data. Must be between
                         [0.0-100.0]. [default 100.0]
@@ -195,10 +195,9 @@ options:
                         Hierarchical clustering linkage to use. [default: average]
   --branch-type, -b {patristic,cophenetic}
                         Determine how to display tree lenghts in the Newick file. [default cophenetic]
-  --matrix,
-
+  --matrix              Write the computed distance matrix to a file in the output directory called 'matrix.tsv'.
 >>> # Example programs
->>> beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -o out -l average -nm -b cophenetic -c 2 -t 1 0.5 --delimiter , --matrix
+>>> beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -o out -l average -nm -b cophenetic -c 2 -t 0.9 0.5 --delimiter , --matrix
 >>> beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -b cophenetic -c 1 --thresholds 10 9 8
 ```
 
@@ -217,9 +216,9 @@ options:
                         A file containing a single column of the column names to subset from the passed allele profiles.
   --count-missing, -m   Count missing values as differences.
   --normalize-distance, -n
-                        Compute the normalized distance. Distance is presented as a percentage, or a value between [0.0-100.0]
+                        Compute the normalized distance. Distance is presented as a percentage, or a value between [0.0-1.0]
   --filter-threshold, -f FILTER_THRESHOLD
-                        Exclude samples from analysis if they are missing more than the specified percentage of data. Must be between [0.0-100.0]. (default 100.0)
+                        Exclude samples from analysis if they are missing more than the specified percentage of data. Must be between [0.0-1.0]. (default 1.0)
   --verbose             Display logger debug messages.
   --reference, -r REFERENCE
                         Profiles to compare against. Query samples will be included in comparisons.

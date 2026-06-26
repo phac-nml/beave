@@ -22,56 +22,72 @@ def threshold_validator():
     return thresh_validator
 
 
+@pytest.fixture()
+def thresholds_hamming_validator():
+    """Fixture for testing validation of thresholds passed to cluster."""
+    thresh_validator = beave_main.ArgValidator()
+    thresh_validator.add_validation_function(beave_main.verify_threshold_is_int)
+    return thresh_validator
+
+
+@pytest.fixture()
+def threshold_hamming_validator():
+    """Fixture for testing validation of thresholds passed to cluster."""
+    thresh_validator = beave_main.ArgValidator()
+    thresh_validator.add_validation_function(beave_main.verify_threshold_is_int)
+    return thresh_validator
+
+
 @pytest.mark.parametrize(
     "thresholds,expected,match",
     [
         (
-            [100.0, 90.0],
+            [1.0, 0.90],
             beave_main.CommandError,
-            "but values greater than or equal to 100.0 are provided. 100.0",
+            "but values greater than or equal to 1.0 are provided. 1.0",
         ),  # Too high
         (
-            [100.0, -90.0],
+            [1.0, -0.90],
             beave_main.CommandError,
-            "but values greater than or equal to 100.0 are provided. 100.0",
+            "but values greater than or equal to 1.0 are provided. 1.0",
         ),  # Too high and too low
         (
-            [101.0, -90.0],
+            [1.1, -0.90],
             beave_main.CommandError,
-            "but values greater than or equal to 100.0 are provided. 101.0",
+            "but values greater than or equal to 1.0 are provided. 1.1",
         ),  # Too high and too low
         (
-            [101.0, -90.0],
+            [1.1, -0.9],
             beave_main.CommandError,
-            "but values less than or equal to 0.0 are provided. -90.0",
+            "but values less than or equal to 0.0 are provided. -0.9",
         ),  # Too high and too low
         (
-            [101.0, 90.0],
+            [1.1, 0.9],
             beave_main.CommandError,
-            "but values greater than or equal to 100.0 are provided. 101.0",
+            "but values greater than or equal to 1.0 are provided. 1.1",
         ),  # Too high
         (
-            [100.0, -90.0],
+            [1.0, -0.9],
             beave_main.CommandError,
-            "but values less than or equal to 0.0 are provided. -90.0",
+            "but values less than or equal to 0.0 are provided. -0.9",
         ),  # Too high
         (
-            [float("inf"), 100.0, -90.0],
+            [float("inf"), 1.0, -0.90],
             beave_main.CommandError,
             "Sorry, infinity can not be used as a threshold.",
         ),  # Too high
         (
-            [float("inf"), 150.0],
+            [float("inf"), 1.50],
             beave_main.CommandError,
             "Sorry, infinity can not be used as a threshold.",
         ),  # Too high
         (
-            [99.0, -90.0],
+            [0.99, -0.9],
             beave_main.CommandError,
-            "but values less than or equal to 0.0 are provided. -90.0",
+            "but values less than or equal to 0.0 are provided. -0.9",
         ),  # Too low
         (
-            [99.0, 90.0],
+            [0.99, 0.90],
             None,
             "",
         ),  # No error
@@ -90,6 +106,37 @@ def test_verify_normalized_distance_thresholds(thresholds_validator, thresholds,
     "thresholds,expected,match",
     [
         (
+            [1.0, 0.90],
+            beave_main.CommandError,
+            "used in threshold. 0.9",
+        ),  # Too high
+        (
+            [float("inf")],
+            None,
+            "",
+        ),  # No error
+        (
+            [-1.0],
+            beave_main.CommandError,
+            "but a negative value passed. -1.0",
+        ),  # Negative value error
+    ],
+)
+def test_verify_hamming_distance_thresholds(
+    thresholds_hamming_validator, thresholds, expected, match
+):
+    """Test verify_normalized_distance raises the expected errors."""
+    if expected:
+        with pytest.raises(expected, match=match):
+            thresholds_hamming_validator(thresholds)
+    else:
+        assert thresholds_hamming_validator(thresholds) is None
+
+
+@pytest.mark.parametrize(
+    "thresholds,expected,match",
+    [
+        (
             -1.0,
             beave_main.CommandError,
             "but values less than or equal to 0.0 are provided. -1.0",
@@ -97,7 +144,7 @@ def test_verify_normalized_distance_thresholds(thresholds_validator, thresholds,
         (
             100.0,
             beave_main.CommandError,
-            "but values greater than or equal to 100.0 are provided. 100.0",
+            "but values greater than or equal to 1.0 are provided. 100.0",
         ),
     ],
 )
@@ -108,3 +155,29 @@ def test_verify_normalized_distance_threshold(threshold_validator, thresholds, e
             threshold_validator(thresholds)
     else:
         assert threshold_validator(thresholds) is None
+
+
+@pytest.mark.parametrize(
+    "thresholds,expected,match",
+    [
+        (
+            -1.0,
+            beave_main.CommandError,
+            "but a negative value passed. -1.0",
+        ),
+        (
+            100.1,
+            beave_main.CommandError,
+            "used in threshold. 100.1",
+        ),
+    ],
+)
+def test_verify_hamming_distance_threshold(
+    threshold_hamming_validator, thresholds, expected, match
+):
+    """Test verify_normalized_distance raises the expected errors."""
+    if expected:
+        with pytest.raises(expected, match=match):
+            threshold_hamming_validator(thresholds)
+    else:
+        assert threshold_hamming_validator(thresholds) is None

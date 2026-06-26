@@ -166,15 +166,15 @@ def test_prepare_fast_match_outputs(tmp_path, input, sample_names, normalized, e
             np.array(
                 [
                     [0, 1, 0.0],
-                    [0, 2, 10.0],
-                    [0, 3, 20.0],
-                    [0, 4, 30.0],
-                    [0, 5, 40.0],
-                    [0, 6, 50.0],
-                    [0, 7, 60.0],
-                    [0, 8, 70.0],
-                    [0, 9, 80.0],
-                    [0, 10, 90.0],
+                    [0, 2, 0.10],
+                    [0, 3, 0.20],
+                    [0, 4, 0.30],
+                    [0, 5, 0.40],
+                    [0, 6, 0.50],
+                    [0, 7, 0.60],
+                    [0, 8, 0.70],
+                    [0, 9, 0.80],
+                    [0, 10, 0.9],
                 ],
                 dtype=np.float32,
             ),
@@ -212,24 +212,24 @@ def test_prepare_fast_match_outputs(tmp_path, input, sample_names, normalized, e
             np.array(
                 [
                     [0, 1, 0.0],
-                    [0, 2, 10.0],
-                    [0, 3, 20.0],
-                    [0, 4, 30.0],
-                    [0, 5, 40.0],
-                    [0, 6, 50.0],
-                    [0, 7, 60.0],
-                    [0, 8, 70.0],
-                    [0, 9, 80.0],
-                    [0, 10, 90.0],
-                    [1, 2, 10.0],
-                    [1, 3, 20.0],
-                    [1, 4, 30.0],
-                    [1, 5, 40.0],
-                    [1, 6, 50.0],
-                    [1, 7, 60.0],
-                    [1, 8, 70.0],
-                    [1, 9, 80.0],
-                    [1, 10, 90.0],
+                    [0, 2, 0.10],
+                    [0, 3, 0.20],
+                    [0, 4, 0.30],
+                    [0, 5, 0.40],
+                    [0, 6, 0.50],
+                    [0, 7, 0.60],
+                    [0, 8, 0.70],
+                    [0, 9, 0.80],
+                    [0, 10, 0.9],
+                    [1, 2, 0.1],
+                    [1, 3, 0.2],
+                    [1, 4, 0.3],
+                    [1, 5, 0.4],
+                    [1, 6, 0.5],
+                    [1, 7, 0.6],
+                    [1, 8, 0.7],
+                    [1, 9, 0.8],
+                    [1, 10, 0.9],
                 ],
                 dtype=np.float32,
             ),
@@ -444,7 +444,7 @@ def test_match(monkeypatch, tmp_path, input, profile_width, expected_header):
         r = int(r)
         dist = float(dist)
         if input.normalize_distance:
-            expected = (abs(q - r) / profile_width) * 100.0
+            expected = abs(q - r) / profile_width
         else:
             expected = float(dist)
         assert dist <= input.threshold
@@ -546,7 +546,7 @@ def test_fast_match_run_outputs_normalized(workflow_dir):
         r = int(r)
         query_ids_read.add(q)
         values.add((q, r))
-        expected = float(abs(q - r) / 1000) * 100.0
+        expected = float(abs(q - r) / 1000)
         assert expected == pytest.approx(float(dist), rel=1e-6)
     assert query_ids_read == query_ids
     assert values == expected_labels  # verify the two sets are the same
