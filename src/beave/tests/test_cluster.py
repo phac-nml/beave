@@ -159,7 +159,7 @@ def test_benchmark_read_input_profiles_simple_method(benchmark, test_df, tmp_pat
 
 
 def test_verify_categories_raises_compute_error(test_df, tmp_path):
-    """Verify categories reaises an error if number of unique values exceeded."""
+    """Verify categories raises an error if number of unique values exceeded."""
     tmp_file = tmp_path / "output_data.tsv"
     test_df.write_csv(tmp_file, separator="\t")
 
