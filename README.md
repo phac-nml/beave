@@ -69,7 +69,9 @@ Start by pulling the repository.
 
 To build and install the Python package you must have the following python packages, `scikit-build-core` and `nanobind` which can be installed with `pip install nanobind scikit-build-core[pyproject]`.
 
-Developers can run `pip install --no-build-isolation -ve .[dev]` or `pip install --no-build-isolation -Ceditable.rebuild=true -ve .[dev]`. Further examples can be found in the nanobind documentation here: [nanobind packaging](https://nanobind.readthedocs.io/en/latest/packaging.html).
+Users can run simply run `pip install .` to install the package.
+
+Developers can run `pip install -ve .[dev]` or `pip install -Ceditable.rebuild=true -ve .[dev]`. Further examples can be found in the nanobind documentation here: [nanobind packaging](https://nanobind.readthedocs.io/en/latest/packaging.html). The `--no-build-isolation` is not included as running `uv pip install` with the `--no-build-isolation` flag tells uv to ignore the `build-system.requires` section from the `pyproject.toml`.
 
 To build a wheel that can be distributed instead of installed, simply run `pip wheel .`
 
