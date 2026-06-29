@@ -1,0 +1,10 @@
+name: beave
+channels:
+  - conda-forge
+dependencies:
+  - cmake>=4.2.3
+  - pip>=26.0.1
+  - python>=3.14.0,<4.0.0
+  - gcc_linux-64
+  - gxx_linux-64
+  - make

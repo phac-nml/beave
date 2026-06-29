@@ -61,8 +61,6 @@ Start by pulling the repository.
 
 `git clone https://github.com/phac-nml/beave`
 
-`git submodule update --init --recursive`
-
 ### Python
 
 #### Without Conda
@@ -79,11 +77,11 @@ To build a wheel that can be distributed instead of installed, simply run `pip w
 
 1. Pull the GitHub repository as described above.
 
-2. Create the Conda environment by running `conda env create -f environment.yml`
+2. Create the Conda environment by running `conda env create -f environment-linux.yml` for linux and `conda env create -f ./environment-osx.yml` for mac.
 
 3. Activate the environment with: `conda activate beave`
 
-4. `pip install .` to install for development `pip install --no-build-isolation -ve .[dev]`
+4. `pip install .` to install for development `pip install -ve .[dev]`
 
 5. Python can then be run with `pytest`.
 
