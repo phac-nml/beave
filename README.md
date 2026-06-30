@@ -27,7 +27,7 @@
 
 A very Canadian utility for genomic clustering and distance querying.
 
-This program is under active development and is used for creating distance matrices from allelic profiles, or for comparing groups of isolates against multiple. This program is similar to [cgmlst-dists](https://github.com/tseemann/cgmlst-dists) from Torstein Tseeman and [gas](https://github.com/phac-nml/genomic_address_service) from the Public Health Agency of Canada.
+This program is under active development and is used for creating distance matrices from allelic profiles, or for comparing groups of isolates against multiple reference sequences. This program is similar to [cgmlst-dists](https://github.com/tseemann/cgmlst-dists) from Torsten Seeman and [gas](https://github.com/phac-nml/genomic_address_service) from the Public Health Agency of Canada.
 
 ## Contact
 
