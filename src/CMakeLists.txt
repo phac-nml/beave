@@ -71,7 +71,12 @@ elseif(TARGET_GROUP STREQUAL test)
 
 elseif(TARGET_GROUP STREQUAL python)
 
-  set(CMAKE_CXX_COMPILER "g++")
+  if(DEFINED ENV{CPP})
+    set(CMAKE_CXX_COMPILER "$ENV{CPP")
+  else()
+    set(CMAKE_CXX_COMPILER "g++")
+  endif()
+
   find_package(Python 3.13
       REQUIRED COMPONENTS Interpreter Development.Module
       ${SKBUILD_SABI_COMPONENT})
