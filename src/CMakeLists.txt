@@ -71,8 +71,8 @@ elseif(TARGET_GROUP STREQUAL test)
 
 elseif(TARGET_GROUP STREQUAL python)
 
-  if(DEFINED ENV{CPP})
-    set(CMAKE_CXX_COMPILER "$ENV{CPP}")
+  if(DEFINED ENV{CXX})
+    set(CMAKE_CXX_COMPILER "$ENV{CXX}")
   else()
     set(CMAKE_CXX_COMPILER "g++")
   endif()
