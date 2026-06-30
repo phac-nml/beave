@@ -8,9 +8,6 @@
   - [Python](#python)
     - [Without Conda](#without-conda)
     - [With Conda](#with-conda)
-  - [C++](#c++)
-    - [Building C++ CLI](#building-c++-cli)
-    - [Running C++ Tests](#running-c++-tests)
 - [Getting Started](#getting-started)
   - [Using Python](#using-python)
     - [Usage](#usage)
@@ -34,8 +31,6 @@
 ## Python CLI
 
 A very Canadian utility for genomic clustering and distance querying.
-
-## C++ CLI
 
 This program is under active development and is used for creating distance matrices from allelic profiles, or for comparing groups of isolates against multiple. This program is similar to [cgmlst-dists](https://github.com/tseemann/cgmlst-dists) from Torstein Tseeman and [gas](https://github.com/phac-nml/genomic_address_service) from the Public Health Agency of Canada.
 
@@ -81,51 +76,9 @@ To build a wheel that can be distributed instead of installed, simply run `pip w
 
 3. Activate the environment with: `conda activate beave`
 
-4. `pip install .` to install for development `pip install -ve .[dev]`
-
-5. Python can then be run with `pytest`.
-
-### C++
-
-#### Building C++ CLI
-
-This program is written entirely in C++ 23. The only dependencies are a G++ compiler and CMake. Catch2 is required for testing. However the library is only required for testing and is managed by CMake. This means an internet connection is required when first building the program.
-
-To build the program pull the latest branch and follow the proceeding instructions:
-
-```
-cd ./beave
-mkdir build && cd build
-cmake .. -DTARGET_GROUP=release
-make -j4
-```
-
-This will compile a release build and the assembled binary will be available in the `release` directory created by CMake. This will be located in the build directory. The resulting binary can be copied into a `bin` directory your system path can find it.
-
-### Running C++ Tests
-
-To run tests, follow the build instructions below (it is presumed you are in the `build` directory created in the previous step already):
-
-```
-cmake .. -DTARGET_GROUP=test
-make -j4
-make test
-```
-
-Unit tests are run by Catch2. However, all tests are orchestrated by CTest, which is typically bundled with CMake.
-
-To create a debug build follow the next steps (it is presumed you are still in the debug directory):
-
-```
-cmake .. # The debug build is the default
-make -j4
-```
-
-The output binary will be in the debug directory.
+4. Run `pip install .`, if you wish to install development dependencies or run tests please run `pip install -ve .[dev]`
 
 ## Getting Started
-
-### Using Python
 
 #### Usage
 
@@ -262,108 +215,6 @@ The general structure of the `match` output:
 | 1        | 2      | 4                          |
 | 1        | 3      | 8                          |
 | 1        | 4      | 10                         |
-
-## Using C++ Binary
-
-### Usage
-
-The help message for the program can be brought up by executing as shown below, (-h|--help) can be used to print the help message at any time as well:
-
-```
-$ beave
-No args passed
-Subcommands:
- matrix - Create distance matrix with an input profile.
- fast-match - Compare a set of profiles to a set of query profiles.
-
-Examples:
-beave matrix -i profiles.tsv -t 4 -sc > output.tsv
-beave fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
-```
-
-The program will display the top-level help messages with the example commands, and warn the user that no arguments have been passed.
-
-Note - The program supports multi-threading but is intended for use on a single CPU therefore the maximum number of CPU cores that can be specified currently is 256.
-
-### Creating a Distance Matrix
-
-The help message for commands is displayed below along with default settings. Flag options can be specified in a sequence as a single letter string e.g. "-sc" or sperately "-s -c". When passing characters such as delimiters you may have to specify ANSI C quoted strings in bash (e.g to specify a tab delimiter $'\t'). The default values are specified in the help message.
-
-```
-$ beave matrix
-
-Subcommands:
- matrix - Create distance matrix with an input profile.
- fast-match - Compare a set of profiles to a set of query profiles.
-
-Examples:
-beave matrix -i profiles.tsv -t 4 -sc > output.tsv
-beave fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
-
-Command Options
-
- --input| -i:
- Input file file of profiles. [required]
- --threads| -t:
- How many threads to run. default = 1 [optional]
- --missing| -m:
- Specify the charactar to use for missing values. default = 0 [optional]
- --delimiter| -d:
- Delimiter for table. default = \t [optional]
- --scaled| -s:
- Calculate a scaled distance metric. [flag]
- --count-missing| -c:
- Include missing values in count of differences. [flag]
-```
-
-### Running Fast Matching
-
-The help message for fast-matching is shown below. The one value that differs to generating a distance matrix is the addition of the `-r` flag to specify a set of reference profiles.
-
-```
-Subcommands:
- matrix - Create distance matrix with an input profile.
- fast-match - Compare a set of profiles to a set of query profiles.
-
-Examples:
-beave matrix -i profiles.tsv -t 4 -sc > output.tsv
-beave fast-match -i qprofiles.tsv -r profiles.tsv -t 4 -sc > output.tsv
-
-Command Options
-
- --input| -i:
- Input file file of profiles. [required]
- --reference| -r:
- Reference profiles to use for fast matching. [required]
- --threads| -t:
- How many threads to run. default = 1 [optional]
- --missing| -m:
- Specify the charactar to use for missing values. default = 0 [optional]
- --delimiter| -d:
- Delimiter for table. default = \t [optional]
- --scaled| -s:
- Calculate a scaled distance metric. [flag]
- --count-missing| -c:
- Include missing values in count of differences. [flag]
-```
-
-### Explanation of Flags
-
-- `-t|--threads`: Specify the number of threads passed to the program, if you specify more threads than profiles to use. Then only 1 thread will be used.
-- `-m|--missing`: This parameter allows you to specify a character to specify marking certain allele values as uncalled. The default value is '0', but '?', '-' etc. can be passed.
-- `-d|-delimiter`: Specify the delimiter used by the input file, a tab character is the default but simply specify ',' to use a comma instead, any single character can be used.
-- `-s|--scaled`: Use the scaled distance instead of Hamming, this metric will report the Hamming distance normalized by the number of comparisons made.
-- `-c|--count-missing`: Specify this value to treat missing allele calls as values. By default comparisons to missing allele calls are not made however enabling this value to count missing values as difference will greatly increase the speed of the program.
-
-A detailed description of the help flags for each program is provided below.
-
-## Data Input
-
-Input data needs to be a flat tabular file, the left most column is treated as the sample columns and all subsequent columns are the alleles. The header line is for the most part ignored but is required. If the first line in your table is sample information it will be treated as the file header.
-
-Example inputs can be found in the `data` directory of the repository.
-
-## Data Output
 
 # Troubleshooting and FAQs
 
