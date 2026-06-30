@@ -62,9 +62,7 @@ elseif(TARGET_GROUP STREQUAL python)
     set(DEV_MODULE Development.Module)
   endif()
 
-  #find_package(Python 3.13 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED)
 
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nanobind)
   add_subdirectory(src)
 
 else()
