@@ -283,7 +283,7 @@ def add_cluster_parser(parser_cluster: argparse.ArgumentParser) -> None:
     # cluster args
 
     parser_cluster.add_argument(
-        "--input", "-i", help="Input alleles.", type=path_exists, required=True
+        "--input", "-i", help="Input alleles. (required)", type=path_exists, required=True
     )
 
     parser_cluster.add_argument(
@@ -301,7 +301,7 @@ def add_cluster_parser(parser_cluster: argparse.ArgumentParser) -> None:
     parser_cluster.add_argument(
         "--thresholds",
         "-t",
-        help="List of threshold values to use.",
+        help="List of threshold values to use. (required)",
         nargs="+",
         required=True,
         action="extend",
@@ -341,7 +341,9 @@ def add_match_parser(parser_match: argparse.ArgumentParser) -> None:
         "-r",
         type=path_exists,
         required=True,
-        help="Profiles to compare against. Query samples will be included in comparisons.",
+        help=(
+            "Profiles to compare against. Query samples will be included in comparisons. (required)"
+        ),
     )
 
     parser_match.add_argument(
@@ -349,7 +351,7 @@ def add_match_parser(parser_match: argparse.ArgumentParser) -> None:
         "-q",
         type=path_exists,
         required=True,
-        help="Profiles containing new-samples for comparisons.",
+        help="Profiles containing new-samples for comparisons. (required)",
     )
 
     parser_match.add_argument(
