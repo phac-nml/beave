@@ -73,3 +73,11 @@ lint.select = [
   "FURB",
   "RUF",
 ]
+
+[tool.cibuildwheel]
+build-verbosity = 1
+archs = ["auto64"]
+
+
+[tool.cibuildwheel.macos.environment]
+MACOSX_DEPLOYMENT_TARGET = "10.14"
