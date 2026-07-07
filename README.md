@@ -32,6 +32,7 @@ This program is under active development and is used for creating distance matri
 ## Contact
 
 [Matthew Wells] : <matthew.wells@phac-aspc.gc.ca>
+[Eric Marinier] : <eric.marinier@phac-aspc.gc.ca>
 
 ## Compatibility
 
