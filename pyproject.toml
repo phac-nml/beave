@@ -78,7 +78,12 @@ lint.select = [
 build-verbosity = 1
 archs = ["auto64"]
 test-requires = ".[dev]"
-test-command = 'cd /tmp && pytest -k "not test_benchmark" --pyargs beave'
+test-command = 'pytest -k "not test_benchmark" --pyargs beave'
+
+[tool.cibuildwheel.macos]
+before-all = "brew install gcc@15"
 
 [tool.cibuildwheel.macos.environment]
+CC = "gcc-15"
+CXX = "g++-15"
 MACOSX_DEPLOYMENT_TARGET = "13.3"
