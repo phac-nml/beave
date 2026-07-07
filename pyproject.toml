@@ -80,7 +80,7 @@ archs = ["auto64"]
 test-requires = ".[dev]"
 test-sources = ["src/beave/tests/data"]
 test-command = 'pytest -k "not test_benchmark" --pyargs beave'
-test-skip = "cp314-{musl,many}linux*"
+test-skip = "cp314-{musl,many}linux*"                          # skipping tests as there are dependency issues with 3.14 missing zstd
 
 
 [tool.cibuildwheel.macos]
