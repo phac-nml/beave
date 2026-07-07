@@ -81,6 +81,7 @@ test-requires = ".[dev]"
 test-sources = ["src/beave/tests/data"]
 test-command = 'pytest -k "not test_benchmark" --pyargs beave'
 test-skip = "cp314-{musl,many}linux*"                          # skipping tests as there are dependency issues with 3.14 missing zstd
+skip = "3???t-*"                                               # skip free threaded builds
 
 
 [tool.cibuildwheel.macos]
