@@ -78,7 +78,7 @@ lint.select = [
 build-verbosity = 1
 archs = ["auto64"]
 test-requires = ".[dev]"
-test-command = 'pytest -c {project}/pytest.toml -k "not test_benchmark"'
+test-command = 'pytest -c {project}/pytest.toml -k "not test_benchmark" {project}'
 
 [tool.cibuildwheel.macos.environment]
-MACOSX_DEPLOYMENT_TARGET = "10.14"
+MACOSX_DEPLOYMENT_TARGET = "10.15"
