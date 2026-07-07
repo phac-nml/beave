@@ -78,7 +78,7 @@ lint.select = [
 build-verbosity = 1
 archs = ["auto64"]
 test-requires = ".[dev]"
-test-sources = "{project}/src/beave/tests/data"
+test-sources = ["src/beave/tests/data"]
 test-command = 'pytest -k "not test_benchmark" --pyargs beave'
 
 [tool.cibuildwheel.macos]
