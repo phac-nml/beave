@@ -78,7 +78,8 @@ lint.select = [
 build-verbosity = 1
 archs = ["auto64"]
 test-requires = ".[dev]"
-test-command = 'pytest -k "not test_benchmark" --pyargs beave --data-dir {project}/src/beave/tests/data'
+test-sources = "{project}/src/beave/tests/data"
+test-command = 'pytest -k "not test_benchmark" --pyargs beave'
 
 [tool.cibuildwheel.macos]
 before-all = "brew install gcc@15"
