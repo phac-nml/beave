@@ -78,7 +78,7 @@ lint.select = [
 build-verbosity = 1
 archs = ["auto64"]
 test-requires = ".[dev]"
-test-command = 'pytest -k "not test_benchmark" {project}/src/beave/tests'
+test-command = 'pytest -k "not test_benchmark" {package}/src/beave/tests'
 
 [tool.cibuildwheel.macos.environment]
 MACOSX_DEPLOYMENT_TARGET = "13.3"
