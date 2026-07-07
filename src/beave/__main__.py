@@ -9,24 +9,111 @@ __description__ = importlib.metadata.metadata(__package__ or __name__)["Summary"
 __version__ = importlib.metadata.version(__package__ or __name__)
 
 import argparse
-import logging
+import asyncio
 import os
 import sys
+from collections.abc import Callable, Sequence
 from enum import StrEnum
 from pathlib import Path
+from typing import Any
 
-from beave.cluster import (
-    BranchLengthType,
-    ClusterArguments,
-    LinkageMetric,
-    cluster,
-)
-from beave.log import init_logger
-from beave.match import MatchArguments, match
+from beave import log
+from beave.cluster import cluster
+from beave.declarations import BranchType, ClusterArguments, LinkageMetric, MatchArguments
+from beave.match import match
 
-logger = init_logger(__name__)
+logger = log.init_logger(__name__)
 
-MAX_PERCENT: float = 100.0
+MAX_NORMALIZED: float = 1.0
+MAX_PERCENTAGE: float = 100.0
+
+
+class Infinity(float):
+    """Override of the float class to change the __repr__ of inifinity."""
+
+    def __new__(cls) -> "Infinity":
+        """Override instance creation of float class."""
+        return super().__new__(cls, "infinity")
+
+    def __repr__(self) -> str:
+        """Override of repr for floats, to only return infinity."""
+        return "infinity"
+
+
+INFINITY: Infinity = Infinity()
+
+
+class ArgValidator:
+    """Class for validating CLI arguments based on passed functions.
+
+    None of the passed arguments in this class peform any type conversion,
+    but should instead raise an error if their passes arguments fail validation.
+    """
+
+    def __init__(self, /, validation_functions: Sequence[Callable[[Any], None]] = ()) -> None:
+        """Intializer function for registered arguments."""
+        self.validation_functions: Sequence[Callable[[Any], None]] = validation_functions
+
+    def add_validation_function(
+        self, new_function: Callable[[Any], None], *, prepend: bool = False
+    ) -> None:
+        """Add new validation function to class."""
+        if not self.validation_functions:
+            self.validation_functions = (new_function,)
+        if prepend:
+            self._prepend_validation_function(new_function)
+        else:
+            self._add_validation_function(new_function)
+
+    def _add_validation_function(self, new_function: Callable[[Any], None]) -> None:
+        """Add an additional validation function to the passed methods."""
+        self.validation_functions = (*self.validation_functions, new_function)
+
+    def _prepend_validation_function(self, new_function: Callable[[Any], None]) -> None:
+        """Add an additional validation function to the front of the passed methods."""
+        self.validation_functions = (new_function, *self.validation_functions)
+
+    def __call__(self, argument: Any) -> None:
+        """Apply validation methods to passed arguments."""
+        if self.validation_functions is None:
+            return
+
+        for func in self.validation_functions:
+            func(argument)
+
+
+class VerboseLogAction(argparse.Action):
+    """Custom action class that supports changing log verbosity."""
+
+    def __init__(
+        self,
+        option_strings: Sequence[str],
+        dest: str,
+        default: bool = False,
+        required: bool = False,
+        help: str | None = None,
+    ) -> None:
+        """Use parent class intializer."""
+        super().__init__(
+            option_strings=option_strings,
+            dest=dest,
+            nargs=0,
+            const=True,
+            default=default,
+            required=required,
+            help=help,
+        )
+
+    def __call__(  # pyright: ignore[reportUnusedVariable]
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
+    ) -> None:
+        """Override argparse action store_true and drop debug filter from logger stream handler."""
+        log.SHARED_STREAM_HANDLER.removeFilter(log.DEBUG_FILTER)
+        setattr(namespace, self.dest, self.const)
 
 
 class CommandError(ValueError):
@@ -54,6 +141,17 @@ def path_exists(file_path: str) -> Path:
     raise FileNotFoundError(error_message)
 
 
+def output_extension(delimiter: str) -> str:
+    """Get correct file extension based on delimiter of input file."""
+    match delimiter:
+        case "\t":
+            return "tsv"
+        case ",":
+            return "csv"
+        case _:
+            return "txt"
+
+
 def check_if_float(float_input: str) -> float:
     """Check if input value is float."""
     try:
@@ -68,19 +166,19 @@ def check_if_float(float_input: str) -> float:
 def percentage_range(float_input: str) -> float:
     """Check if input value is in range for comparisons."""
     converted_float: float = check_if_float(float_input)
-    if converted_float < 0.00 or converted_float > MAX_PERCENT:
+    if converted_float <= 0.00 or converted_float > MAX_PERCENTAGE:
         error_message = (
             f"Sorry, Filter threshold must be between 0.00 and 100.0. You passed: {float_input}"
         )
         logger.critical(error_message)
         raise ValueError(error_message)
-    return converted_float / MAX_PERCENT  # convert percentage to decimal fraction
+    return converted_float / MAX_PERCENTAGE  # convert percentage to decimal fraction
 
 
 def cluster_threshold(float_input: str) -> float:
     """Verify input types are valid."""
     converted_input: float = float(float_input)
-    if converted_input < 0.00 or converted_input == float("inf"):
+    if converted_input < 0.00 or converted_input == INFINITY:
         error_message = (
             f"Sorry, threshold values must be positive and not infinity. You passed: {float_input}"
         )
@@ -89,31 +187,196 @@ def cluster_threshold(float_input: str) -> float:
     return converted_input
 
 
-def verify_scaled_distance(scaled: bool, thresholds: float | list[float]) -> None:
-    """Verify scaled distance thresholds."""
-    if not scaled:
+def fast_match_threshold(float_input: str) -> float:
+    """Verify input types are valid."""
+    converted_input: float = float(float_input)
+    if converted_input < 0.00:
+        error_message = f"Sorry, threshold values must be positive. You passed: {float_input}"
+        logger.critical(error_message)
+        raise ValueError(error_message)
+    return converted_input
+
+
+def verify_does_not_contain_infinity(thresholds: list[float]) -> None:
+    """Verify input thresholds do not contain inifinity.
+
+    This check is redundant, but adding direct logic check to simplify interface
+    for later validation functions.
+    """
+    if INFINITY in thresholds:
+        err_msg = f"Sorry, {INFINITY} can not be used as a threshold."
+        logger.critical(err_msg)
+        raise CommandError(err_msg)
+
+
+def check_is_valid_integer_threshold(value: float) -> str | None:
+    """Check if a value is an integer."""
+    error: str | None = None
+    if not (value.is_integer() or value == INFINITY):
+        error = (
+            f"Sorry, hamming distance is specified, but non-integer values"
+            f" used in threshold. {value}"
+        )
+    if value < 0.0:  # Should zero be allowed?
+        error = f"Sorry, hamming distance is specified but a negative value passed. {value}"
+    return error
+
+
+def verify_threshold_is_int(thresholds: float | list[float]) -> None:
+    """Verify the thresholds passed are round numbers if using non-normalized distance."""
+    errors = []
+    if isinstance(thresholds, list):
+        for value in thresholds:
+            error = check_is_valid_integer_threshold(value)
+            if error is not None:
+                errors.append(error)
+    else:
+        error = check_is_valid_integer_threshold(thresholds)
+        if error is not None:
+            errors.append(error)
+
+    if errors:
+        errors_joined = "\n".join(errors)
+        raise CommandError(errors_joined)
+
+
+def verify_normalized_distance(thresholds: float | list[float]) -> None:
+    """Verify normalized distance thresholds."""
+    max_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
+    min_value: float = min(thresholds) if isinstance(thresholds, list) else thresholds
+    max_value_bound_exceeded: bool = max_value != INFINITY and max_value >= MAX_NORMALIZED
+    min_value_bound_exceeded: bool = min_value <= 0.0
+
+    if not max_value_bound_exceeded and not min_value_bound_exceeded:
         return
 
-    test_value: float = max(thresholds) if isinstance(thresholds, list) else thresholds
-    if test_value == float("inf") or test_value <= MAX_PERCENT:
-        return
+    err_msg_max: str = (
+        f"Sorry, normalized distance specified, but values greater than or equal"
+        f" to {MAX_NORMALIZED} are provided. {max_value}"
+    )
+    err_msg_min: str = (
+        f"Sorry, normalized distance specified, but values less than or equal to 0.0"
+        f" are provided. {min_value}"
+    )
 
-    err_msg: str = "Sorry, scaled distance specified, but values greater than 100.0 are provided."
-    logger.critical(err_msg)
-    raise CommandError(err_msg)
+    err_msg = []
+    if max_value_bound_exceeded:
+        err_msg.append(err_msg_max)
+    if min_value_bound_exceeded:
+        err_msg.append(err_msg_min)
+
+    logger.critical("\n".join(err_msg))
+    raise CommandError("\n".join(err_msg))
 
 
-def output_file(output: str) -> Path:
-    """Create directory for output results file if needed."""
+def output_directory(output: str) -> Path:
+    """Create directory for output files."""
     handle: Path = Path(output)
-    if not handle.parent.is_dir():
+    if not handle.is_dir():
         logger.debug("Creating output directory structure.")
-        handle.parent.mkdir(parents=True, exist_ok=True)
+        handle.mkdir(parents=True, exist_ok=True)
     return handle
 
 
-def main() -> None:
-    """Program entry-point."""
+def add_cluster_parser(parser_cluster: argparse.ArgumentParser) -> None:
+    """Add the cluster parsing options to the parent parser."""
+    # cluster args
+
+    parser_cluster.add_argument(
+        "--input", "-i", help="Input alleles. (required)", type=path_exists, required=True
+    )
+
+    parser_cluster.add_argument(
+        "--output",
+        "-o",
+        type=output_directory,
+        required=False,
+        help=(
+            "Output directory for generated tree and clusters, directory will be created if does"
+            " not exist. (default: %(default)s)"
+        ),
+        default=os.getcwd(),
+    )
+
+    parser_cluster.add_argument(
+        "--thresholds",
+        "-t",
+        help="List of threshold values to use. (required)",
+        nargs="+",
+        required=True,
+        action="extend",
+        type=cluster_threshold,
+    )
+
+    parser_cluster.add_argument(
+        "--linkage-method",
+        "-l",
+        default=LinkageMetric.AVERAGE.value,
+        help="Hierarchical clustering linkage to use. (default: %(default)s)",
+        choices=[i.value for i in LinkageMetric],
+    )
+
+    parser_cluster.add_argument(
+        "--branch-type",
+        "-b",
+        default=BranchType.COPHENETIC.value,
+        choices=[i.value for i in BranchType],
+        help="Determine how to display tree lenghts in the Newick file. (default %(default)s)",
+    )
+
+    parser_cluster.add_argument(
+        "--matrix",
+        action="store_true",
+        help=(
+            "Write the computed distance matrix to a file in "
+            "the output directory called 'matrix.tsv'."
+        ),
+    )
+
+
+def add_match_parser(parser_match: argparse.ArgumentParser) -> None:
+    """Add arguments to sub-parser for match."""
+    parser_match.add_argument(
+        "--reference",
+        "-r",
+        type=path_exists,
+        required=True,
+        help=(
+            "Profiles to compare against. Query samples will be included in comparisons. (required)"
+        ),
+    )
+
+    parser_match.add_argument(
+        "--query",
+        "-q",
+        type=path_exists,
+        required=True,
+        help="Profiles containing new-samples for comparisons. (required)",
+    )
+
+    parser_match.add_argument(
+        "--threshold",
+        "-t",
+        type=fast_match_threshold,
+        help="Only report distances below specified threshold. (default: %(default)s)",
+        default=INFINITY,
+    )
+
+    parser_match.add_argument(
+        "--output",
+        "-o",
+        type=output_directory,
+        required=False,
+        help=(
+            "Output directory for calculated distances, directory will be created if does"
+            " not exist. (default: %(default)s)"
+        ),
+        default=os.getcwd(),
+    )
+
+
+def create_parent_parser() -> argparse.ArgumentParser:
+    """Create the parent parser for program."""
     parent_parser = argparse.ArgumentParser(  # Global command-line arguments:
         add_help=False,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -125,23 +388,22 @@ def main() -> None:
         number_of_cores_default = 1
 
     parent_parser.add_argument(
-        "--n-threads",
-        "-n",
-        help="Specify the number of threads to be used. [default %(default)d]",
+        "--cores",
+        "-c",
+        help="Specify the number of threads to be used. (default %(default)d)",
         type=int,
         default=number_of_cores_default,
     )
     parent_parser.add_argument(
         "--delimiter",
-        "-d",
-        help="Input alleles delimiter. [default \\t]",
+        help="Input alleles delimiter. (default \\t)",
         type=str,
         default="\t",
     )
 
     parent_parser.add_argument(
-        "--columns",
-        "-k",
+        "--columns-subset",
+        "-s",
         help=(
             "A file containing a single column of the column names to subset from the passed "
             "allele profiles."
@@ -152,17 +414,17 @@ def main() -> None:
 
     parent_parser.add_argument(
         "--count-missing",
-        "-c",
+        "-m",
         help="Count missing values as differences.",
         action="store_true",
     )
 
     parent_parser.add_argument(
-        "--scaled",
-        "-s",
+        "--normalize-distance",
+        "-n",
         help=(
-            "Compute the scaled distance. Distance is presented as a percentage, or a value "
-            "between [0.0-100.0]"
+            "Compute the normalized distance. Distance is presented as a percentage, or a value "
+            "between [0.0-1.0]"
         ),
         action="store_true",
     )
@@ -172,21 +434,24 @@ def main() -> None:
         "-f",
         help=(
             "Exclude samples from analysis if they are missing more than the specified percentage "
-            "of data. Must be between [0.0-100.0]. [default 100.0]"
+            "of data. Must be between [0.0-100.0]. (default 100.0)"
         ),
         default=percentage_range("100.00"),
         type=percentage_range,
     )
 
     parent_parser.add_argument(
-        "--verbose", action="store_true", help="Display logger debug messages."
+        "--verbose", action=VerboseLogAction, help="Display logger debug messages."
     )
 
     parser = argparse.ArgumentParser(
         description=__description__,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=[parent_parser],
+        allow_abbrev=True,
     )
+    # suggest_on_error only exists in newer python versions, setting it as a @property
+    # will not raise errors as the flag will just be un-used
+    parser.suggest_on_error = True  # pyright: ignore[reportAttributeAccessIssue]
 
     parser.add_argument("--version", "-v", action="version", version=f"%(prog)s {__version__}")
 
@@ -195,135 +460,81 @@ def main() -> None:
         dest="command",
     )
 
-    # cluster args
+    parser_match = subparsers.add_parser(
+        Commands.MATCH, help="Run fast matching.", parents=[parent_parser]
+    )
     parser_cluster = subparsers.add_parser(
         Commands.CLUSTER, help="Run denovo clustering.", parents=[parent_parser]
     )
 
-    parser_cluster.add_argument(
-        "--input", "-i", help="Input alleles.", type=path_exists, required=True
-    )
+    add_cluster_parser(parser_cluster)
+    add_match_parser(parser_match)
 
-    parser_cluster.add_argument(
-        "--tree-output",
-        "-t",
-        help="File path to write generated tree. [default %(default)s]",
-        type=output_file,
-        required=False,
-        default="clusters.nwk",
-    )
+    return parser
 
-    parser_cluster.add_argument(
-        "--cluster-output",
-        "-l",
-        help="File path to write generated clusters. [default %(default)s]",
-        type=output_file,
-        required=False,
-        default="clusters.tsv",
-    )
 
-    parser_cluster.add_argument(
-        "--thresholds",
-        "-p",
-        help="List of threshold values to use.",
-        nargs="+",
-        required=True,
-        action="extend",
-        type=cluster_threshold,
-    )
+async def main() -> None:
+    """Program entry-point."""
+    parser = create_parent_parser()
+    args = parser.parse_args()
+    if args.command is None:
+        parser.print_help()
+        raise SystemExit()
 
-    parser_cluster.add_argument(
-        "--method",
-        "-m",
-        default=LinkageMetric.AVERAGE.value,
-        help="Hierarchical clustering linkage to use. [default: %(default)s]",
-        choices=[i.value for i in LinkageMetric],
-    )
+    validate_normalized_distance: ArgValidator = ArgValidator()
+    validate_hamming_distance: ArgValidator = ArgValidator()
+    if args.normalize_distance:
+        validate_normalized_distance.add_validation_function(verify_normalized_distance)
+    else:
+        validate_hamming_distance.add_validation_function(verify_threshold_is_int)
 
-    parser_cluster.add_argument(
-        "--tree-distances",
-        "-b",
-        default=BranchLengthType.COPHENETIC.value,
-        choices=[i.value for i in BranchLengthType],
-        help="Determine how to display tree lenghts in the Newick file. [default %(default)s]",
-    )
-
-    parser_match = subparsers.add_parser(
-        Commands.MATCH, help="Run fast matching.", parents=[parent_parser]
-    )
-
-    parser_match.add_argument(
-        "--reference",
-        "-r",
-        type=path_exists,
-        required=True,
-        help="Profiles to compare against. Query samples will be included in comparisons.",
-    )
-
-    parser_match.add_argument(
-        "--query",
-        "-q",
-        type=path_exists,
-        required=True,
-        help="Profiles containing new-samples for comparisons.",
-    )
-
-    parser_match.add_argument(
-        "--threshold",
-        "-t",
-        type=cluster_threshold,
-        help="Only report distances below specified threshold. [default: %(default)s]",
-        default=float("inf"),
-    )
-
-    parser_match.add_argument(
-        "--output",
-        "-o",
-        type=output_file,
-        required=False,
-        help="Fast match result output tsv file. [default: %(default)s]",
-        default="output.tsv",
-    )
-
-    args = parser.parse_args(sys.argv[1:])
-
-    if args.verbose:
-        """Set the root loggers level to debug if verbose is enabled."""
-        logging.getLogger().setLevel(logging.DEBUG)
-
+    log.add_file_logger(args.output)
+    file_extension: str = output_extension(args.delimiter)
     match args.command:
         case Commands.CLUSTER:
-            verify_scaled_distance(args.scaled, args.thresholds)
+            validate_normalized_distance.add_validation_function(
+                verify_does_not_contain_infinity,
+                prepend=True,  # Check can be used on hamming values as infinity is not allowed.
+            )
+            validate_hamming_distance(args.thresholds)
+            validate_normalized_distance(args.thresholds)
             cluster_args = ClusterArguments(
-                args.input,
-                args.delimiter,
-                args.thresholds,
-                args.method,
-                args.n_threads,
-                args.columns,
-                args.count_missing,
-                args.scaled,
-                args.tree_output,
-                args.cluster_output,
-                args.tree_distances,
-                args.filter_threshold,
+                input_file=args.input,
+                delimiter=args.delimiter,
+                thresholds=args.thresholds,
+                linkage_method=args.linkage_method,
+                cores=args.cores,
+                columns_path=args.columns_subset,
+                count_missing=args.count_missing,
+                normalize_distance=args.normalize_distance,
+                branch_type=args.branch_type,
+                filter_threshold=args.filter_threshold,
+                matrix=args.matrix,
+                output_directory=args.output,
             )
-            cluster(cluster_args)
+            await cluster(cluster_args, file_extension)
         case Commands.MATCH:
-            verify_scaled_distance(args.scaled, args.threshold)
+            validate_hamming_distance(args.threshold)
+            validate_normalized_distance(args.threshold)
             match_args = MatchArguments(
-                args.query,
-                args.reference,
-                args.threshold,
-                args.n_threads,
-                args.columns,
-                args.delimiter,
-                args.count_missing,
-                args.scaled,
-                args.filter_threshold,
-                args.output,
+                query=args.query,
+                reference=args.reference,
+                threshold=args.threshold,
+                cores=args.cores,
+                columns_path=args.columns_subset,
+                delimiter=args.delimiter,
+                count_missing=args.count_missing,
+                normalize_distance=args.normalize_distance,
+                filter_threshold=args.filter_threshold,
+                output_directory=args.output,
             )
-            match(match_args)
+            match(match_args, file_extension)
         case _:
             parser.print_help()
             sys.exit()
+
+
+def async_main() -> None:
+    """Async entry point for main python function."""
+    asyncio.run(main())
+    logger.info("Finished.")

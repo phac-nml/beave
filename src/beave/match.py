@@ -1,7 +1,6 @@
 """Module for fast-matching process."""
 
 from collections.abc import Sequence
-from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
@@ -11,6 +10,7 @@ import polars as pl
 
 import beave.transform_data as transform
 from beave import fast_match
+from beave.declarations import MatchArguments
 from beave.log import init_logger
 
 logger = init_logger(__name__)
@@ -23,22 +23,6 @@ class MatchColumns(StrEnum):
 
     QUERY = "query_id"
     REFERENCE = "ref_id"
-
-
-@dataclass(slots=True)
-class MatchArguments:
-    """CLI arguments for match process."""
-
-    query: Path
-    reference: Path
-    threshold: float
-    cores: int
-    columns_path: Path | None
-    delimiter: str
-    count_missing: bool
-    scaled: bool
-    filter_threshold: float
-    output: Path
 
 
 class ColumnsDoNotMatchError(ValueError):
@@ -82,7 +66,7 @@ def run_fast_matching(
     fast_match_data: npt.NDArray = fast_match(
         profiles,
         match_args.cores,
-        match_args.scaled,
+        match_args.normalize_distance,
         match_args.count_missing,
         query_size,
         match_args.threshold,
@@ -108,15 +92,13 @@ def prepare_slice_to_write(
 
 
 def prepare_fast_match_outputs(
-    data: npt.NDArray,
-    profiles: npt.NDArray,
-    match_args: MatchArguments,
+    data: npt.NDArray, profiles: npt.NDArray, match_args: MatchArguments, output_file: Path
 ) -> None:
     """Write out fast-match results for each query and reference."""
     dist_type: str = transform.DistanceTypes.HAMMING
     type_conversion: type[pl.UInt32] | type[pl.Float32] = pl.UInt32
-    if match_args.scaled:
-        dist_type = transform.DistanceTypes.SCALED
+    if match_args.normalize_distance:
+        dist_type = transform.DistanceTypes.NORMALIZED
         type_conversion = pl.Float32
 
     find_replace_query: tuple[Sequence[str], Sequence[str]] = (
@@ -140,8 +122,8 @@ def prepare_fast_match_outputs(
     output_data: pl.DataFrame = prepare_slice_to_write(
         data[:MAX_ROWS_WRITE_BATCH], output_schema, find_replace_query
     )
-    logger.info(f"Writing to {match_args.output}.")
-    output_data.write_csv(match_args.output, separator=match_args.delimiter)
+    logger.info(f"Writing to {output_file}.")
+    output_data.write_csv(output_file, separator=match_args.delimiter)
 
     if len(data) < MAX_ROWS_WRITE_BATCH:
         """
@@ -154,7 +136,7 @@ def prepare_fast_match_outputs(
 
     logger.info(f"Final output is being written in batches of {MAX_ROWS_WRITE_BATCH:,}.")
     # write additional outputs if a 32 bit integer is exceeded
-    with open(match_args.output, "a") as output:
+    with open(output_file, "a") as output:
         for idx in range(MAX_ROWS_WRITE_BATCH, len(data), MAX_ROWS_WRITE_BATCH):
             logger.debug(f"Writing batch {idx:,}-{idx + MAX_ROWS_WRITE_BATCH:,}")
             output_data = prepare_slice_to_write(
@@ -164,18 +146,16 @@ def prepare_fast_match_outputs(
             output_data.write_csv(output, include_header=False, separator=match_args.delimiter)
 
 
-def match(match_args: MatchArguments) -> None:
+def match(match_args: MatchArguments, file_extension: str) -> None:
     """Driver function for fast-matching."""
     logger.debug("Launching fast-matching.")
-    with pl.StringCache():
-        query = transform.read_input_profiles(
-            match_args.query, match_args.delimiter, match_args.cores
-        )
-        logger.debug("Finished reading query profiles.")
-        reference = transform.read_input_profiles(
-            match_args.reference, match_args.delimiter, match_args.cores
-        )
-        logger.debug("Finished reading reference profiles.")
+
+    query = transform.read_input_profiles(match_args.query, match_args.delimiter, match_args.cores)
+    logger.debug("Finished reading query profiles.")
+    reference = transform.read_input_profiles(
+        match_args.reference, match_args.delimiter, match_args.cores
+    )
+    logger.debug("Finished reading reference profiles.")
 
     logger.info("Finished reading reference and query profiles.")
     if match_args.columns_path:
@@ -199,18 +179,22 @@ def match(match_args: MatchArguments) -> None:
     transform.verify_dataframe_integrity(merged_profiles)
     logger.debug("Finished verifying merged profiles dataframe.")
 
-    profiles_prepared: npt.NDArray = transform.prep_data(
-        merged_profiles, match_args.filter_threshold, transform.transform_data_categorical_encoding
+    profiles_prepared, merged_profiles_samples = transform.prep_data(
+        merged_profiles,
+        match_args.filter_threshold,
+        transform.transform_data_categorical_encoding,
+        match_args,
     )
     logger.debug("Converted prepared profiles to numpy array.")
 
     fast_match_results: npt.NDArray = run_fast_matching(profiles_prepared, query.height, match_args)
-    logger.info(f"Finished calculations and writing to output: {match_args.output}")
+    output_file: Path = match_args.output_directory / f"results.{file_extension}"
+    logger.info(f"Finished calculations and writing to output: {output_file}")
 
     """
     Need to provide an index row to the passed labels or else the look up of each value from
     the list when writing the output is incredibly slow.
     """
-    samples: npt.NDArray = merged_profiles.select(pl.first()).to_series().to_numpy()
-    prepare_fast_match_outputs(fast_match_results, samples, match_args)
+    samples: npt.NDArray = merged_profiles_samples.to_numpy()
+    prepare_fast_match_outputs(fast_match_results, samples, match_args, output_file)
     logger.info("Finished.")

@@ -14,7 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(TARGET_GROUP STREQUAL release)
 
   set(CMAKE_CXX_FLAGS
-  "-Wall -Wextra -g -O3 -mfpmath=sse -flto \
+  "-Wall -Wextra -O3 -mfpmath=sse -flto \
   -ffast-math -ftree-vectorize -funroll-loops \
   -fopt-info-vec-optimized -std=c++23 -mavx2")
   add_subdirectory(src)
@@ -62,9 +62,7 @@ elseif(TARGET_GROUP STREQUAL python)
     set(DEV_MODULE Development.Module)
   endif()
 
-  #find_package(Python 3.13 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED)
 
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/nanobind)
   add_subdirectory(src)
 
 else()

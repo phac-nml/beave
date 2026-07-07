@@ -1,55 +1,65 @@
 - name: Run cluster pass
-  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -t out/tree.out -m average -l out/clusters.tsv -sc -b patristic -n 2 --thresholds 10.0 9.0 8.0
+  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -o out -nm -b patristic -c 2 --thresholds 0.10 0.9 0.8
   files:
-    - path: "out/tree.out"
+    - path: "out/tree.nwk"
       should_exist: true
-      md5sum: 245de895468635ba78925d0e05b11c6d
+      md5sum: 5d03f341ecb2cd156e8601efce29a74c
     - path: out/clusters.tsv
       should_exist: true
-      md5sum: 34d06f485579d92e97da2dd26ce50ae2 
+      md5sum: 0835ba33a75095034170a72fe93b9951
 
 - name: Run cluster pass cophenetic
   tags:
     - should_pass
-  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -t tree/tree.out -m average -l clusters/clusters.tsv -sc -b cophenetic -n 2 --thresholds 10.0 9.0 8.0
+  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -o tree -l average -nm -b cophenetic -c 2 --thresholds 0.10 0.9 0.8
   files:
-    - path: "tree/tree.out"
+    - path: "tree/tree.nwk"
       should_exist: true
-      md5sum: 0a90b6371ef7c044447281bee283684c
-    - path: clusters/clusters.tsv
+      md5sum: c5b6d9f4be42bf3c0326e104e8e8c6e1
+    - path: tree/clusters.tsv
       should_exist: true
-      md5sum: 34d06f485579d92e97da2dd26ce50ae2
+      md5sum: 0835ba33a75095034170a72fe93b9951
 
-- name: Run cluster pass cophenetic no scaled metric
+- name: Run cluster pass cophenetic no normalized metric
   tags:
     - should_pass
-  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -c -b cophenetic -n 1 --thresholds 10.0 9.0 8.0
+  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -m -b cophenetic -c 1 --thresholds 10.0 9.0 8.0
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: true
       md5sum: 89b7c399d4e36412104858fb9da4cf3b 
     - path: clusters.tsv
       should_exist: true
       md5sum: c281c95b0733d27ee1bcf1b1079be84b 
 
-- name: Run cluster pass cophenetic no scaled or missing counted metric
+- name: Run cluster pass cophenetic no normalized or missing counted metric
   tags:
     - should_pass
-  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 3 --thresholds 10.0 9.0 8.0
+  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -b cophenetic -c 3 --thresholds 10.0 9.0 8.0
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: true
       md5sum: 24d90a65d2a9a658c222ee0d4b005972
     - path: clusters.tsv
       should_exist: true
       md5sum: 4000cbea01848c4a651fa22647bec5c7
 
-- name: Run cluster pass cophenetic sc flag passing 0 cores passed
+- name: Run cluster pass filter data
   tags:
     - should_pass
-  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -b cophenetic -n 0 --thresholds 10.0 9.0 8.0
+  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -b cophenetic -c 3 --thresholds 10.0 9.0 8.0 -f 20 -m --matrix
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
+      should_exist: true
+    - path: clusters.tsv
+      should_exist: true
+
+- name: Run cluster pass cophenetic nm flag passing 0 cores passed
+  tags:
+    - should_pass
+  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -b cophenetic -c 0 --thresholds 10.0 9.0 8.0
+  files:
+    - path: "tree.nwk"
       should_exist: true
       md5sum: 24d90a65d2a9a658c222ee0d4b005972
     - path: clusters.tsv
@@ -59,52 +69,61 @@
 - name: Run cluster cophenetic fail threshold
   tags:
     - should_fail
-  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 --thresholds 0.1.0
+  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -nm -b cophenetic -n 2 --thresholds 0.1.0
   exit_code: 2
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: false
     - path: clusters.tsv
       should_exist: false
   stderr:
     contains:
-      - "beave cluster: error: argument --thresholds/-p: invalid cluster_threshold value: '0.1.0'"
+      - "beave cluster: error: argument --thresholds/-t: invalid cluster_threshold value: '0.1.0'"
+
+- name: Run cluster cophenetic fail threshold due to positive and negative values
+  tags:
+    - should_fail
+  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -nm -b cophenetic -n 2 --thresholds 101 -1
+  exit_code: 2
+  stderr:
+    contains:
+      - "Sorry, threshold values must be positive and not infinity. You passed: -1"
 
 - name: Run cluster fail threshold missing argument
   tags:
     - should_fail
-  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 --thresholds
+  command: beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -nm -b cophenetic -c 2 --thresholds
   exit_code: 2
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: false
     - path: clusters.tsv
       should_exist: false
   stderr:
     contains:
-      - "beave cluster: error: argument --thresholds/-p: expected at least one argument"
+      - "beave cluster: error: argument --thresholds/-t: expected at least one argument"
 
 - name: Run cluster csv
   tags:
     - should_pass
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -c 2 -t 0.999 0.5 --delimiter ,
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: true
-      md5sum: 0a90b6371ef7c044447281bee283684c
-    - path: clusters.tsv
+      md5sum: c5b6d9f4be42bf3c0326e104e8e8c6e1
+    - path: clusters.csv
       should_exist: true
-      md5sum: 0da547890daef8144b1b36191c0166a4
+      md5sum: b409d053ec5951c90b42e36fb5fc08b4
 
 - name: Run cluster threshold should fail due to negative number being passed
   tags:
     - should_fail
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d , -f -1
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -n -b cophenetic -c 2 -t 0.99 0.5 --delimiter , -f -1
   exit_code: 2
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: false
-    - path: clusters.tsv
+    - path: clusters.csv
       should_exist: false
   stderr:
     contains:
@@ -113,40 +132,40 @@
 - name: Run cluster, cluster threshold should fail due to negative number being passed.
   tags:
     - should_fail
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -1 -d , 
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -c 2 -t 0.99 0.5 -1 --delimiter, 
   exit_code: 2
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: false
-    - path: clusters.tsv
+    - path: clusters.csv
       should_exist: false
   stderr:
     contains:
-      - "beave cluster: error: argument --thresholds/-p: invalid cluster_threshold value: '-1'"
+      - "beave cluster: error: argument --thresholds/-t: invalid cluster_threshold value: '-1'"
 
 - name: Run cluster, cluster threshold should fail due to infinity being passed.
   tags:
     - should_fail
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 inf -d , 
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -m -b cophenetic -n 2 --thresholds 1 0.5 inf --delimiter , 
   exit_code: 2
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: false
-    - path: clusters.tsv
+    - path: clusters.csv
       should_exist: false
   stderr:
     contains:
-      - "beave cluster: error: argument --thresholds/-p: invalid cluster_threshold value: 'inf'"
+      - "beave cluster: error: argument --thresholds/-t: invalid cluster_threshold value: 'inf'"
 
 - name: Run cluster threshold should fail due to high threshold
   tags:
     - should_fail
   exit_code: 2
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d , -f 101
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -c 2 --thresholds 1 0.5 --delimiter , --filter-threshold 101
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: false
-    - path: clusters.tsv
+    - path: clusters.csv
       should_exist: false
   stderr:
     contains:
@@ -155,22 +174,22 @@
 - name: Run cluster threshold should pass
   tags:
     - should_pass
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d , -f 50.0
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.csv -l average -nm -b cophenetic -c 2 -t 0.9 0.5 --delimiter , -f 50.0
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: true
-      md5sum: 0a90b6371ef7c044447281bee283684c
-    - path: clusters.tsv
+      md5sum: c5b6d9f4be42bf3c0326e104e8e8c6e1
+    - path: clusters.csv
       should_exist: true
-      md5sum: 0da547890daef8144b1b36191c0166a4
+      md5sum: a5395127251806230a9faf0f3c17d53d
 
 - name: Run cluster file does not exist
   tags:
     - should_fail
-  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5 -d ,
+  command: beave cluster --input src/beave/tests/data/R1KC1K.2-zeroes.does-not-exist.csv -l average -nm -b cophenetic -c 2 -t 1 0.5 --delimiter ,
   exit_code: 1
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: false
     - path: clusters.tsv
       should_exist: false
@@ -181,10 +200,10 @@
 - name: Run cluster id contains null value
   tags:
     - should_fail
-  command: beave cluster --input src/beave/tests/data/test_profiles_null_in_id_column.csv -d, -t tree.out -m average -l clusters.tsv -sc -b cophenetic -n 2 -p 1 0.5
+  command: beave cluster --input src/beave/tests/data/test_profiles_null_in_id_column.csv --delimiter , -l average -nm -b cophenetic -c 2 -t 0.99 0.5
   exit_code: 1
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: false
     - path: clusters.tsv
       should_exist: false
@@ -193,9 +212,9 @@
       - "MissingIDValueError: Sorry, missing values identified in left most column (ID column). The left most column can have no missing values."
 
 - name: Run cluster known inputs complete linkage
-  command: beave cluster --input src/beave/tests/data/test_constructed.tsv -t tree.out -m complete -l clusters.tsv -b patristic -n 1 --thresholds 5 3 0
+  command: beave cluster --input src/beave/tests/data/test_constructed.tsv -l complete -b patristic -c 1 --thresholds 5 3 0
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: true
       md5sum: d516d6375779284e27ebca6e0edde7e8  # Verified manually
     - path: clusters.tsv
@@ -204,9 +223,9 @@
 
 
 - name: Run cluster known inputs single linkage
-  command: beave cluster --input src/beave/tests/data/test_constructed.tsv -t tree.out -m single -l clusters.tsv -b patristic -n 1 --thresholds 5 3 0
+  command: beave cluster --input src/beave/tests/data/test_constructed.tsv -l single -b patristic -c 1 --thresholds 5 3 0
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: true
       md5sum: 13a8a20475d0cba22bc2f97908f9b29b # Verified manually
     - path: clusters.tsv
@@ -215,9 +234,9 @@
 
 
 - name: Run cluster known inputs average linkage
-  command: beave cluster --input src/beave/tests/data/test_constructed.tsv -t tree.out -m average -l clusters.tsv -b patristic -n 1 --thresholds 5 3 0
+  command: beave cluster --input src/beave/tests/data/test_constructed.tsv -l average -b patristic -c 1 --thresholds 5 3 0
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: true
       md5sum: fcd5ccc9cfd750d0a5841ae34b13dfba # Verified manually
     - path: clusters.tsv
@@ -226,9 +245,9 @@
 
 
 - name: Run cluster known inputs complete linkage cophenetic
-  command: beave cluster --input src/beave/tests/data/test_constructed.tsv -t tree.out -m complete -l clusters.tsv -n 1 --thresholds 5 3 0
+  command: beave cluster --input src/beave/tests/data/test_constructed.tsv -l complete -c 1 --thresholds 5 3 0
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: true
       md5sum: fd228bc6b7a19e6c2413acd7e9f5ee4d
     - path: clusters.tsv
@@ -237,9 +256,9 @@
 
 
 - name: Run cluster known inputs single linkage cophenetic 
-  command: beave cluster --input src/beave/tests/data/test_constructed.tsv -t tree.out -m single -l clusters.tsv -n 1 --thresholds 5 3 0
+  command: beave cluster --input src/beave/tests/data/test_constructed.tsv -l single -c 1 --thresholds 5 3 0
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: true
       md5sum: fc81376e9ba335a29b29ed6ed327812a
     - path: clusters.tsv
@@ -248,9 +267,9 @@
 
 
 - name: Run cluster known inputs average linkage cophenetic 
-  command: beave cluster --input src/beave/tests/data/test_constructed.tsv -t tree.out -m average -l clusters.tsv -n 1 --thresholds 5 3 0
+  command: beave cluster --input src/beave/tests/data/test_constructed.tsv -l average -c 1 --thresholds 5 3 0
   files:
-    - path: "tree.out"
+    - path: "tree.nwk"
       should_exist: true
       md5sum: 879283e060f6cbd739bc68c11dd0f59d
     - path: clusters.tsv
