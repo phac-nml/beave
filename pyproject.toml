@@ -81,8 +81,11 @@ test-requires = ".[dev]"
 test-sources = ["src/beave/tests/data"]
 test-command = 'pytest -k "not test_benchmark" --pyargs beave'
 
+[tool.cibuildwheel.linux]
+before-all = "apt install libzstd-dev"
+
 [tool.cibuildwheel.macos]
-before-all = "brew install gcc@15"
+before-all = "brew install gcc@15 zstd"
 
 [tool.cibuildwheel.macos.environment]
 CC = "gcc-15"
