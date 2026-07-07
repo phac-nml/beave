@@ -80,9 +80,8 @@ archs = ["auto64"]
 test-requires = ".[dev]"
 test-sources = ["src/beave/tests/data"]
 test-command = 'pytest -k "not test_benchmark" --pyargs beave'
+test-skip = "cp314-{musl,many}linux*"
 
-[tool.cibuildwheel.linux]
-before-all = "yum install zstd -y"
 
 [tool.cibuildwheel.macos]
 before-all = "brew install gcc@15 zstd"
