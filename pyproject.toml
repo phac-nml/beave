@@ -9,7 +9,7 @@ description = "A very Canadian utility for genomic clustering and distance query
 readme = "README.md"
 requires-python = ">=3.13"
 authors = [{ name = "Matthew Wells", email = "matthew.wells@phac-aspc.gc.ca" }]
-classifiers = ["License :: Apache-2.0"]
+license = "Apache-2.0"
 dependencies = ["numpy >= 2.4.0", "polars >=1.41.1", "scipy >= 1.17.0"]
 version = "1.0.0"
 
