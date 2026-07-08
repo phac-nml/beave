@@ -1,3 +1,5 @@
+![PyPI](https://img.shields.io/pypi/v/beave?label=pypi%20package)
+
 # `beave`
 
 - [Introduction](#introduction)
@@ -56,9 +58,7 @@ Start by pulling the repository.
 
 #### Without Conda
 
-To build and install the Python package you must have the following python packages, `scikit-build-core` and `nanobind` which can be installed with `pip install nanobind scikit-build-core[pyproject]`.
-
-Users can run simply run `pip install .` to install the package.
+Users can install beave from pypi, by simply running `pip install beave`. If you wish to compile the project from its source code simply enter `pip install .` in the source code directory.
 
 Developers can run `pip install -ve .[dev]` or `pip install -Ceditable.rebuild=true -ve .[dev]`. Further examples can be found in the nanobind documentation here: [nanobind packaging](https://nanobind.readthedocs.io/en/latest/packaging.html). The `--no-build-isolation` is not included as running `uv pip install` with the `--no-build-isolation` flag tells uv to ignore the `build-system.requires` section from the `pyproject.toml`.
 
