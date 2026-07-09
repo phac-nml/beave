@@ -8,7 +8,8 @@
 - [Install](#install)
   - [Get Started](#get-started)
   - [Python](#python)
-    - [Without Conda](#without-conda)
+    - [With Bioconda](#with-bioconda)
+    - [With pip](#with-pip)
     - [With Conda](#with-conda)
 - [Getting Started](#getting-started)
   - [Using Python](#using-python)
@@ -34,6 +35,7 @@ This program is under active development and is used for creating distance matri
 ## Contact
 
 [Matthew Wells] : <matthew.wells@phac-aspc.gc.ca>
+
 [Eric Marinier] : <eric.marinier@phac-aspc.gc.ca>
 
 ## Compatibility
@@ -56,7 +58,13 @@ Start by pulling the repository.
 
 ### Python
 
-#### Without Conda
+#### With Bioconda
+
+Currently only linux is supported within bioconda, if you wish to install on OSX please install from pypi for build from source. An issue has been created and OSX on bioconda will be supported in the future.
+
+To install from bioconda simply run `conda install -c bioconda beave`
+
+#### With pip
 
 Users can install beave from pypi, by simply running `pip install beave`. If you wish to compile the project from its source code simply enter `pip install .` in the source code directory.
 
