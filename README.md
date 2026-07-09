@@ -1,4 +1,5 @@
 ![PyPI](https://img.shields.io/pypi/v/beave?label=pypi%20package)
+![Conda](https://img.shields.io/conda/dn/bioconda/beave)
 
 # `beave`
 
