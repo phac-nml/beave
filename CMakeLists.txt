@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 project(beave
-  VERSION 0.0.1
+  VERSION 1.0.0
   DESCRIPTION "Simple test of distance matrix generation"
   LANGUAGES CXX)
 include(FetchContent)

@@ -27,7 +27,7 @@ constexpr size_t MINIMUM_PROFILES = 2;
  * @details
  * The number of threads is handled externally by the program, therefore
  * a value of size 0 should never be passed to the threads argument. There
- * must be atleast 2 profiles for any comparison to take place as well.
+ * must be at least 2 profiles for any comparison to take place as well.
  *
  * @usage
  * std::vector<size_t> bins = sample_rnages(profiles.size(), threads)
@@ -35,7 +35,7 @@ constexpr size_t MINIMUM_PROFILES = 2;
 std::vector<size_t> sample_ranges(size_t profiles, size_t threads) {
   if (threads < 1 || profiles < MINIMUM_PROFILES) {
     throw std::invalid_argument("Threads passed must be a positive integer, "
-                                "and atleast 2 profiles must be passed.");
+                                "and at least 2 profiles must be passed.");
   }
   size_t samples_bin = profiles / threads;
   std::vector<size_t> bins;
@@ -57,7 +57,7 @@ std::vector<size_t> sample_ranges(size_t profiles, size_t threads) {
  * @return a vector of sample ranges
  *
  * @details
- * This function calls the `sample_ranges` function, however it is a seperate
+ * This function calls the `sample_ranges` function. However it is a seperate
  * function as it gaurds the logic required for verifying the case when the
  * number of threads passed to program exceeds the number of profiles passed to
  * the program.
@@ -127,7 +127,7 @@ using array_out = nb::ndarray<float, nb::numpy, nb::shape<-1, 3>, nb::c_contig,
                               nb::device::cpu>;
 
 /*
- * Fast matching return value, containst a 3x-1 array. As we compare all of
+ * Fast matching return value, contains a 3x-1 array. As we compare all of
  * the query sample against themeselves and against all reference samples.
  *
  * Only distances less than a passed thershold are retained in the final

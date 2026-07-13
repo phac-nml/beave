@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Optimized hamming distance hot loop in distance calculation. [PR 42](https://github.com/phac-nml/beave/pull/42)
+- Optimized Hamming distance hot loop in distance calculation. [PR 42](https://github.com/phac-nml/beave/pull/42)
 
 ### Removed
 
-- Dropped C++ CLI option removing `syncstream` dependency causing issues in mac builds. [PR 42](https://github.com/phac-nml/beave/pull/42)
+- Dropped C++ CLI option removing `syncstream` dependency causing issues in Mac builds. [PR 42](https://github.com/phac-nml/beave/pull/42)
