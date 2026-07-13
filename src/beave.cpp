@@ -57,7 +57,7 @@ std::vector<size_t> sample_ranges(size_t profiles, size_t threads) {
  * @return a vector of sample ranges
  *
  * @details
- * This function calls the `sample_ranges` function. However it is a seperate
+ * This function calls the `sample_ranges` function. However, it is a seperate
  * function as it gaurds the logic required for verifying the case when the
  * number of threads passed to program exceeds the number of profiles passed to
  * the program.
