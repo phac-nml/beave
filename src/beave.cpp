@@ -1,13 +1,80 @@
-#include "main.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <immintrin.h>
+#include <sys/types.h>
+#include <thread>
+#include <vector>
+
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/string.h>
-#include <thread>
-#include <vector>
+
+constexpr size_t MISSING_VALUE = 0;
+constexpr size_t MINIMUM_PROFILES = 2;
+
+/**
+ * @brief Determine the sample ranges to be calculated based on
+ * the number of threads used.
+ *
+ * @param profiles The number of profiles to be processed
+ * @param threads the number of threads used by the program
+ *
+ * @return A vector of indexes containing the ranges of samples to be
+ * partitioned
+ *
+ * @details
+ * The number of threads is handled externally by the program, therefore
+ * a value of size 0 should never be passed to the threads argument. There
+ * must be at least 2 profiles for any comparison to take place as well.
+ *
+ * @usage
+ * std::vector<size_t> bins = sample_rnages(profiles.size(), threads)
+ */
+std::vector<size_t> sample_ranges(size_t profiles, size_t threads) {
+  if (threads < 1 || profiles < MINIMUM_PROFILES) {
+    throw std::invalid_argument("Threads passed must be a positive integer, "
+                                "and at least 2 profiles must be passed.");
+  }
+  size_t samples_bin = profiles / threads;
+  std::vector<size_t> bins;
+  for (size_t i = 0; i < profiles; i = i + samples_bin) {
+    bins.push_back(i);
+  }
+  bins.push_back(profiles);
+
+  return bins;
+}
+
+/**
+ *@brief Retrieve the index ranges required for partition of each range of
+ * samples to a given thread.
+ *
+ * @param threads The number of threads passed to the program.
+ * @param data_size The number of profiles used by the program
+ *
+ * @return a vector of sample ranges
+ *
+ * @details
+ * This function calls the `sample_ranges` function. However, it is a seperate
+ * function as it gaurds the logic required for verifying the case when the
+ * number of threads passed to program exceeds the number of profiles passed to
+ * the program.
+ *
+ * @usage
+ * std::vector<size_t> bins = get_thread_ranges(threads, profiles.size())
+ */
+std::vector<size_t> get_thread_ranges(size_t threads, size_t data_size) {
+  std::vector<size_t> ranges;
+  if (threads <= 1 || data_size <= threads) {
+    ranges.push_back(0);
+    ranges.push_back(data_size);
+  } else {
+    ranges = sample_ranges(data_size, threads);
+  }
+  return ranges;
+}
 
 namespace nb = nanobind;
 
@@ -18,7 +85,7 @@ float _hamming_distance(const uint32_t *__restrict__ p1_data,
   uint32_t compared_sites = size;
 
   if (count_missing) {
-    for (size_t i = 0; i < size; i++) {
+    for (auto i{size}; i-- > 0;) {
       if (p1_data[i] != p2_data[i]) {
         hamming_distance++;
       }
@@ -27,7 +94,7 @@ float _hamming_distance(const uint32_t *__restrict__ p1_data,
     compared_sites = 0;
     // Hand rolled SIMD instructions for this, but switching to uin32_t allowed
     // the compiler to optimize this code.
-    for (size_t i = 0; i < size; i++) {
+    for (auto i{size}; i-- > 0;) {
       const bool valid =
           (p1_data[i] != MISSING_VALUE) & (p2_data[i] != MISSING_VALUE);
       compared_sites += valid;
@@ -49,8 +116,8 @@ float _hamming_distance(const uint32_t *__restrict__ p1_data,
 }
 
 /*
- * Interface will take in a numpy array of profiles -1x-1, and return the upper
- * triangle distance matrix only.
+ * Interface will take in a numpy array of profiles -1x-1, and return the
+ * upper triangle distance matrix only.
  *
  */
 
@@ -60,10 +127,11 @@ using array_out = nb::ndarray<float, nb::numpy, nb::shape<-1, 3>, nb::c_contig,
                               nb::device::cpu>;
 
 /*
- * Fast matching return value, containst a 3x-1 array. As we compare all of the
- * query sample against themeselves and against all reference samples.
+ * Fast matching return value, contains a 3x-1 array. As we compare all of
+ * the query sample against themeselves and against all reference samples.
  *
- * Only distances less than a passed thershold are retained in the final output.
+ * Only distances less than a passed thershold are retained in the final
+ * output.
  *
  * array positions:
  * position 0 = id of query sample.
@@ -75,8 +143,8 @@ using array_fast_match = nb::ndarray<float, nb::numpy, nb::shape<3, -1>,
                                      nb::c_contig, nb::device::cpu>;
 
 /*
- * Need to figure out final output storage, will likely need to be an arrray to
- * place nicely with numpy
+ * Need to figure out final output storage, will likely need to be an arrray
+ * to place nicely with numpy
  **/
 void fast_match_function(const array profiles, size_t start, size_t end,
                          const bool scaled, const bool count_missing,
@@ -203,9 +271,9 @@ array_fast_match fast_match(array np_in, size_t threads, bool scaled,
   }
 
   // Copying data from vector to final array as returning a pointer to the
-  // vector data results in a segmentation fault as the destructor is called on
-  // the vector when this function exits. However python still has the reference
-  // to the data.
+  // vector data results in a segmentation fault as the destructor is called
+  // on the vector when this function exits. However python still has the
+  // reference to the data.
 
   size_t recorded_results = results[0].size();
   // Get capacity of each filled vector
