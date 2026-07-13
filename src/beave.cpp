@@ -85,7 +85,7 @@ float _hamming_distance(const uint32_t *__restrict__ p1_data,
   uint32_t compared_sites = size;
 
   if (count_missing) {
-    for (auto i{size}; i-- > 0;) {
+    for (size_t i = 0; i < size; i++) {
       if (p1_data[i] != p2_data[i]) {
         hamming_distance++;
       }
@@ -94,7 +94,7 @@ float _hamming_distance(const uint32_t *__restrict__ p1_data,
     compared_sites = 0;
     // Hand rolled SIMD instructions for this, but switching to uin32_t allowed
     // the compiler to optimize this code.
-    for (auto i{size}; i-- > 0;) {
+    for (size_t i = 0; i < size; i++) {
       const bool valid =
           (p1_data[i] != MISSING_VALUE) & (p2_data[i] != MISSING_VALUE);
       compared_sites += valid;
