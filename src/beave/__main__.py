@@ -394,6 +394,10 @@ def add_matrix_parser(parser_matrix: argparse.ArgumentParser) -> None:
         default=os.getcwd(),
     )
 
+    parser_matrix.add_argument(
+        "--molten", action="store_true", help=("Print the final matrix in molten format.")
+    )
+
 
 def create_parent_parser() -> argparse.ArgumentParser:
     """Create the parent parser for program."""
@@ -532,6 +536,7 @@ async def main() -> None:
                 matrix=True,
                 output_directory=args.output,
                 matrix_only=True,
+                molten_format=args.molten,
             )
             await cluster(matrix_args, file_extension)
         case Commands.CLUSTER:

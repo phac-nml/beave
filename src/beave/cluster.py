@@ -183,7 +183,11 @@ def create_matrix(
     output_extension: str,
     tg: asyncio.TaskGroup | None,
 ) -> asyncio.Task[None] | None:
-    """Write a pairwise distance matrix to the output directory."""
+    """Write a pairwise distance matrix to the output directory.
+
+    Can use np.triu_indices to get the profile_name comparisons for writing out the
+    molten form of the matrix.
+    """
     logger.info("Preparing distance matrix for write to file.")
     matrix_output: Path = cluster_args.output_directory / f"matrix.{output_extension}"
     logger.debug("Fromatting matrix.")
@@ -197,6 +201,30 @@ def create_matrix(
     return tg.create_task(  # pyright: ignore[reportAssignmentType]
         asyncio.to_thread(dists_to_matrix, square_matrix, cluster_args.delimiter, matrix_output)
     )
+
+
+def create_molten_matrix(
+    cluster_args: ClusterArguments,
+    distances: npt.NDArray,
+    profile_names: pl.Series,
+    output_extension: str,
+):
+    """Write the distances to a file in molten format."""
+    logger.info("Preparing distance matrix for write to file.")
+    matrix_output: Path = cluster_args.output_directory / f"molten.{output_extension}"
+    sample_names: npt.NDArray = profile_names.to_numpy()
+    logger.info("Formatting molten output.")
+    rows, columns = np.triu_indices(len(profile_names), 1)  # starting at 1 to skip diagonal indices
+
+    output = pl.DataFrame(
+        {
+            "profile_1": [sample_names[rows[i]] for i in range(len(rows))],
+            "profile_2": [sample_names[columns[f]] for f in range(len(columns))],
+            "distances": distances,
+        },
+    )
+    logger.debug("Finished preparing molten output.")
+    output.write_csv(matrix_output, separator=cluster_args.delimiter, include_header=True)
 
 
 async def cluster(cluster_args: ClusterArguments, output_extension: str) -> None:
@@ -220,7 +248,10 @@ async def cluster(cluster_args: ClusterArguments, output_extension: str) -> None
 
     logger.info("Computed distances.")
     if cluster_args.matrix_only:
-        create_matrix(cluster_args, distances, profile_names, output_extension, None)
+        if not cluster_args.molten_format:
+            create_matrix(cluster_args, distances, profile_names, output_extension, None)
+        else:
+            create_molten_matrix(cluster_args, distances, profile_names, output_extension)
         return
 
     async with asyncio.TaskGroup() as tg:
