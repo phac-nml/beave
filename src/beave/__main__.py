@@ -129,6 +129,7 @@ class Commands(StrEnum):
 
     CLUSTER = "cluster"
     MATCH = "match"
+    MATRIX = "matrix"
 
 
 def path_exists(file_path: str) -> Path:
@@ -375,6 +376,25 @@ def add_match_parser(parser_match: argparse.ArgumentParser) -> None:
     )
 
 
+def add_matrix_parser(parser_matrix: argparse.ArgumentParser) -> None:
+    """Add option for matrix generation only to parent parser."""
+    parser_matrix.add_argument(
+        "--input", "-i", help="Input alleles. (required)", type=path_exists, required=True
+    )
+
+    parser_matrix.add_argument(
+        "--output",
+        "-o",
+        type=output_directory,
+        required=False,
+        help=(
+            "Output directory for generated tree and clusters, directory will be created if does"
+            " not exist. (default: %(default)s)"
+        ),
+        default=os.getcwd(),
+    )
+
+
 def create_parent_parser() -> argparse.ArgumentParser:
     """Create the parent parser for program."""
     parent_parser = argparse.ArgumentParser(  # Global command-line arguments:
@@ -466,9 +486,15 @@ def create_parent_parser() -> argparse.ArgumentParser:
     parser_cluster = subparsers.add_parser(
         Commands.CLUSTER, help="Run denovo clustering.", parents=[parent_parser]
     )
+    parser_matrix = subparsers.add_parser(
+        Commands.MATRIX,
+        help="Generate a matrix of all pairwise distances only.",
+        parents=[parent_parser],
+    )
 
     add_cluster_parser(parser_cluster)
     add_match_parser(parser_match)
+    add_matrix_parser(parser_matrix)
 
     return parser
 
@@ -491,6 +517,23 @@ async def main() -> None:
     log.add_file_logger(args.output)
     file_extension: str = output_extension(args.delimiter)
     match args.command:
+        case Commands.MATRIX:
+            matrix_args = ClusterArguments(
+                input_file=args.input,
+                delimiter=args.delimiter,
+                thresholds=[INFINITY],  # default value set will not be used
+                linkage_method=LinkageMetric.AVERAGE,  # unused default
+                cores=args.cores,
+                columns_path=args.columns_subset,
+                count_missing=args.count_missing,
+                normalize_distance=args.normalize_distance,
+                branch_type=BranchType.COPHENETIC,  # unused default
+                filter_threshold=args.filter_threshold,
+                matrix=True,
+                output_directory=args.output,
+                matrix_only=True,
+            )
+            await cluster(matrix_args, file_extension)
         case Commands.CLUSTER:
             validate_normalized_distance.add_validation_function(
                 verify_does_not_contain_infinity,
@@ -511,6 +554,7 @@ async def main() -> None:
                 filter_threshold=args.filter_threshold,
                 matrix=args.matrix,
                 output_directory=args.output,
+                matrix_only=False,
             )
             await cluster(cluster_args, file_extension)
         case Commands.MATCH:

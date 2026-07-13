@@ -176,6 +176,29 @@ def convert_branch_lengths(linkage_matrix: npt.NDArray, branch_type: BranchType)
     return linkage_matrix
 
 
+def create_matrix(
+    cluster_args: ClusterArguments,
+    distances: npt.NDArray,
+    profile_names: pl.Series,
+    output_extension: str,
+    tg: asyncio.TaskGroup | None,
+) -> asyncio.Task[None] | None:
+    """Write a pairwise distance matrix to the output directory."""
+    logger.info("Preparing distance matrix for write to file.")
+    matrix_output: Path = cluster_args.output_directory / f"matrix.{output_extension}"
+    logger.debug("Fromatting matrix.")
+    square_matrix: pl.DataFrame = prepare_matrix(distances, profile_names)
+    logger.debug("Finished preparing distance matrix for output.")
+
+    if tg is None:
+        dists_to_matrix(square_matrix, cluster_args.delimiter, matrix_output)
+        return None
+
+    return tg.create_task(  # pyright: ignore[reportAssignmentType]
+        asyncio.to_thread(dists_to_matrix, square_matrix, cluster_args.delimiter, matrix_output)
+    )
+
+
 async def cluster(cluster_args: ClusterArguments, output_extension: str) -> None:
     """Runner function of cluster."""
     profiles: pl.DataFrame = read_input_profiles(
@@ -196,22 +219,19 @@ async def cluster(cluster_args: ClusterArguments, output_extension: str) -> None
     )
 
     logger.info("Computed distances.")
+    if cluster_args.matrix_only:
+        create_matrix(cluster_args, distances, profile_names, output_extension, tg)
+
     async with asyncio.TaskGroup() as tg:
         linkages_task = tg.create_task(
             asyncio.to_thread(compute_linkage_matrix, distances, cluster_args.linkage_method)
         )
         matrix_task: asyncio.Task[None] | None = None
         if cluster_args.matrix:
-            logger.info("Preparing distance matrix for write to file.")
-            matrix_output: Path = cluster_args.output_directory / f"matrix.{output_extension}"
-            logger.debug("Fromatting matrix.")
-            square_matrix: pl.DataFrame = prepare_matrix(distances, profile_names)
-            logger.debug("Finished preparing distance matrix for output.")
-            matrix_task = tg.create_task(  # pyright: ignore[reportAssignmentType]
-                asyncio.to_thread(
-                    dists_to_matrix, square_matrix, cluster_args.delimiter, matrix_output
-                )
+            matrix_task = create_matrix(
+                cluster_args, distances, profile_names, output_extension, tg
             )
+
     linkages = linkages_task.result()
     if matrix_task:
         await matrix_task
