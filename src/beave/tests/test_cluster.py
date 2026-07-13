@@ -93,6 +93,7 @@ def test_benchmark_read_input_profiles(benchmark, test_df, tmp_path):
             thresholds=[0.99],
             branch_type=BranchType.COPHENETIC,
             matrix=False,
+            matrix_only=False,
         )
         cluster.compute_dists(result, cluster_args)
 
@@ -151,6 +152,7 @@ def test_benchmark_read_input_profiles_simple_method(benchmark, test_df, tmp_pat
             thresholds=[0.99],
             branch_type=BranchType.COPHENETIC,
             matrix=False,
+            matrix_only=False,
         )
         cluster.compute_dists(result, cluster_args)
 
@@ -1245,6 +1247,70 @@ def test_cluster_pass_filter_data(workflow_dir):
             sample2 = header[f]
             dist = float(abs(sample1 - sample2))  # type: ignore
             assert dist == float(lines[i][f])
+
+    filtered_samples = [
+        i for i in Path(workflow_dir, "FilteredProfiles.txt").read_text().split("\n") if i
+    ][1:]  # get all values except for column header
+    out_length = output_length - expected_output_lengths
+    assert len(filtered_samples) == out_length
+    for value in filtered_samples:
+        assert int(value) < out_length
+
+
+@pytest.mark.workflow("Run matrix")
+def test_run_matrix(workflow_dir):
+    """Verify the outputs of the filtered data are correct."""
+    # passed parameter of more than 20% is empty it gets filtered
+    # input 1000 rows and columns means 80% of data get filtered
+    output_length = 1000
+    expected_output_lengths = (
+        output_length * 0.2 + 1
+    )  # <= comparison so we should have one extra value present
+    matrix = Path(workflow_dir, "matrix.tsv")
+    lines = [
+        [int(f) if f.isdigit() else f for f in i.split("\t")]
+        for i in matrix.read_text().split("\n")
+        if i
+    ]
+    header = lines[0]
+    for i in range(1, len(lines)):
+        sample1 = header[i]  # sample1 position
+        for f in range(1, len(lines)):
+            sample2 = header[f]
+            dist = float(abs(sample1 - sample2))  # type: ignore
+            assert dist == float(lines[i][f])
+
+    filtered_samples = [
+        i for i in Path(workflow_dir, "FilteredProfiles.txt").read_text().split("\n") if i
+    ][1:]  # get all values except for column header
+    out_length = output_length - expected_output_lengths
+    assert len(filtered_samples) == out_length
+    for value in filtered_samples:
+        assert int(value) < out_length
+
+
+@pytest.mark.workflow("Run matrix normalized distance")
+def test_run_matrix_normalized(workflow_dir):
+    """Verify the outputs of the filtered data are correct."""
+    # passed parameter of more than 20% is empty it gets filtered
+    # input 1000 rows and columns means 80% of data get filtered
+    output_length = 1000
+    expected_output_lengths = (
+        output_length * 0.2 + 1
+    )  # <= comparison so we should have one extra value present
+    matrix = Path(workflow_dir, "matrix.tsv")
+    lines = [
+        [int(f) if f.isdigit() else f for f in i.split("\t")]
+        for i in matrix.read_text().split("\n")
+        if i
+    ]
+    header = lines[0]
+    for i in range(1, len(lines)):
+        sample1 = header[i]  # sample1 position
+        for f in range(1, len(lines)):
+            sample2 = header[f]
+            dist = float(abs(sample1 - sample2) / output_length)  # type: ignore
+            assert dist == pytest.approx(float(lines[i][f]), rel=1e-6)
 
     filtered_samples = [
         i for i in Path(workflow_dir, "FilteredProfiles.txt").read_text().split("\n") if i

@@ -220,7 +220,8 @@ async def cluster(cluster_args: ClusterArguments, output_extension: str) -> None
 
     logger.info("Computed distances.")
     if cluster_args.matrix_only:
-        create_matrix(cluster_args, distances, profile_names, output_extension, tg)
+        create_matrix(cluster_args, distances, profile_names, output_extension, None)
+        return
 
     async with asyncio.TaskGroup() as tg:
         linkages_task = tg.create_task(

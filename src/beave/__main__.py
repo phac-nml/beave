@@ -488,7 +488,7 @@ def create_parent_parser() -> argparse.ArgumentParser:
     )
     parser_matrix = subparsers.add_parser(
         Commands.MATRIX,
-        help="Generate a matrix of all pairwise distances only.",
+        help="Generate a pairwise distance matrix.",
         parents=[parent_parser],
     )
 
