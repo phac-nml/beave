@@ -1,13 +1,80 @@
-#include "main.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <immintrin.h>
+#include <sys/types.h>
+#include <thread>
+#include <vector>
+
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/string.h>
-#include <thread>
-#include <vector>
+
+constexpr size_t MISSING_VALUE = 0;
+constexpr size_t MINIMUM_PROFILES = 2;
+
+/**
+ * @brief Determine the sample ranges to be calculated based on
+ * the number of threads used.
+ *
+ * @param profiles The number of profiles to be processed
+ * @param threads the number of threads used by the program
+ *
+ * @return A vector of indexes containing the ranges of samples to be
+ * partitioned
+ *
+ * @details
+ * The number of threads is handled externally by the program, therefore
+ * a value of size 0 should never be passed to the threads argument. There
+ * must be atleast 2 profiles for any comparison to take place as well.
+ *
+ * @usage
+ * std::vector<size_t> bins = sample_rnages(profiles.size(), threads)
+ */
+std::vector<size_t> sample_ranges(size_t profiles, size_t threads) {
+  if (threads < 1 || profiles < MINIMUM_PROFILES) {
+    throw std::invalid_argument("Threads passed must be a positive integer, "
+                                "and atleast 2 profiles must be passed.");
+  }
+  size_t samples_bin = profiles / threads;
+  std::vector<size_t> bins;
+  for (size_t i = 0; i < profiles; i = i + samples_bin) {
+    bins.push_back(i);
+  }
+  bins.push_back(profiles);
+
+  return bins;
+}
+
+/**
+ *@brief Retrieve the index ranges required for partition of each range of
+ * samples to a given thread.
+ *
+ * @param threads The number of threads passed to the program.
+ * @param data_size The number of profiles used by the program
+ *
+ * @return a vector of sample ranges
+ *
+ * @details
+ * This function calls the `sample_ranges` function, however it is a seperate
+ * function as it gaurds the logic required for verifying the case when the
+ * number of threads passed to program exceeds the number of profiles passed to
+ * the program.
+ *
+ * @usage
+ * std::vector<size_t> bins = get_thread_ranges(threads, profiles.size())
+ */
+std::vector<size_t> get_thread_ranges(size_t threads, size_t data_size) {
+  std::vector<size_t> ranges;
+  if (threads <= 1 || data_size <= threads) {
+    ranges.push_back(0);
+    ranges.push_back(data_size);
+  } else {
+    ranges = sample_ranges(data_size, threads);
+  }
+  return ranges;
+}
 
 namespace nb = nanobind;
 
