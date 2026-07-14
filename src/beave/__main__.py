@@ -395,7 +395,7 @@ def add_matrix_parser(parser_matrix: argparse.ArgumentParser) -> None:
     )
 
     parser_matrix.add_argument(
-        "--molten", action="store_true", help=("Print the final matrix in molten format.")
+        "--molten", action="store_true", help=("Write the final matrix in molten format.")
     )
 
 

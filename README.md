@@ -188,7 +188,7 @@ options:
 >>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -t 101 -l average -c 8
 ```
 
-In some instances you may have no need to perform clustering and simply want a distance matrix for other downstream purposes.
+In some instances you may have no need to perform clustering and simply want a distance matrix for other downstream purposes. The matrix option can perform this task and generate a matrix or all pairwise distances in a molten format. e.g. SampleID*1, SampleID_2, dist*{hamming,normalized}
 
 ```Bash
 >>> beave matrix --help
@@ -210,10 +210,11 @@ options:
                         [0.0-100.0]. (default 100.0)
   --verbose             Display logger debug messages.
   --input, -i INPUT     Input alleles. (required)
-  --output, -o OUTPUT   Output directory for generated tree and clusters, directory will be created if does not exist. (default:
-                        /home/CSCScience.ca/mwells/Development/beave)
+  --output, -o OUTPUT   Output directory for generated tree and clusters, directory will be created if does not exist. (default: .)
+  --molten              Write the final matrix in molten format.
 
 >>> beave matrix -i src/beave/test/data/R1KC1K.head.tsv -nm --verbose -o output
+>>> beave matrix -i src/beave/test/data/R1KC1K.head.tsv --verbose -o output --molten
 ```
 
 #### Data Input

@@ -1319,3 +1319,60 @@ def test_run_matrix_normalized(workflow_dir):
     assert len(filtered_samples) == out_length
     for value in filtered_samples:
         assert int(value) < out_length
+
+
+@pytest.mark.workflow("Run matrix molten")
+def test_run_matrix_molten(workflow_dir):
+    """Verify the outputs of the filtered data are correct."""
+    # passed parameter of more than 20% is empty it gets filtered
+    # input 1000 rows and columns means 80% of data get filtered
+    # For the molten format we multiply by the output length as
+    # the matrix is not in a single column not in one line
+    output_length = 1000
+    expected_output_lengths = (
+        output_length * 0.2 + 1
+    )  # <= comparison so we should have one extra value present
+    number_of_outputs = (expected_output_lengths * (expected_output_lengths - 1)) // 2
+
+    matrix = Path(workflow_dir, "molten.tsv")
+    lines = iter(matrix.read_text().split("\n"))
+    header = next(lines)
+    assert header == "SampleID_1\tSampleID_2\tdist_hamming"
+    lines_counted = 0
+    for i in lines:
+        if not i:  # break on EOF
+            break
+        sample1, sample2, dist_calc = i.split("\t")
+        dist = abs(float(sample1) - float(sample2))  # type: ignore
+        assert dist == float(dist_calc)
+        lines_counted += 1
+
+    assert number_of_outputs == lines_counted
+
+    filtered_samples = [
+        i for i in Path(workflow_dir, "FilteredProfiles.txt").read_text().split("\n") if i
+    ][1:]  # get all values except for column header
+    out_length = output_length - expected_output_lengths
+    assert len(filtered_samples) == out_length
+    for value in filtered_samples:
+        assert int(value) < out_length
+
+
+@pytest.mark.workflow("Run matrix molten no filter")
+def test_run_matrix_molten_no_filter(workflow_dir):
+    """Verify the outputs of the filtered data are correct."""
+    matrix = Path(workflow_dir, "molten.tsv")
+    lines = iter(matrix.read_text().split("\n"))
+    header = next(lines)
+    output_length = 1000
+    assert header == "SampleID_1\tSampleID_2\tdist_hamming"
+    number_of_lines = 0
+    for i in lines:
+        if not i:  # break on EOF
+            break
+        sample1, sample2, dist_calc = i.split("\t")
+        dist = abs(float(sample1) - float(sample2))  # type: ignore
+        assert dist == float(dist_calc)
+        number_of_lines += 1
+
+    assert number_of_lines == (output_length * (output_length - 1)) // 2

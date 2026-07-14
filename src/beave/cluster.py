@@ -13,6 +13,7 @@ import beave
 from beave.declarations import BranchType, ClusterArguments
 from beave.log import init_logger
 from beave.transform_data import (
+    DistanceTypes,
     prep_data,
     read_input_profiles,
     subset_columns,
@@ -215,12 +216,15 @@ def create_molten_matrix(
     sample_names: npt.NDArray = profile_names.to_numpy()
     logger.info("Formatting molten output.")
     rows, columns = np.triu_indices(len(profile_names), 1)  # starting at 1 to skip diagonal indices
+    dist_type: str = DistanceTypes.HAMMING
+    if cluster_args.normalize_distance:
+        dist_type = DistanceTypes.NORMALIZED
 
     output = pl.DataFrame(
         {
-            "profile_1": [sample_names[rows[i]] for i in range(len(rows))],
-            "profile_2": [sample_names[columns[f]] for f in range(len(columns))],
-            "distances": distances,
+            "SampleID_1": [sample_names[rows[i]] for i in range(len(rows))],
+            "SampleID_2": [sample_names[columns[f]] for f in range(len(columns))],
+            f"dist_{dist_type}": distances,
         },
     )
     logger.debug("Finished preparing molten output.")
