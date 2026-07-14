@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added option to generate a distance matrix only. [PR 43](https://github.com/phac-nml/beave/pull/43)
+- Added option to generate a distance matrix only. [PR 45](https://github.com/phac-nml/beave/pull/45)
 
 ### Changed
 
