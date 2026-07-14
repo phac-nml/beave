@@ -209,7 +209,7 @@ def create_molten_matrix(
     distances: npt.NDArray,
     profile_names: pl.Series,
     output_extension: str,
-):
+) -> None:
     """Write the distances to a file in molten format."""
     logger.info("Preparing distance matrix for write to file.")
     matrix_output: Path = cluster_args.output_directory / f"molten.{output_extension}"
@@ -256,6 +256,7 @@ async def cluster(cluster_args: ClusterArguments, output_extension: str) -> None
             create_matrix(cluster_args, distances, profile_names, output_extension, None)
         else:
             create_molten_matrix(cluster_args, distances, profile_names, output_extension)
+        logger.info(f"Finished writing distances to {cluster_args.output_directory}")
         return
 
     async with asyncio.TaskGroup() as tg:
