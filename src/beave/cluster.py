@@ -259,14 +259,14 @@ async def cluster(cluster_args: ClusterArguments, output_extension: str) -> None
         logger.info(f"Finished writing distances to {cluster_args.output_directory}")
         return
 
-    async with asyncio.TaskGroup() as tg:
-        linkages_task = tg.create_task(
+    async with asyncio.TaskGroup() as task_group:
+        linkages_task = task_group.create_task(
             asyncio.to_thread(compute_linkage_matrix, distances, cluster_args.linkage_method)
         )
         matrix_task: asyncio.Task[None] | None = None
         if cluster_args.matrix:
             matrix_task = create_matrix(
-                cluster_args, distances, profile_names, output_extension, tg
+                cluster_args, distances, profile_names, output_extension, task_group
             )
 
     linkages = linkages_task.result()
