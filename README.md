@@ -42,17 +42,17 @@ Additionally, the following Python runtime dependencies are required:
 
 ## Bioconda
 
-Currently, Bioconda only supports Linux. If you wish to install the software on OSX, you will need to install `pypi` to build the project from the source code. To install with Bioconda on Linux, run the following code:
+Currently, Bioconda only supports Linux. If you wish to install the software on OSX, you will need to install `pypi` to build the project from source. To install with Bioconda on Linux, run the following code:
 
 `conda install -c bioconda beave`
 
 ## pip
 
-Beave may be installed from `pypi` by running the following command:
+Beave may be installed from `pypi` by running the following:
 
 `pip install beave`
 
-Beave may alternatively be installed from source by downloading the project and running the following command in the source code directory:
+Alternatively, the software may be installed from source by downloading the project and running the following command in the source code directory:
 
 `pip install .`
 
@@ -70,7 +70,7 @@ The envinronment can then be activated with:
 
 `conda activate beave`
 
-and the project can be installed with `pip` as follows:
+and the project can be installed with `pip` into the newly created Conda environment as follows:
 
 `pip install .`
 
@@ -249,9 +249,9 @@ The output of `match` is a single file showing the query sample, reference sampl
 
 # Contact
 
-[Matthew Wells] : <matthew.wells@phac-aspc.gc.ca>
+Matthew Wells: <matthew.wells@phac-aspc.gc.ca>
 
-[Eric Marinier] : <eric.marinier@phac-aspc.gc.ca>
+Eric Marinier: <eric.marinier@phac-aspc.gc.ca>
 
 # Legal
 
