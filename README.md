@@ -13,24 +13,24 @@ TODO
 
 ## Compatibility
 
-Beave only supports Linux distributions. However, as only the C++ 23 standard library and Python are used, in principle any environment that supports G++ and Python may compile and run the program. Since this program relies heavily on the compiler to optimize the program and add SIMD instructions, it is recommended to compile the program on your local computer to get the full benefit of the potential instruction sets your CPU may offer.
+Beave only supports Linux distributions. However, as only the C++ 23 standard library and Python libraries are used, in principle any environment that supports G++ and Python may compile and run the program. Since this program relies heavily on the compiler to optimize the program and add SIMD instructions, it is recommended to compile the program on your local computer to get the full benefit of the potential instruction sets your CPU may offer.
 
-To build the `beave` Python package, you will first need to install dependencies listed in the pyproject.toml file. Python version 3.13 or greater is required, along with scikit-build-core and the nanobind Python package.
+To build the `beave` Python package, you will first need to install the dependencies listed in the `pyproject.toml` file. Python version `3.13` or greater is required, along with `scikit-build-core` and the `nanobind` Python package.
 
-Python runtime dependencies include:
+Additionally, the following Python runtime dependencies are required:
 - `numpy>=2.4.0`
 - `polars>= 1.40.1`
 - `scipy>=1.17.0`
 
 ## Bioconda
 
-Currently, Bioconda only supports Linux. If you wish to install the software on OSX, you will need to install pypi to build the project from the source code. To install with Bioconda on Linux, run the following code:
+Currently, Bioconda only supports Linux. If you wish to install the software on OSX, you will need to install `pypi` to build the project from the source code. To install with Bioconda on Linux, run the following code:
 
 `conda install -c bioconda beave`
 
 ## pip
 
-Beave may be installed from pypi by running the following command:
+Beave may be installed from `pypi` by running the following command:
 
 `pip install beave`
 
@@ -40,7 +40,7 @@ Beave may alternatively be installed from source by downloading the project and 
 
 ## Conda
 
-The project may be created within a Conda environment (outside of Bioconda) by first downloading the project source, and creating a Conda environment on Linux as follows:
+The project may be installed within a Conda environment (without using Bioconda) by downloading the project source and creating a Conda environment on Linux as follows:
 
 `conda env create -f environment-linux.yml`
 
@@ -52,7 +52,7 @@ The envinronment can then be activated with:
 
 `conda activate beave`
 
-and the project can be installed with pip as follows:
+and the project can be installed with `pip` as follows:
 
 `pip install .`
 
@@ -93,7 +93,7 @@ options:
 
 ### cluster
 
-To run _de-novo_ clustering use the `cluster` utility. The long form options for cluster are shown below:
+To run _de-novo_ clustering use the `cluster` utility. The parameters for running `cluster` are shown below:
 
 ```Bash
 >>> beave cluster --help
@@ -131,7 +131,7 @@ options:
 
 ### match
 
-The `match` utility may be used to compute pairwise distances between a group of query samples against a group of reference samples. The parameters for running match are described below:
+The `match` utility may be used to compute pairwise distances between a group of query samples against a group of reference samples. The parameters for running `match` are described below:
 
 ```Bash
 >>> beave match --help
@@ -163,11 +163,15 @@ options:
 >>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -t 101 -l average -c 8
 ```
 
+When running `match`, the query and reference profiles will be merged by the program. If duplicate ID's are detected an error will be raised by the program.
+
 ### matrix
 
 In some instances you may have no need to perform clustering and simply want a distance matrix for other downstream purposes. The matrix utility can perform this task and generate a matrix or all pairwise distances in a molten format. For example:
 
 `SampleID_1, SampleID_2, dist_{hamming,normalized}`
+
+The parameters for running `matrix` are described below:
 
 ```Bash
 >>> beave matrix --help
@@ -198,17 +202,13 @@ options:
 
 ## Input
 
-The inputs provided must be tabular. Most delimiters are supported as long as they are a single character. The first column of the file must contain no duplicates or missing values. The columns are not inspected to verify unique values only and duplicated columns will be loaded incorrectly as unique columns. The characters "?", " ", "", "-", "\_", and "0" are treated as missing values by the program unless the `--count-missing` option is specified. All other values are treated as a valid alleles. Example inputs can be found in the `tests` directory. Thresholds are always converted to float values, however both integers and floating point numbers may be provided.
-
-When running `match`, the query and reference profiles will be merged by the program. If duplicate ID's are detected an error will be raised by the program.
+The inputs must be provided in tabular format. Most delimiters are supported as long as they are a single character. The first column of the file must contain no duplicates or missing values. The columns are not inspected to verify uniqueness and duplicated columns will be loaded incorrectly as unique columns. The characters `?`, ` `(space), (blank), `-`, `\_`, and `0` are treated as missing values by the program unless the `--count-missing` option is specified. All other values are treated as a valid alleles. Example inputs can be found in the `tests` directory. Thresholds are always converted to float values, however both integers and floating point numbers may be provided.
 
 ## Output
 
 ### Cluster Outputs
 
-The program outputs a Newick-format file containing the tree generated by whichever linkage metric is selected. The sample IDs and their addresses are put out in a separate file specified by the user in TSV format. Addresses are delimited by an '.'.
-
-The following is an example of the clustering output:
+The program outputs a Newick-format file containing the tree generated by whichever linkage metric is selected. The sample IDs and their addresses are put out in a separate file specified by the user in TSV format. Addresses are delimited by an `.`. The following is an example of the clustering output:
 
 | SampleID    | level_10.0 | level_9.0 | denovo_address |
 | ----------- | ---------- | --------- | -------------- |
@@ -217,9 +217,7 @@ The following is an example of the clustering output:
 
 ### Match Outputs
 
-The output of `match` is a single file showing the query sample, reference sample, and distance.
-
-The following is an example of the match output:
+The output of `match` is a single file showing the query sample, reference sample, and distance. The following is an example of the match output:
 
 | query_id | ref_id | dist\_{hamming,normalized} |
 | -------- | ------ | -------------------------- |
@@ -229,11 +227,11 @@ The following is an example of the match output:
 
 # Troubleshooting
 
-- There may be issues with the Python build system, please create a GitHub issue for any issues identified.
+- If you encounter any issues installing or running the program, please create a GitHub issue for any issues identified.
 
-- If there are duplicate identifiers with different profiles. The distance between the two values will still be reported as no duplicate detection is performed currently. Future iterations may add this functionality.
+- If there are duplicate identifiers with different profiles. The distance between the two values will still be reported, as no duplicate detection is performed currently. Future iterations may add this functionality.
 
-- `-ffast-math` is enabled during compilation to prevent sub-normals. This leads to some error in floating point operations, the affect of this is being evaluated and this compiler flag may be removed after further testing is performed.
+- `-ffast-math` is enabled during compilation to prevent sub-normals. This leads to some error in floating point operations, the affect of this is being evaluated and this compiler flag may be removed in the future.
 
 # Contact
 
@@ -243,7 +241,7 @@ The following is an example of the match output:
 
 # Legal
 
-Copyright Government of Canada [2026]
+Copyright Government of Canada 2026
 
 Written by: National Microbiology Laboratory, Public Health Agency of Canada
 
