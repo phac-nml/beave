@@ -7,7 +7,25 @@ Beave is an open-source bioinformatics utility for genomic clustering and distan
 
 # Table of Contents
 
-TODO
+- [Beave](#beave)
+- [Table of Contents](#table-of-contents)
+- [Installation](#installation)
+  * [Compatibility](#compatibility)
+  * [Bioconda](#bioconda)
+  * [pip](#pip)
+  * [Conda](#conda)
+- [Getting Started](#getting-started)
+  * [Usage](#usage)
+    + [cluster](#cluster)
+    + [match](#match)
+    + [matrix](#matrix)
+  * [Input](#input)
+  * [Output](#output)
+    + [Cluster Outputs](#cluster-outputs)
+    + [Match Outputs](#match-outputs)
+- [Troubleshooting](#troubleshooting)
+- [Contact](#contact)
+- [Legal](#legal)
 
 # Installation
 
