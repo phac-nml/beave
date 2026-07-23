@@ -22,41 +22,43 @@ Python runtime dependencies include:
 - `polars>= 1.40.1`
 - `scipy>=1.17.0`
 
-## Manual Installation
+## Bioconda
 
-The repository may be pulled with:
-
-`git clone https://github.com/phac-nml/beave`
-
-### Python
-
-#### With Bioconda
-
-Currently Bioconda only supports Linux. If you wish to install the software on OSX, you will need to install pypi to build the project from the source code. To install with Bioconda on Linux, run the following code:
+Currently, Bioconda only supports Linux. If you wish to install the software on OSX, you will need to install pypi to build the project from the source code. To install with Bioconda on Linux, run the following code:
 
 `conda install -c bioconda beave`
 
-#### With pip
+## pip
 
-Users can install beave from pypi, by simply running `pip install beave`. If you wish to compile the project from its source code simply enter `pip install .` in the source code directory.
+Beave may be installed from pypi by running the following command:
 
-Developers can run `pip install -ve .[dev]` or `pip install -Ceditable.rebuild=true -ve .[dev]`. Further examples can be found in the nanobind documentation here: [nanobind packaging](https://nanobind.readthedocs.io/en/latest/packaging.html). The `--no-build-isolation` is not included as running `uv pip install` with the `--no-build-isolation` flag tells uv to ignore the `build-system.requires` section from the `pyproject.toml`.
+`pip install beave`
 
-To build a wheel that can be distributed instead of installed, simply run `pip wheel .`
+Beave may alternatively be installed from source by downloading the project and running the following command in the source code directory:
 
-#### With Conda
+`pip install .`
 
-1. Pull the GitHub repository as described above.
+## Conda
 
-2. Create the Conda environment by running `conda env create -f environment-linux.yml` for linux and `conda env create -f ./environment-osx.yml` for mac.
+The project may be created within a Conda environment (outside of Bioconda) by first downloading the project source, and creating a Conda environment on Linux as follows:
 
-3. Activate the environment with: `conda activate beave`
+`conda env create -f environment-linux.yml`
 
-4. Run `pip install .`, if you wish to install development dependencies or run tests please run `pip install -ve .[dev]`
+or on Mac as follows:
 
-## Getting Started
+`conda env create -f ./environment-osx.yml`
 
-#### Usage
+The envinronment can then be activated with:
+
+`conda activate beave`
+
+and the project can be installed with pip as follows:
+
+`pip install .`
+
+# Getting Started
+
+## Usage
 
 The main help message for the program is shown below:
 
@@ -65,8 +67,6 @@ The main help message for the program is shown below:
 usage: beave [-h] [--cores CORES] [--delimiter DELIMITER] [--columns-subset COLUMNS_SUBSET] [--count-missing] [--normalize-distance]
              [--filter-threshold FILTER_THRESHOLD] [--verbose] [--version]
              {cluster,match} ...
-
-A very Canadian utility for genomic clustering and distance querying.
 
 positional arguments:
   {cluster,match}       Select a program to run.
@@ -90,6 +90,8 @@ options:
   --verbose             Display logger debug messages. (default: False)
   --version, -v         show program's version number and exit
 ```
+
+### cluster
 
 To run _de-novo_ clustering use the `cluster` option. The long form options for cluster are shown below:
 
@@ -127,6 +129,8 @@ options:
 >>> beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -b cophenetic -c 1 --thresholds 10 9 8
 ```
 
+### match
+
 The match argument may be used to compute pairwise distances between a group of query samples against a group of reference samples. The parameters for running match are described below:
 
 ```Bash
@@ -159,7 +163,9 @@ options:
 >>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -t 101 -l average -c 8
 ```
 
-In some instances you may have no need to perform clustering and simply want a distance matrix for other downstream purposes. The matrix option can perform this task and generate a matrix or all pairwise distances in a molten format. e.g. SampleID*1, SampleID_2, dist*{hamming,normalized}
+### matrix
+
+In some instances you may have no need to perform clustering and simply want a distance matrix for other downstream purposes. The matrix option can perform this task and generate a matrix or all pairwise distances in a molten format. e.g. SampleID_1, SampleID_2, dist_{hamming,normalized}
 
 ```Bash
 >>> beave matrix --help
@@ -188,15 +194,15 @@ options:
 >>> beave matrix -i src/beave/test/data/R1KC1K.head.tsv --verbose -o output --molten
 ```
 
-#### Data Input
+## Input
 
 The inputs for this program must be tabular, any delimiter is supported as long is it is a single character. The first column of the file must contain no duplicates or missing values. The columns are not inspected to verify unique values only, so duplicate column names will be name mangled and treated as another unique column. The characters "?", " ", "", "-", "\_", and "0" are treated as missing values by the program unless the `-c` option is added to the program. All other values are treated as a valid alleles. Example inputs can be found in the `tests` folder. Thresholds are always converted to float values, however you can specify either integers not just decimals.
 
 When running `match`, the query and reference profiles will be merged by the program. If duplicate ID's are detected an error will be raised by the program.
 
-#### Data Output
+## Output
 
-##### Cluster Outputs
+### Cluster Outputs
 
 The program outputs a Newick-Format file containing the tree generated by whichever linkage metric is selected, the sample IDs and their addresses are put out in a separate file specified by the user in TSV format. Addresses are delimited by an '.'.
 
@@ -207,7 +213,7 @@ Example of cluster outputs:
 | CoolSample  | 1          | 2         | 1.2            |
 | CoolSample2 | 2          | 1         | 2.1            |
 
-##### Match Outputs
+### Match Outputs
 
 The output of `match` is a single file showing the query sample, the reference sample and distance.
 
@@ -244,3 +250,11 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
 [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+
+
+# TODO / OTHER
+
+Developers can run `pip install -ve .[dev]` or `pip install -Ceditable.rebuild=true -ve .[dev]`. Further examples can be found in the nanobind documentation here: [nanobind packaging](https://nanobind.readthedocs.io/en/latest/packaging.html). The `--no-build-isolation` is not included as running `uv pip install` with the `--no-build-isolation` flag tells uv to ignore the `build-system.requires` section from the `pyproject.toml`.
+
+, if you wish to install development dependencies or run tests please run `pip install -ve .[dev]`
