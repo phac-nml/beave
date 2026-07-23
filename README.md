@@ -3,57 +3,28 @@
 
 # Beave
 
-- [Introduction](#introduction)
-  - [Contact](#contact)
-- [Compatibility](#compatibility)
-- [Install](#install)
-  - [Get Started](#get-started)
-  - [Python](#python)
-    - [With Bioconda](#with-bioconda)
-    - [With pip](#with-pip)
-    - [With Conda](#with-conda)
-- [Getting Started](#getting-started)
-  - [Using Python](#using-python)
-    - [Usage](#usage)
-    - [Configuration and Settings](#configuration-and-settings)
-    - [Data Input](#data-input)
-    - [Data Output](#data-output)
-- [Troubleshooting and FAQs](#troubleshooting-and-faqs)
-- [Other Information](#other-information)
-- [Legal and Compliance Information](#legal-and-compliance-information)
-- [Updates and Release Notes](#updates-and-release-notes)
+Beave is an open-source bioinformatics utility for genomic clustering and distance querying. This program may be used to create distance matrices from allelic profiles, or to compare groups of isolates against multiple reference sequences.
 
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+# Table of Contents
 
-# Introduction
+TODO
 
-## Python CLI
-
-A very Canadian utility for genomic clustering and distance querying.
-
-This program is under active development and is used for creating distance matrices from allelic profiles, or for comparing groups of isolates against multiple reference sequences. This program is similar to [cgmlst-dists](https://github.com/tseemann/cgmlst-dists) from Torsten Seeman and [gas](https://github.com/phac-nml/genomic_address_service) from the Public Health Agency of Canada.
-
-## Contact
-
-[Matthew Wells] : <matthew.wells@phac-aspc.gc.ca>
-
-[Eric Marinier] : <eric.marinier@phac-aspc.gc.ca>
+# Installation
 
 ## Compatibility
 
-`beave` has only been tested on Linux, any system that supports G++ can compile the program. As only the C++ 23 standard library is used, the program may be able to be compiled on Windows system.
-
-This program relies heavily on the compiler to optimize the program and add SIMD instructions, it is recommended to compile the program on your local computer to get the full benefit of the potential instruction sets your CPU may offer. Compilation using AVX-512 instruction sets has been tested, however in our testing the programs performance degrades likely due to throttling by the CPU.
+Beave only supports Linux distributions. However, as only the C++ 23 standard library and Python are used, in principle any environment that supports G++ and Python may compile and run the program. Since this program relies heavily on the compiler to optimize the program and add SIMD instructions, it is recommended to compile the program on your local computer to get the full benefit of the potential instruction sets your CPU may offer.
 
 To build the `beave` Python package, you will first need to install dependencies listed in the pyproject.toml file. Python version 3.13 or greater is required, along with scikit-build-core and the nanobind Python package.
 
-Python runtime dependencies include numpy >= 2.4.0 and polars >= 1.40.1 and scipy >= 1.17.0.
+Python runtime dependencies include:
+- `numpy>=2.4.0`
+- `polars>= 1.40.1`
+- `scipy>=1.17.0`
 
-## Install
+## Manual Installation
 
-### Get Started
-
-Start by pulling the repository.
+The repository may be pulled with:
 
 `git clone https://github.com/phac-nml/beave`
 
@@ -61,9 +32,9 @@ Start by pulling the repository.
 
 #### With Bioconda
 
-Currently only linux is supported within bioconda, if you wish to install on OSX please install from pypi for build from source. An issue has been created and OSX on bioconda will be supported in the future.
+Currently Bioconda only supports Linux. If you wish to install the software on OSX, you will need to install pypi to build the project from the source code. To install with Bioconda on Linux, run the following code:
 
-To install from bioconda simply run `conda install -c bioconda beave`
+`conda install -c bioconda beave`
 
 #### With pip
 
@@ -256,7 +227,13 @@ The general structure of the `match` output:
 
 - `-ffast-math` is enabled during compilation to prevent sub-normals. This leads to some error in floating point operations, the affect of this is being evaluated and this compiler flag may be removed after further testing is performed.
 
-# Legal and Compliance Information
+## Contact
+
+[Matthew Wells] : <matthew.wells@phac-aspc.gc.ca>
+
+[Eric Marinier] : <eric.marinier@phac-aspc.gc.ca>
+
+# Legal
 
 Copyright Government of Canada [2026]
 
@@ -267,7 +244,3 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
 [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
-# Updates and Release Notes
-
-Please see the `CHANGELOG.md`.
