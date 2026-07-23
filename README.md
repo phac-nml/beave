@@ -111,7 +111,7 @@ options:
 
 ### cluster
 
-To run _de-novo_ clustering use the `cluster` utility. The parameters for running `cluster` are shown below:
+Clusters user-provided allelic profiles.
 
 ```Bash
 >>> beave cluster --help
@@ -149,7 +149,7 @@ options:
 
 ### match
 
-The `match` utility may be used to compute pairwise distances between a group of query samples against a group of reference samples. The parameters for running `match` are described below:
+Computes pairwise distances between a group of query samples and a group of reference samples. When running `match`, the query and reference profiles will be merged by the program. If duplicate ID's are detected an error will be raised by the program.
 
 ```Bash
 >>> beave match --help
@@ -181,15 +181,11 @@ options:
 >>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -t 101 -l average -c 8
 ```
 
-When running `match`, the query and reference profiles will be merged by the program. If duplicate ID's are detected an error will be raised by the program.
-
 ### matrix
 
-In some instances you may have no need to perform clustering and simply want a distance matrix for other downstream purposes. The matrix utility can perform this task and generate a matrix or all pairwise distances in a molten format. For example:
+In some instances you may have no need to perform clustering and simply want a distance matrix for other downstream purposes. The `matrix utility` can perform this task and generate a matrix or all pairwise distances in a molten format. For example:
 
 `SampleID_1, SampleID_2, dist_{hamming,normalized}`
-
-The parameters for running `matrix` are described below:
 
 ```Bash
 >>> beave matrix --help
