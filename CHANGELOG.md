@@ -7,12 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added option to generate a distance matrix only. [PR 45](https://github.com/phac-nml/beave/pull/45)
+
 ### Changed
 
 - Optimized Hamming distance hot loop in distance calculation. [PR 42](https://github.com/phac-nml/beave/pull/42)
 
-- Reverted change in Hamming distance hot loop in distance calculation. [PR 43](https://github.com/phac-nml/beave/pull/43)
-  - Change did not result in substantial performance improvement and may automatic SIMD vectorization.
+- Reverted Hamming distance hot loop in distance calculation. [PR 43](https://github.com/phac-nml/beave/pull/43)
+  - Benchmarking revealed inefficient vectorization of instructions leading to slightly longer runtimes.
 
 ### Removed
 

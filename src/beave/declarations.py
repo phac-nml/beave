@@ -42,6 +42,8 @@ class ClusterArguments(DefaultArguments):
     linkage_method: str
     branch_type: BranchType
     matrix: bool
+    matrix_only: bool
+    molten_format: bool = False
 
 
 @dataclass(slots=True)
