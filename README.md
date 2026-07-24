@@ -10,21 +10,22 @@ Beave is an open-source bioinformatics utility for genomic clustering and distan
 - [Beave](#beave)
 - [Table of Contents](#table-of-contents)
 - [Installation](#installation)
-  * [Compatibility](#compatibility)
-  * [Bioconda](#bioconda)
-  * [pip](#pip)
-  * [Conda](#conda)
+  - [Compatibility](#compatibility)
+  - [Bioconda](#bioconda)
+  - [pip](#pip)
+  - [Conda](#conda)
 - [Getting Started](#getting-started)
-  * [Usage](#usage)
-    + [cluster](#cluster)
-    + [match](#match)
-    + [matrix](#matrix)
-  * [Input](#input)
-  * [Output](#output)
-    + [Cluster Outputs](#cluster-outputs)
-    + [Match Outputs](#match-outputs)
+  - [Usage](#usage)
+    - [cluster](#cluster)
+    - [match](#match)
+    - [matrix](#matrix)
+  - [Input](#input)
+  - [Output](#output)
+    - [Cluster Outputs](#cluster-outputs)
+    - [Match Outputs](#match-outputs)
 - [Troubleshooting](#troubleshooting)
 - [Contact](#contact)
+- [FAQ](#faq)
 - [Legal](#legal)
 
 # Installation
@@ -36,6 +37,7 @@ Beave only supports Linux distributions. However, as only the C++ 23 standard li
 To build the `beave` Python package, you will first need to install the dependencies listed in the `pyproject.toml` file. Python version `3.13` or greater is required, along with `scikit-build-core` and the `nanobind` Python package.
 
 Additionally, the following Python runtime dependencies are required:
+
 - `numpy>=2.4.0`
 - `polars>= 1.40.1`
 - `scipy>=1.17.0`
@@ -252,6 +254,10 @@ The output of `match` is a single file showing the query sample, reference sampl
 Matthew Wells: <matthew.wells@phac-aspc.gc.ca>
 
 Eric Marinier: <eric.marinier@phac-aspc.gc.ca>
+
+# FAQ
+
+Beave is named in honour of both the beloved childhood puppet famous to Manitoba children raised in the mid-'80s to the late '90s from the show Beave and Buckley and as a reference to the beloved national animal of Canada.
 
 # Legal
 
