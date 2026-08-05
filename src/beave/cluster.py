@@ -13,6 +13,7 @@ import beave
 from beave.declarations import BranchType, ClusterArguments
 from beave.log import init_logger
 from beave.transform_data import (
+    DistanceTypes,
     prep_data,
     read_input_profiles,
     subset_columns,
@@ -176,6 +177,60 @@ def convert_branch_lengths(linkage_matrix: npt.NDArray, branch_type: BranchType)
     return linkage_matrix
 
 
+def create_matrix(
+    cluster_args: ClusterArguments,
+    distances: npt.NDArray,
+    profile_names: pl.Series,
+    output_extension: str,
+    tg: asyncio.TaskGroup | None,
+) -> asyncio.Task[None] | None:
+    """Write a pairwise distance matrix to the output directory.
+
+    Can use np.triu_indices to get the profile_name comparisons for writing out the
+    molten form of the matrix.
+    """
+    logger.info("Preparing distance matrix for write to file.")
+    matrix_output: Path = cluster_args.output_directory / f"matrix.{output_extension}"
+    logger.debug("Fromatting matrix.")
+    square_matrix: pl.DataFrame = prepare_matrix(distances, profile_names)
+    logger.debug("Finished preparing distance matrix for output.")
+
+    if tg is None:
+        dists_to_matrix(square_matrix, cluster_args.delimiter, matrix_output)
+        return None
+
+    return tg.create_task(  # pyright: ignore[reportAssignmentType]
+        asyncio.to_thread(dists_to_matrix, square_matrix, cluster_args.delimiter, matrix_output)
+    )
+
+
+def create_molten_matrix(
+    cluster_args: ClusterArguments,
+    distances: npt.NDArray,
+    profile_names: pl.Series,
+    output_extension: str,
+) -> None:
+    """Write the distances to a file in molten format."""
+    logger.info("Preparing distance matrix for write to file.")
+    matrix_output: Path = cluster_args.output_directory / f"molten.{output_extension}"
+    sample_names: npt.NDArray = profile_names.to_numpy()
+    logger.info("Formatting molten output.")
+    rows, columns = np.triu_indices(len(profile_names), 1)  # starting at 1 to skip diagonal indices
+    dist_type: str = DistanceTypes.HAMMING
+    if cluster_args.normalize_distance:
+        dist_type = DistanceTypes.NORMALIZED
+
+    output = pl.DataFrame(
+        {
+            "SampleID_1": [sample_names[rows[i]] for i in range(len(rows))],
+            "SampleID_2": [sample_names[columns[f]] for f in range(len(columns))],
+            f"dist_{dist_type}": distances,
+        },
+    )
+    logger.debug("Finished preparing molten output.")
+    output.write_csv(matrix_output, separator=cluster_args.delimiter, include_header=True)
+
+
 async def cluster(cluster_args: ClusterArguments, output_extension: str) -> None:
     """Runner function of cluster."""
     profiles: pl.DataFrame = read_input_profiles(
@@ -196,22 +251,24 @@ async def cluster(cluster_args: ClusterArguments, output_extension: str) -> None
     )
 
     logger.info("Computed distances.")
-    async with asyncio.TaskGroup() as tg:
-        linkages_task = tg.create_task(
+    if cluster_args.matrix_only:
+        if not cluster_args.molten_format:
+            create_matrix(cluster_args, distances, profile_names, output_extension, None)
+        else:
+            create_molten_matrix(cluster_args, distances, profile_names, output_extension)
+        logger.info(f"Finished writing distances to {cluster_args.output_directory}")
+        return
+
+    async with asyncio.TaskGroup() as task_group:
+        linkages_task = task_group.create_task(
             asyncio.to_thread(compute_linkage_matrix, distances, cluster_args.linkage_method)
         )
         matrix_task: asyncio.Task[None] | None = None
         if cluster_args.matrix:
-            logger.info("Preparing distance matrix for write to file.")
-            matrix_output: Path = cluster_args.output_directory / f"matrix.{output_extension}"
-            logger.debug("Fromatting matrix.")
-            square_matrix: pl.DataFrame = prepare_matrix(distances, profile_names)
-            logger.debug("Finished preparing distance matrix for output.")
-            matrix_task = tg.create_task(  # pyright: ignore[reportAssignmentType]
-                asyncio.to_thread(
-                    dists_to_matrix, square_matrix, cluster_args.delimiter, matrix_output
-                )
+            matrix_task = create_matrix(
+                cluster_args, distances, profile_names, output_extension, task_group
             )
+
     linkages = linkages_task.result()
     if matrix_task:
         await matrix_task

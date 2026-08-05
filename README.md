@@ -188,6 +188,35 @@ options:
 >>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -t 101 -l average -c 8
 ```
 
+In some instances you may have no need to perform clustering and simply want a distance matrix for other downstream purposes. The matrix option can perform this task and generate a matrix or all pairwise distances in a molten format. e.g. SampleID*1, SampleID_2, dist*{hamming,normalized}
+
+```Bash
+>>> beave matrix --help
+usage: beave matrix [-h] [--cores CORES] [--delimiter DELIMITER] [--columns-subset COLUMNS_SUBSET] [--count-missing]
+                    [--normalize-distance] [--filter-threshold FILTER_THRESHOLD] [--verbose] --input INPUT [--output OUTPUT]
+
+options:
+  -h, --help            show this help message and exit
+  --cores, -c CORES     Specify the number of threads to be used. (default 12)
+  --delimiter DELIMITER
+                        Input alleles delimiter. (default \t)
+  --columns-subset, -s COLUMNS_SUBSET
+                        A file containing a single column of the column names to subset from the passed allele profiles.
+  --count-missing, -m   Count missing values as differences.
+  --normalize-distance, -n
+                        Compute the normalized distance. Distance is presented as a percentage, or a value between [0.0-1.0]
+  --filter-threshold, -f FILTER_THRESHOLD
+                        Exclude samples from analysis if they are missing more than the specified percentage of data. Must be between
+                        [0.0-100.0]. (default 100.0)
+  --verbose             Display logger debug messages.
+  --input, -i INPUT     Input alleles. (required)
+  --output, -o OUTPUT   Output directory for generated tree and clusters, directory will be created if does not exist. (default: .)
+  --molten              Write the final matrix in molten format.
+
+>>> beave matrix -i src/beave/test/data/R1KC1K.head.tsv -nm --verbose -o output
+>>> beave matrix -i src/beave/test/data/R1KC1K.head.tsv --verbose -o output --molten
+```
+
 #### Data Input
 
 The inputs for this program must be tabular, any delimiter is supported as long is it is a single character. The first column of the file must contain no duplicates or missing values. The columns are not inspected to verify unique values only, so duplicate column names will be name mangled and treated as another unique column. The characters "?", " ", "", "-", "\_", and "0" are treated as missing values by the program unless the `-c` option is added to the program. All other values are treated as a valid alleles. Example inputs can be found in the `tests` folder. Thresholds are always converted to float values, however you can specify either integers not just decimals.
