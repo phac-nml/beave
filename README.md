@@ -88,6 +88,8 @@ usage: beave [-h] [--cores CORES] [--delimiter DELIMITER] [--columns-subset COLU
              [--filter-threshold FILTER_THRESHOLD] [--verbose] [--version]
              {cluster,match} ...
 
+A very Canadian utility for genomic clustering and distance querying.
+
 positional arguments:
   {cluster,match}       Select a program to run.
     cluster             Run denovo clustering.
