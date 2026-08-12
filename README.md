@@ -3,7 +3,7 @@
 
 # Beave
 
-Beave is an open-source bioinformatics utility for genomic clustering and distance querying. This program may be used to create distance matrices from allelic profiles, or to compare groups of isolates against multiple reference sequences.
+Beave is an open-source bioinformatics utility for genomic clustering and distance querying. This program may be used to create distance matrices from allelic profiles, or to compare groups of isolates against multiple reference sequences. This program is similar to [cgmlst-dists](https://github.com/tseemann/cgmlst-dists) from Torsten Seeman and [gas](https://github.com/phac-nml/genomic_address_service) from the Public Health Agency of Canada.
 
 # Table of Contents
 
