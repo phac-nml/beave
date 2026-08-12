@@ -1,91 +1,84 @@
 ![PyPI](https://img.shields.io/pypi/v/beave?label=pypi%20package)
 ![Conda](https://img.shields.io/conda/dn/bioconda/beave)
 
-# `beave`
+# Beave
 
-- [Introduction](#introduction)
-  - [Contact](#contact)
-- [Compatibility](#compatibility)
-- [Install](#install)
-  - [Get Started](#get-started)
-  - [Python](#python)
-    - [With Bioconda](#with-bioconda)
-    - [With pip](#with-pip)
-    - [With Conda](#with-conda)
+Beave is an open-source bioinformatics utility for genomic clustering and distance querying. This program may be used to create distance matrices from allelic profiles, or to compare groups of isolates against multiple reference sequences. This program is similar to [cgmlst-dists](https://github.com/tseemann/cgmlst-dists) from Torsten Seeman and [gas](https://github.com/phac-nml/genomic_address_service) from the Public Health Agency of Canada.
+
+# Table of Contents
+
+- [Beave](#beave)
+- [Table of Contents](#table-of-contents)
+- [Installation](#installation)
+  - [Compatibility](#compatibility)
+  - [Bioconda](#bioconda)
+  - [pip](#pip)
+  - [Conda](#conda)
 - [Getting Started](#getting-started)
-  - [Using Python](#using-python)
-    - [Usage](#usage)
-    - [Configuration and Settings](#configuration-and-settings)
-    - [Data Input](#data-input)
-    - [Data Output](#data-output)
-- [Troubleshooting and FAQs](#troubleshooting-and-faqs)
-- [Other Information](#other-information)
-- [Legal and Compliance Information](#legal-and-compliance-information)
-- [Updates and Release Notes](#updates-and-release-notes)
+  - [Usage](#usage)
+    - [cluster](#cluster)
+    - [match](#match)
+    - [matrix](#matrix)
+  - [Input](#input)
+  - [Output](#output)
+    - [Cluster Outputs](#cluster-outputs)
+    - [Match Outputs](#match-outputs)
+- [Troubleshooting](#troubleshooting)
+- [Contact](#contact)
+- [FAQ](#faq)
+- [Legal](#legal)
 
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
-
-# Introduction
-
-## Python CLI
-
-A very Canadian utility for genomic clustering and distance querying.
-
-This program is under active development and is used for creating distance matrices from allelic profiles, or for comparing groups of isolates against multiple reference sequences. This program is similar to [cgmlst-dists](https://github.com/tseemann/cgmlst-dists) from Torsten Seeman and [gas](https://github.com/phac-nml/genomic_address_service) from the Public Health Agency of Canada.
-
-## Contact
-
-[Matthew Wells] : <matthew.wells@phac-aspc.gc.ca>
-
-[Eric Marinier] : <eric.marinier@phac-aspc.gc.ca>
+# Installation
 
 ## Compatibility
 
-`beave` has only been tested on Linux, any system that supports G++ can compile the program. As only the C++ 23 standard library is used, the program may be able to be compiled on Windows system.
+Beave only supports Linux distributions. However, as only the C++ 23 standard library and Python libraries are used, in principle any environment that supports G++ and Python may compile and run the program. Since this program relies heavily on the compiler to optimize the program and add SIMD instructions, it is recommended to compile the program on your local computer to get the full benefit of the potential instruction sets your CPU may offer.
 
-This program relies heavily on the compiler to optimize the program and add SIMD instructions, it is recommended to compile the program on your local computer to get the full benefit of the potential instruction sets your CPU may offer. Compilation using AVX-512 instruction sets has been tested, however in our testing the programs performance degrades likely due to throttling by the CPU.
+To build the `beave` Python package, you will first need to install the dependencies listed in the `pyproject.toml` file. Python version `3.13` or greater is required, along with `scikit-build-core` and the `nanobind` Python package.
 
-To build the `beave` Python package, you will first need to install dependencies listed in the pyproject.toml file. Python version 3.13 or greater is required, along with scikit-build-core and the nanobind Python package.
+Additionally, the following Python runtime dependencies are required:
 
-Python runtime dependencies include numpy >= 2.4.0 and polars >= 1.40.1 and scipy >= 1.17.0.
+- `numpy>=2.4.0`
+- `polars>= 1.40.1`
+- `scipy>=1.17.0`
 
-## Install
+## Bioconda
 
-### Get Started
+Currently, Bioconda only supports Linux. If you wish to install the software on OSX, you will need to install `pypi` to build the project from source. To install with Bioconda on Linux, run the following code:
 
-Start by pulling the repository.
+`conda install -c bioconda beave`
 
-`git clone https://github.com/phac-nml/beave`
+## pip
 
-### Python
+Beave may be installed from `pypi` by running the following:
 
-#### With Bioconda
+`pip install beave`
 
-Currently only linux is supported within bioconda, if you wish to install on OSX please install from pypi for build from source. An issue has been created and OSX on bioconda will be supported in the future.
+Alternatively, the software may be installed from source by downloading the project and running the following command in the source code directory:
 
-To install from bioconda simply run `conda install -c bioconda beave`
+`pip install .`
 
-#### With pip
+## Conda
 
-Users can install beave from pypi, by simply running `pip install beave`. If you wish to compile the project from its source code simply enter `pip install .` in the source code directory.
+The project may be installed within a Conda environment (without using Bioconda) by downloading the project source and creating a Conda environment on Linux as follows:
 
-Developers can run `pip install -ve .[dev]` or `pip install -Ceditable.rebuild=true -ve .[dev]`. Further examples can be found in the nanobind documentation here: [nanobind packaging](https://nanobind.readthedocs.io/en/latest/packaging.html). The `--no-build-isolation` is not included as running `uv pip install` with the `--no-build-isolation` flag tells uv to ignore the `build-system.requires` section from the `pyproject.toml`.
+`conda env create -f environment-linux.yml`
 
-To build a wheel that can be distributed instead of installed, simply run `pip wheel .`
+or on Mac as follows:
 
-#### With Conda
+`conda env create -f ./environment-osx.yml`
 
-1. Pull the GitHub repository as described above.
+The envinronment can then be activated with:
 
-2. Create the Conda environment by running `conda env create -f environment-linux.yml` for linux and `conda env create -f ./environment-osx.yml` for mac.
+`conda activate beave`
 
-3. Activate the environment with: `conda activate beave`
+and the project can be installed with `pip` into the newly created Conda environment as follows:
 
-4. Run `pip install .`, if you wish to install development dependencies or run tests please run `pip install -ve .[dev]`
+`pip install .`
 
-## Getting Started
+# Getting Started
 
-#### Usage
+## Usage
 
 The main help message for the program is shown below:
 
@@ -120,7 +113,9 @@ options:
   --version, -v         show program's version number and exit
 ```
 
-To run _de-novo_ clustering use the `cluster` option. The long form options for cluster are shown below:
+### cluster
+
+Clusters user-provided allelic profiles.
 
 ```Bash
 >>> beave cluster --help
@@ -156,7 +151,9 @@ options:
 >>> beave cluster --input src/beave/tests/data/R1KC1K.tsv -l average -b cophenetic -c 1 --thresholds 10 9 8
 ```
 
-The match argument may be used to compute pairwise distances between a group of query samples against a group of reference samples. The parameters for running match are described below:
+### match
+
+Computes pairwise distances between a group of query samples and a group of reference samples. When running `match`, the query and reference profiles will be merged by the program. If duplicate ID's are detected an error will be raised by the program.
 
 ```Bash
 >>> beave match --help
@@ -188,7 +185,11 @@ options:
 >>> beave match -q src/beave/tests/data/R1KC1K.head.tsv -r src/beave/tests/data/R1KC1K.tail.tsv -t 101 -l average -c 8
 ```
 
-In some instances you may have no need to perform clustering and simply want a distance matrix for other downstream purposes. The matrix option can perform this task and generate a matrix or all pairwise distances in a molten format. e.g. SampleID*1, SampleID_2, dist*{hamming,normalized}
+### matrix
+
+In some instances you may have no need to perform clustering and simply want a distance matrix for other downstream purposes. The `matrix utility` can perform this task and generate a matrix or all pairwise distances in a molten format. For example:
+
+`SampleID_1, SampleID_2, dist_{hamming,normalized}`
 
 ```Bash
 >>> beave matrix --help
@@ -217,30 +218,24 @@ options:
 >>> beave matrix -i src/beave/test/data/R1KC1K.head.tsv --verbose -o output --molten
 ```
 
-#### Data Input
+## Input
 
-The inputs for this program must be tabular, any delimiter is supported as long is it is a single character. The first column of the file must contain no duplicates or missing values. The columns are not inspected to verify unique values only, so duplicate column names will be name mangled and treated as another unique column. The characters "?", " ", "", "-", "\_", and "0" are treated as missing values by the program unless the `-c` option is added to the program. All other values are treated as a valid alleles. Example inputs can be found in the `tests` folder. Thresholds are always converted to float values, however you can specify either integers not just decimals.
+The inputs must be provided in tabular format. Most delimiters are supported as long as they are a single character. The first column of the file must contain no duplicates or missing values. The columns are not inspected to verify uniqueness and duplicated columns will be loaded incorrectly as unique columns. The characters `?`, ` `(space), (blank), `-`, `\_`, and `0` are treated as missing values by the program unless the `--count-missing` option is specified. All other values are treated as a valid alleles. Example inputs can be found in the `tests` directory. Thresholds are always converted to float values, however both integers and floating point numbers may be provided.
 
-When running `match`, the query and reference profiles will be merged by the program. If duplicate ID's are detected an error will be raised by the program.
+## Output
 
-#### Data Output
+### Cluster Outputs
 
-##### Cluster Outputs
-
-The program outputs a Newick-Format file containing the tree generated by whichever linkage metric is selected, the sample IDs and their addresses are put out in a separate file specified by the user in TSV format. Addresses are delimited by an '.'.
-
-Example of cluster outputs:
+The program outputs a Newick-format file containing the tree generated by whichever linkage metric is selected. The sample IDs and their addresses are put out in a separate file specified by the user in TSV format. Addresses are delimited by an `.`. The following is an example of the clustering output:
 
 | SampleID    | level_10.0 | level_9.0 | denovo_address |
 | ----------- | ---------- | --------- | -------------- |
 | CoolSample  | 1          | 2         | 1.2            |
 | CoolSample2 | 2          | 1         | 2.1            |
 
-##### Match Outputs
+### Match Outputs
 
-The output of `match` is a single file showing the query sample, the reference sample and distance.
-
-The general structure of the `match` output:
+The output of `match` is a single file showing the query sample, reference sample, and distance. The following is an example of the match output:
 
 | query_id | ref_id | dist\_{hamming,normalized} |
 | -------- | ------ | -------------------------- |
@@ -248,17 +243,27 @@ The general structure of the `match` output:
 | 1        | 3      | 8                          |
 | 1        | 4      | 10                         |
 
-# Troubleshooting and FAQs
+# Troubleshooting
 
-- There may be issues with the Python build system, please create a GitHub issue for any issues identified.
+- If you encounter any issues installing or running the program, please create a GitHub issue for any issues identified.
 
-- If there are duplicate identifiers with different profiles. The distance between the two values will still be reported as no duplicates detection is performed currently. Future iterations may add this functionality.
+- If there are duplicate identifiers with different profiles. The distance between the two values will still be reported, as no duplicate detection is performed currently. Future iterations may add this functionality.
 
-- `-ffast-math` is enabled during compilation to prevent sub-normals. This leads to some error in floating point operations, the affect of this is being evaluated and this compiler flag may be removed after further testing is performed.
+- `-ffast-math` is enabled during compilation to prevent sub-normals. This leads to some error in floating point operations, the affect of this is being evaluated and this compiler flag may be removed in the future.
 
-# Legal and Compliance Information
+# Contact
 
-Copyright Government of Canada [2026]
+Matthew Wells: <matthew.wells@phac-aspc.gc.ca>
+
+Eric Marinier: <eric.marinier@phac-aspc.gc.ca>
+
+# FAQ
+
+Beave is named in honour of both the beloved childhood puppet famous to Manitoba children raised in the mid-'80s to the late '90s from the show Beave and Buckley and as a reference to the beloved national animal of Canada.
+
+# Legal
+
+Copyright Government of Canada 2026
 
 Written by: National Microbiology Laboratory, Public Health Agency of Canada
 
@@ -267,7 +272,3 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
 [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
-# Updates and Release Notes
-
-Please see the `CHANGELOG.md`.
