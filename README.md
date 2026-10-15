@@ -80,7 +80,7 @@ and the project can be installed with `pip` into the newly created Conda environ
 
 ## Usage
 
-Beave uses polars for reading CSV files and since version 2.0.0 the number of threads used to read CSV files is now specified through the environment variable `POLARS_MAX_THREADS` on linux you can specify the number of threads for polars to use by executing the following command: `export POLARS_MAX_THREADS=X` where `X` is the number of threads.
+Beave uses polars for reading CSV files and since version 2.0.0 the number of threads used to read CSV files is now specified through the environment variable `POLARS_MAX_THREADS` on linux you can specify the number of threads for polars to use by executing the following command: `export POLARS_MAX_THREADS=X` where `X` is the number of threads. If no default is specified polars will automatically select a default value, most users will not need to modify this variable. HPC users may need to set this variable as to not use more cores then requested.
 
 The main help message for the program is shown below:
 
