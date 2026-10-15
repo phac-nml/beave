@@ -1,0 +1,60 @@
+
+- name: Run matrix
+  tags:
+    - should_pass
+  command: beave matrix --input src/beave/tests/data/R1KC1K.tsv -c 3 -f 20 -m
+  files:
+    - path: "tree.nwk"
+      should_exist: false
+    - path: clusters.tsv
+      should_exist: false
+    - path: matrix.tsv
+      should_exist: true
+    - path: FilteredProfiles.txt
+      should_exist: true
+
+- name: Run matrix molten
+  tags:
+    - should_pass
+  command: beave matrix --input src/beave/tests/data/R1KC1K.tsv -c 3 -f 20 -m --molten
+  files:
+    - path: "tree.nwk"
+      should_exist: false
+    - path: clusters.tsv
+      should_exist: false
+    - path: matrix.tsv
+      should_exist: false
+    - path: FilteredProfiles.txt
+      should_exist: true
+    - path: molten.tsv
+      should_exist: true
+
+- name: Run matrix normalized distance
+  tags:
+    - should_pass
+  command: beave matrix --input src/beave/tests/data/R1KC1K.tsv -c 3 -f 20 -mn
+  files:
+    - path: "tree.nwk"
+      should_exist: false
+    - path: clusters.tsv
+      should_exist: false
+    - path: matrix.tsv
+      should_exist: true
+    - path: FilteredProfiles.txt
+      should_exist: true
+
+- name: Run matrix molten no filter
+  tags:
+    - should_pass
+  command: beave matrix --input src/beave/tests/data/R1KC1K.tsv -c 1 -m --molten
+  files:
+    - path: "tree.nwk"
+      should_exist: false
+    - path: clusters.tsv
+      should_exist: false
+    - path: matrix.tsv
+      should_exist: false
+    - path: FilteredProfiles.txt
+      should_exist: false
+    - path: molten.tsv
+      should_exist: true
