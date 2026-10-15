@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Updated polars to version 2.0.0. [PR 50](https://github.com/phac-nml/beave/pull/50)
+
 - Optimized Hamming distance hot loop in distance calculation. [PR 42](https://github.com/phac-nml/beave/pull/42)
 
 - Reverted Hamming distance hot loop in distance calculation. [PR 43](https://github.com/phac-nml/beave/pull/43)
