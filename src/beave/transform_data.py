@@ -127,7 +127,6 @@ def read_input_profiles(input_file: Path, delimiter: str, threads: int) -> pl.Da
     profiles = pl.read_csv(
         input_file,
         separator=delimiter,
-        n_threads=threads,
         has_header=True,
         raise_if_empty=True,
         infer_schema=False,
@@ -222,9 +221,7 @@ def transform_data_hashes(
 
     profiles = profiles.with_columns(
         [
-            pl.when(pl.col(i) != str(MISSING_VALUE))
-            .then(pl.col(i).hash(42, 42, 42, 42))
-            .otherwise(pl.lit(0))
+            pl.when(pl.col(i) != str(MISSING_VALUE)).then(pl.col(i).hash(42)).otherwise(pl.lit(0))
             for i in data_columns
         ]
     )
