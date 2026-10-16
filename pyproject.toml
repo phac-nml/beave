@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 authors = [{ name = "Matthew Wells", email = "matthew.wells@phac-aspc.gc.ca" }]
 license = "Apache-2.0"
-dependencies = ["numpy >= 2.4.0", "polars >=1.41.1", "scipy >= 1.17.0"]
+dependencies = ["numpy >= 2.4.0", "polars >=2.0.0", "scipy >= 1.17.0"]
 version = "1.1.0"
 
 [project.scripts]
