@@ -46,7 +46,7 @@ jobs:
       env:
           CIBW_ARCHS_LINUX: x86_64
           CIBW_ARCHS_MACOS: x86_64
-          CIBW_BEFORE_ALL_LINUX: "yum install -y nasm || dnf install -y nasm || apt-get update && apt-get install -y nasm || apk add nasm"
+          CIBW_BEFORE_ALL_LINUX: "yum install -y nasm || dnf install -y nasm || (apt-get update && apt-get install -y nasm) || apk add nasm"
           CIBW_BEFORE_ALL_MACOS: "brew install nasm"
 
     - name: Upload wheels
