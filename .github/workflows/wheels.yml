@@ -37,12 +37,6 @@ jobs:
       with:
         submodules: true
 
-    - name: Install NASM
-      uses: ilammy/setup-nasm@v1
-
-    - name: Verify NASM installation
-      run: nasm --version
-
     - name: Build Wheels
       uses: pypa/cibuildwheel@v4.3.1
       with:
@@ -52,6 +46,8 @@ jobs:
       env:
           CIBW_ARCHS_LINUX: x86_64
           CIBW_ARCHS_MACOS: x86_64
+          CIBW_BEFORE_ALL_LINUX: "yum install -y nasm || dnf install -y nasm || apt-get update && apt-get install -y nasm || apk add nasm"
+          CIBW_BEFORE_ALL_MACOS: "brew install nasm"
 
     - name: Upload wheels
       uses: actions/upload-artifact@v4
