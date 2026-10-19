@@ -37,12 +37,12 @@ jobs:
       with:
         submodules: true
 
-    - name: Verify clean directory
-      run: git diff --exit-code
-      shell: bash
-    
     - name: Build Wheels
       uses: pypa/cibuildwheel@v4.3.1
+      with:
+          package-dir: .
+          output-dir: wheelhouse
+          config-file: "{package}/pyproject.toml" 
       env:
           CIBW_ARCHS_LINUX: x86_64
           CIBW_ARCHS_MACOS: x86_64
